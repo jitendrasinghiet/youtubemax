@@ -1,10 +1,10 @@
 import { getVideoDetails } from 'youtube-caption-extractor'
-import { resolveChapters } from './chapters'
-import { extractKeywords } from './keywords'
-import { createProxyFetch } from './proxy'
-import { generateSummary } from './summary'
-import type { AnalyzeResult, TranscriptSegment } from './types'
-import { fetchOEmbed } from './youtube'
+import { resolveChapters } from './chapters.js'
+import { extractKeywords } from './keywords.js'
+import { createProxyFetch } from './proxy.js'
+import { generateSummary } from './summary.js'
+import type { AnalyzeResult, TranscriptSegment } from './types.js'
+import { fetchOEmbed } from './youtube.js'
 
 function parseSubtitleStart(start: string): number {
   const n = Number(start)

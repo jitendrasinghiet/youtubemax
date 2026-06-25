@@ -1,4 +1,4 @@
-import { splitSentences, tokenize } from './text-utils'
+import { splitSentences, tokenize } from './text-utils.js'
 
 export function generateSummary(segments: { text: string }[], maxSentences = 6): string {
   const fullText = segments.map((s) => s.text).join(' ')

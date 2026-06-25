@@ -1,5 +1,5 @@
-import type { Chapter, TranscriptSegment } from './types'
-import { parseDescriptionChapters } from './youtube'
+import type { Chapter, TranscriptSegment } from './types.js'
+import { parseDescriptionChapters } from './youtube.js'
 
 const TARGET_CHAPTER_SECONDS = 90
 const MIN_CHAPTER_SECONDS = 45

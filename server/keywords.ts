@@ -1,5 +1,5 @@
-import type { Keyword, TranscriptSegment } from './types'
-import { STOP_WORDS, tokenize } from './text-utils'
+import type { Keyword, TranscriptSegment } from './types.js'
+import { STOP_WORDS, tokenize } from './text-utils.js'
 
 const MAX_KEYWORDS = 28
 

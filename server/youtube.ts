@@ -1,4 +1,4 @@
-import type { Chapter } from './types'
+import type { Chapter } from './types.js'
 
 const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/
 
