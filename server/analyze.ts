@@ -37,11 +37,13 @@ export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
     )
   }
 
+  // --- START OF MODIFICATION ---
+  let transcriptFetched = false;
   try {
     const details = await getVideoDetails({
       videoID: videoId,
       lang: 'en',
-      fetch: customFetch,
+      fetch: customFetch, // Use customFetch (proxy) if available
     })
     title = details.title || title
     description = details.description ?? ''
@@ -50,15 +52,29 @@ export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
       duration: parseSubtitleDuration(s.dur),
       text: s.text,
     }))
+    transcriptFetched = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error'
     warnings.push(`Transcript fetch failed: ${message}`)
-    if (!customFetch && process.env.NODE_ENV === 'production') {
+    if (customFetch === undefined && process.env.NODE_ENV === 'production') {
       warnings.push(
         'YouTube often blocks transcript requests from cloud hosts. Set YOUTUBE_PROXY_URL to a residential proxy for production.',
       )
+    } else if (customFetch !== undefined) {
+      warnings.push(
+        'Transcript fetch failed even with proxy. The proxy might be misconfigured or blocked.',
+      );
     }
   }
+
+  if (!transcriptFetched) {
+    // Fallback if transcript fetching failed
+    warnings.push('Transcript is unavailable. Chapters and summary might be incomplete.');
+    // We can also set default/empty values for chapters, summary, keywords if needed
+    // based on whether they can still be derived meaningfully without a transcript.
+    // For now, we'll let the subsequent logic run with an empty transcript.
+  }
+  // --- END OF MODIFICATION ---
 
   const chapters = resolveChapters(description, transcript)
   const summary = generateSummary(transcript)
@@ -80,3 +96,4 @@ export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
     warnings,
   }
 }
+
