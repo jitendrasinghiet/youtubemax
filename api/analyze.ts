@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { analyzeVideo } from '../server/analyze'
-import { parseVideoId } from '../server/youtube'
+import { analyzeVideo } from '../server/analyze.js'
+import { parseVideoId } from '../server/youtube.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -24,3 +24,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: message })
   }
 }
+
