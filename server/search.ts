@@ -129,8 +129,9 @@ async function fetchWithHeaders(
   return fetchFn(url, {
     ...init,
     headers: {
-      'User-Agent': USER_AGENT,
-      'Accept-Language': 'en-US,en;q=0.9',
+      "User-Agent": USER_AGENT,
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept": "*/*",
       ...(init?.headers as Record<string, string> | undefined),
     },
   })

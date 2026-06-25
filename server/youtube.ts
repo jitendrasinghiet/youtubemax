@@ -78,13 +78,25 @@ export async function fetchOEmbed(
   videoId: string,
   customFetch?: typeof fetch,
 ): Promise<{ title: string; author: string; thumbnail: string }> {
+
   const fetchFn = customFetch ?? fetch
+
   const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
-  const res = await fetchFn(url)
+
+  const res = await fetchFn(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9"
+    }
+  })
+
   if (!res.ok) {
     throw new Error(`Failed to fetch video metadata (${res.status})`)
   }
+
   const data = (await res.json()) as OEmbedResponse
+
   return {
     title: data.title,
     author: data.author_name,
