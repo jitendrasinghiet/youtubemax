@@ -44,6 +44,7 @@ export interface AnalyzeResult {
   keywords: Keyword[]
   transcript: TranscriptSegment[]
   warnings: string[]
+  transcriptStrategy?: 'jdepoix' | 'direct' | 'proxy'
 }
 
 export interface MasterKeyword {

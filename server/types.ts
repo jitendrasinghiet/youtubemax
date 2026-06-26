@@ -44,4 +44,5 @@ export interface AnalyzeResult {
   keywords: Keyword[]
   transcript: TranscriptSegment[]
   warnings: string[]
+  transcriptStrategy?: 'jdepoix' | 'direct' | 'proxy' // Which strategy was used
 }

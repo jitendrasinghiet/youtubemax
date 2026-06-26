@@ -15,8 +15,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid YouTube URL or video ID' })
   }
 
+  // Get transcript strategy from query parameter (default: jdepoix)
+  const strategyParam = typeof req.query.strategy === 'string' ? req.query.strategy : 'jdepoix'
+  const strategy = ['jdepoix', 'direct', 'proxy'].includes(strategyParam)
+    ? (strategyParam as 'jdepoix' | 'direct' | 'proxy')
+    : 'jdepoix'
+
   try {
-    const result = await analyzeVideo(videoId)
+    const result = await analyzeVideo(videoId, strategy)
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
     return res.status(200).json(result)
   } catch (err) {

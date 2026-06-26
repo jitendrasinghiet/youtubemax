@@ -1,7 +1,10 @@
 import type { AnalyzeResult, SearchResponse } from '../types'
 
-export async function analyzeVideo(input: string): Promise<AnalyzeResult> {
-  const params = new URLSearchParams({ videoId: input.trim() })
+export async function analyzeVideo(
+  input: string,
+  strategy: 'jdepoix' | 'direct' | 'proxy' = 'jdepoix',
+): Promise<AnalyzeResult> {
+  const params = new URLSearchParams({ videoId: input.trim(), strategy })
   const res = await fetch(`/api/analyze?${params}`)
   const data = await res.json()
 

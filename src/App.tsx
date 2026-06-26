@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChapterList } from './components/ChapterList'
 import { KeywordMasterList } from './components/KeywordMasterList'
 import { SearchBar } from './components/SearchBar'
+import { StrategySelector } from './components/StrategySelector'
 import { SummaryCard } from './components/SummaryCard'
 import { TranscriptPanel } from './components/TranscriptPanel'
 import { VideoPlayer } from './components/VideoPlayer'
@@ -22,6 +23,9 @@ function App() {
   const [activeTab, setActiveTab] = useState<'discovery' | 'viewer'>('discovery')
   const [showSummary, setShowSummary] = useState(true)
   const [showTranscript, setShowTranscript] = useState(false)
+  const [transcriptStrategy, setTranscriptStrategy] = useState<'jdepoix' | 'direct' | 'proxy'>(
+    'jdepoix',
+  )
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
@@ -45,7 +49,7 @@ function App() {
       setActiveTab('viewer')
 
       try {
-        const data = await analyzeVideo(input)
+        const data = await analyzeVideo(input, transcriptStrategy)
         setResult(data)
         ingestFromAnalysis(data)
       } catch (err) {
@@ -54,7 +58,19 @@ function App() {
         setLoading(false)
       }
     },
-    [ingestFromAnalysis],
+    [ingestFromAnalysis, transcriptStrategy],
+  )
+
+  // Handle strategy change - re-analyze current video with new strategy
+  const handleStrategyChange = useCallback(
+    (newStrategy: 'jdepoix' | 'direct' | 'proxy') => {
+      setTranscriptStrategy(newStrategy)
+      if (result) {
+        // Re-analyze current video with new strategy
+        runAnalysis(result.meta.videoId)
+      }
+    },
+    [result, runAnalysis],
   )
 
   const handleVideoSearch = useCallback(async (input: string) => {
@@ -180,15 +196,24 @@ function App() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-        <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div>
-              <h1 className="text-sm font-bold tracking-tight sm:text-base">
-                YouTube<span className="text-red-500">Max</span>
-              </h1>              
+        <header className="mb-4 flex flex-col gap-2 sm:gap-3">
+          <div className="flex items-center justify-between gap-3 sm:flex-row flex-col">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div>
+                <h1 className="text-sm font-bold tracking-tight sm:text-base">
+                  YouTube<span className="text-red-500">Max</span>
+                </h1>              
+              </div>
             </div>
+            <StrategySelector
+              value={transcriptStrategy}
+              onChange={handleStrategyChange}
+              disabled={loading}
+              usedStrategy={result?.transcriptStrategy}
+              compact={true}
+            />
           </div>
-          <div className="flex-1">
+          <div>
             <SearchBar onSearch={runAnalysis} loading={loading} />
           </div>
         </header>
@@ -344,6 +369,13 @@ function App() {
               {activeTab === 'viewer' && result && (
                 <div className="flex flex-col gap-3">
                   <WarningsBanner warnings={result.warnings} />
+                  <StrategySelector
+                    value={transcriptStrategy}
+                    onChange={handleStrategyChange}
+                    disabled={loading}
+                    usedStrategy={result.transcriptStrategy}
+                    compact={false}
+                  />
                   <div className="grid gap-4 lg:grid-cols-[1fr_280px] relative group">
                     <div className="flex flex-col gap-2">
                       {clipMode && displayedChapters[clipIndex] && (
