@@ -37,12 +37,13 @@ export function extractKeywords(
   title: string,
   description: string,
 ): Keyword[] {
-  const scores = new Map<string, { score: number; source: Keyword['source'] }>()
+  const scores = new Map<string, { score: number; source: Keyword['source']; count: number }>()
 
   const bump = (term: string, amount: number, source: Keyword['source']) => {
     const existing = scores.get(term)
     if (existing) {
       existing.score += amount
+      existing.count += 1
       if (
         source === 'title' ||
         (source === 'summary' && existing.source === 'transcript')
@@ -50,7 +51,7 @@ export function extractKeywords(
         existing.source = source
       }
     } else {
-      scores.set(term, { score: amount, source })
+      scores.set(term, { score: amount, source, count: 1 })
     }
   }
 
@@ -63,7 +64,8 @@ export function extractKeywords(
   }
 
   const transcriptText = transcript.map((s) => s.text).join(' ')
-  for (const [term, count] of countTerms(transcriptText, 1)) {
+  const transcriptTermCounts = new Map(countTerms(transcriptText, 1))
+  for (const [term, count] of transcriptTermCounts) {
     bump(term, count, 'transcript')
   }
 
@@ -80,12 +82,24 @@ export function extractKeywords(
     bump(term, count, 'transcript')
   }
 
+  // Calculate chapter spread for each term
+  const chapterSpread = new Map<string, Set<number>>()
+  for (let i = 0; i < transcript.length; i++) {
+    const words = tokenize(transcript[i].text)
+    for (const word of words) {
+      if (!chapterSpread.has(word)) chapterSpread.set(word, new Set())
+      chapterSpread.get(word)!.add(i)
+    }
+  }
+
   const ranked = [...scores.entries()]
     .filter(([term]) => term.length >= 3 && !/^\d+$/.test(term))
     .map(([term, { score, source }]) => ({
       term,
       score: Math.round(score * 10) / 10,
       source,
+      frequency: transcriptTermCounts.get(term) ?? 0,
+      chapterSpread: chapterSpread.get(term)?.size ?? 0,
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_KEYWORDS)

@@ -46,6 +46,8 @@ function rendererToResult(renderer: Record<string, unknown>): SearchResultItem |
     thumbnail: extractThumbnail(renderer, videoId),
     publishedAt: extractText(renderer.publishedTimeText),
     description: extractText(renderer.descriptionSnippet),
+    viewCount: extractText(renderer.viewCountText),
+    duration: extractText(renderer.lengthText),
   }
 }
 

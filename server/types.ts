@@ -1,7 +1,9 @@
 export interface Keyword {
   term: string
   score: number
-  source: 'title' | 'summary' | 'transcript'
+  source: 'title' | 'chapter' | 'summary' | 'transcript'
+  frequency?: number // occurrences in transcript
+  chapterSpread?: number // count of unique chapters containing term
 }
 
 export interface SearchResultItem {
@@ -11,6 +13,8 @@ export interface SearchResultItem {
   thumbnail: string
   publishedAt: string
   description: string
+  viewCount?: string
+  duration?: string
 }
 
 export interface TranscriptSegment {

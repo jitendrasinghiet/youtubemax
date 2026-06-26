@@ -3,7 +3,7 @@ import { resolveChapters } from './chapters.js'
 import { extractKeywords } from './keywords.js'
 import { createProxyFetch } from './proxy.js'
 import { generateSummary } from './summary.js'
-import type { AnalyzeResult, TranscriptSegment } from './types.js'
+import type { AnalyzeResult, Keyword, TranscriptSegment } from './types.js'
 import { fetchOEmbed } from './youtube.js'
 
 function parseSubtitleStart(start: string): number {
@@ -79,7 +79,13 @@ export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
   const chapters = resolveChapters(description, transcript)
   const summary = generateSummary(transcript)
   const resolvedTitle = title || 'Unknown video'
-  const keywords = extractKeywords(transcript, summary, resolvedTitle, description)
+  const baseKeywords = extractKeywords(transcript, summary, resolvedTitle, description)
+  const seenTerms = new Set(baseKeywords.map((k) => k.term.toLowerCase()))
+  const chapterKeywords: Keyword[] = chapters
+    .filter((c) => c.source === 'description')
+    .map((c) => ({ term: c.title, score: 0.7, source: 'chapter' as const }))
+    .filter((ck) => !seenTerms.has(ck.term.toLowerCase()))
+  const keywords = [...baseKeywords, ...chapterKeywords]
 
   return {
     meta: {
