@@ -1,6 +1,6 @@
 import { type FormEvent } from 'react'
 import type { SearchResultItem } from '../types'
-import { parseSearchTerms, youtubeSearchUrl } from '../lib/api'
+import { parseSearchTerms, youtubeSearchUrl, formatViewCount } from '../lib/api'
 
 interface VideoDiscoveryPanelProps {
   searchQuery: string
@@ -114,7 +114,14 @@ export function VideoDiscoveryPanel({
                     {video.title}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">{video.channel}</p>
-                  <p className="mt-1 text-[10px] text-zinc-600">Click to analyze</p>
+                  <div className="mt-1.5 flex flex-wrap gap-2 text-[10px] text-zinc-600">
+                    {video.viewCount && <span>{formatViewCount(video.viewCount)}</span>}
+                    {video.duration && <span>·</span>}
+                    {video.duration && <span>{video.duration}</span>}
+                    {video.publishedAt && <span>·</span>}
+                    {video.publishedAt && <span>{video.publishedAt}</span>}
+                  </div>
+
                 </div>
               </button>
             </li>
