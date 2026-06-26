@@ -27,7 +27,8 @@ export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
   let transcript: TranscriptSegment[] = []
 
   try {
-    const oembed = await fetchOEmbed(videoId, customFetch)
+    // oEmbed (metadata) doesn't need proxy - it works fine on Vercel
+    const oembed = await fetchOEmbed(videoId, fetch)
     title = oembed.title
     author = oembed.author
     thumbnail = oembed.thumbnail

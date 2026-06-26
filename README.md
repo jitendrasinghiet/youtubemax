@@ -319,8 +319,14 @@ Video doesn't exist, is private, or age-restricted. Verify on YouTube directly.
 ### "Captions not available"
 Video has no captions. Enable auto-generated captions in YouTube settings. Some videos may not have any available captions.
 
+### "Could not load oEmbed metadata (408)" (Vercel)
+YouTube's oEmbed API occasionally times out from Vercel. This should auto-recover on retry. If persistent:
+- Ensure you don't have proxy set for metadata (proxy is only for transcripts)
+- Wait a few minutes and try again
+- Check if video is still public on YouTube
+
 ### "Transcript fetch failed: LOGIN_REQUIRED" (Vercel)
-YouTube blocks requests from datacenter IPs. **See [VERCEL_SETUP.md](VERCEL_SETUP.md)** for complete proxy setup. Quick fix:
+YouTube blocks **transcript** requests from datacenter IPs. **See [VERCEL_SETUP.md](VERCEL_SETUP.md)** for proxy setup:
 
 ```bash
 vercel env add YOUTUBE_PROXY_URL
@@ -328,10 +334,16 @@ vercel env add YOUTUBE_PROXY_URL
 vercel deploy --prod
 ```
 
-Works locally? Then it's a Vercel/proxy issue, not your code.
+### "In-app results unavailable" (Search broken)
+Search doesn't need a proxy. Remove it if you added it:
+
+```bash
+vercel env rm YOUTUBE_PROXY_URL
+vercel deploy --prod
+```
 
 ### "Failed to fetch transcript (production)"
-Datacenter IP blocked. Configure proxy (see above) or check if proxy URL is correctly set in Vercel environment variables.
+Datacenter IP blocked. Configure proxy for transcripts (see Transcript fetch failed section above).
 
 ### "Build fails with TypeScript errors"
 ```bash

@@ -332,40 +332,41 @@ return topSentences.map(s => s.text).join(' ')
 
 **Benefit:** Fast, no API costs, no dependency on external services.
 
-### Transcript Fetching with Proxy Support
+### Request Routing Strategy
 
-**Problem:** YouTube blocks transcript requests from datacenter IPs (Vercel, AWS Lambda, etc.) with anti-bot protection.
+**YouTube has different anti-bot protection levels:**
 
-**Solution:** Route requests through a residential proxy.
+| Request Type | Protection | Solution |
+|--------------|-----------|----------|
+| **oEmbed (metadata)** | Moderate | Direct fetch (works on Vercel) |
+| **Captions/Transcripts** | Strict (LOGIN_REQUIRED) | Proxy API required |
+| **Search** | Moderate | Direct fetch (works on Vercel) |
+
+**Implementation:**
 
 ```typescript
-// server/proxy.ts
-export async function createProxyFetch(): Promise<typeof fetch> {
-  const proxyUrl = process.env.YOUTUBE_PROXY_URL?.trim()
-  
-  if (!proxyUrl) return fetch  // No proxy, use direct fetch
-  
-  // If proxy is an API endpoint (recommended for Vercel)
-  if (proxyUrl.includes('?url=')) {
-    return async (input, init) => {
-      const targetUrl = typeof input === 'string' ? input : input.toString()
-      const encoded = encodeURIComponent(targetUrl)
-      const proxyApiUrl = `${proxyUrl}${encoded}`
-      return fetch(proxyApiUrl, init)  // Fetch through proxy API
-    }
-  }
-  
-  return fetch  // Fallback to direct fetch
-}
-
 // server/analyze.ts
 const customFetch = await createProxyFetch()
-const details = await getVideoDetails({
+
+// 1. oEmbed uses direct fetch (no proxy needed, includes timeout)
+await fetchOEmbed(videoId, fetch)  // Direct fetch with 10-second timeout
+
+// 2. Transcripts use proxy if configured
+await getVideoDetails({
   videoID: videoId,
-  lang: 'en',
-  fetch: customFetch,  // Pass proxy fetch to caption extractor
+  fetch: customFetch  // Proxy if YOUTUBE_PROXY_URL set
 })
+
+// server/search.ts
+// 3. Search uses direct fetch (no proxy needed)
+const fetchFn = fetch  // Always direct
 ```
+
+**Why this approach?**
+- oEmbed is lightweight and works on Vercel directly
+- Transcripts need strict circumvention (proxy required)
+- Search works via HTML scraping (direct fetch sufficient)
+- Reduces latency by avoiding unnecessary proxy routing
 
 **Proxy Configuration:**
 

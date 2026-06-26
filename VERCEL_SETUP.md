@@ -43,7 +43,11 @@ Transcript fetch failed: Video not playable on any client.
 LOGIN_REQUIRED - Sign in to confirm you're not a bot
 ```
 
-This means YouTube is blocking requests from Vercel's datacenter IPs. **Solution: Add a proxy.**
+This means YouTube is blocking **transcript** requests from Vercel's datacenter IPs. 
+
+**Important:** The proxy is **only for transcripts**. Search results work fine without a proxy on Vercel. If you're having search issues, see the [Common Errors & Fixes](#common-errors--fixes) section below.
+
+### Solution: Add a Proxy
 
 ### Step 1: Choose a Proxy Service
 
@@ -166,11 +170,14 @@ vercel logs
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `LOGIN_REQUIRED` | YouTube blocking datacenter IP | Add proxy URL |
-| `Proxy failed` | Proxy misconfigured or down | Try different proxy |
+| `Could not load oEmbed metadata (408)` | YouTube oEmbed API timeout from Vercel | This should auto-recover. Ensure you don't have proxy set for oEmbed. Verify by checking that YOUTUBE_PROXY_URL is **only for transcripts**, not metadata |
+| `LOGIN_REQUIRED` in transcript | YouTube blocking datacenter IP | Add proxy URL (see above) |
+| `In-app results unavailable` in search | Proxy misconfigured for search | Search should work without proxy. Remove `YOUTUBE_PROXY_URL` if search was working before |
+| `Proxy failed` | Proxy misconfigured or down | Verify proxy URL format ends with `?url=` |
 | `403 Forbidden` | Proxy rate limited | Wait 1 min, try again |
-| `Connection timeout` | Network issue | Redeploy |
-| `Invalid proxy URL` | Environment variable wrong format | Check format ends with `?url=` |
+| `Connection timeout` | Network issue | Redeploy or try different proxy |
+
+**Key:** Proxy is **only for transcripts** (LOGIN_REQUIRED errors). Metadata and search work fine on Vercel without a proxy.
 
 ---
 

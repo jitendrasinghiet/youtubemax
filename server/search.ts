@@ -1,4 +1,3 @@
-import { createProxyFetch } from './proxy.js'
 import type { SearchResultItem } from './types.js'
 
 const USER_AGENT =
@@ -210,7 +209,9 @@ export async function searchYouTubeVideos(
   }
 
   const limit = Math.min(Math.max(maxResults, 1), 25)
-  const fetchFn = (await createProxyFetch()) ?? fetch
+  // Use direct fetch for search (don't apply proxy - search works fine on Vercel)
+  // Proxy is only needed for transcripts, which have stricter anti-bot protection
+  const fetchFn = fetch
 
   const attempts: Array<{ name: string; run: () => Promise<SearchResultItem[]> }> = [
     { name: 'results page', run: () => searchViaResultsUrl(trimmed, limit, fetchFn) },

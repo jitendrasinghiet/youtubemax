@@ -83,23 +83,40 @@ export async function fetchOEmbed(
 
   const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
 
-  const res = await fetchFn(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-      "Accept-Language": "en-US,en;q=0.9"
+  // Create abort controller with 10-second timeout
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+  try {
+    const res = await fetchFn(url, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "application/json",
+        "Referer": "https://www.youtube.com/",
+        "Origin": "https://www.youtube.com",
+      }
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch video metadata (${res.status})`)
     }
-  })
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch video metadata (${res.status})`)
-  }
+    const data = (await res.json()) as OEmbedResponse
 
-  const data = (await res.json()) as OEmbedResponse
-
-  return {
-    title: data.title,
-    author: data.author_name,
-    thumbnail: data.thumbnail_url,
+    return {
+      title: data.title,
+      author: data.author_name,
+      thumbnail: data.thumbnail_url,
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Video metadata request timed out (10s)')
+    }
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
