@@ -209,6 +209,40 @@ vercel
 
 Auto-configures via `vercel.json`. Free tier includes serverless functions and 100GB bandwidth.
 
+#### Fixing Transcript Fetch Errors on Vercel
+
+YouTube blocks transcript requests from datacenter IPs (like Vercel) with `LOGIN_REQUIRED` errors. To fix this, use a **residential proxy service**:
+
+**Option 1: AllOrigins (Free, Works Great)**
+```bash
+vercel env add YOUTUBE_PROXY_URL
+# Set value to: https://api.allorigins.win/raw?url=
+vercel deploy
+```
+
+**Option 2: Residential Proxy Services (Paid, Best Quality)**
+- [BrightData](https://brightdata.com/) — $5/GB, excellent uptime
+- [Oxylabs](https://oxylabs.io/) — €5/GB, residential & datacenter
+- [ScraperAPI](https://www.scraperapi.com/) — Paid, YouTube-optimized
+
+For these, use the proxy API URL provided by the service. Most accept URLs like:
+```
+YOUTUBE_PROXY_URL=https://api.provider.com/fetch?url=
+```
+
+**Option 3: Self-Hosted Proxy**
+Run a proxy on a residential IP or VPS, then:
+```bash
+vercel env add YOUTUBE_PROXY_URL
+# Set value to: http://username:password@your-proxy.com:8080
+vercel deploy
+```
+
+After setting `YOUTUBE_PROXY_URL`, redeploy:
+```bash
+vercel deploy --prod
+```
+
 ### Netlify
 
 ```bash
@@ -216,13 +250,22 @@ npm run build
 netlify deploy --prod --dir=dist
 ```
 
-### Environment Variables
+To set environment variables on Netlify:
+1. Go to **Site Settings → Build & Deploy → Environment**
+2. Add `YOUTUBE_PROXY_URL` with your proxy URL
+3. Trigger a new deploy
 
-**For transcript proxying (if captions fail in production):**
+### Self-Hosted / Docker
 
 ```bash
-YOUTUBE_PROXY_URL=http://proxy-provider.com:8080
-npm install undici  # Optional proxy support
+npm run build
+
+# Serve dist/ with any static host (Apache, Nginx, Python, Node, etc.)
+python -m http.server 3000 --directory dist
+
+# With environment variables
+YOUTUBE_PROXY_URL=http://proxy:8080 npm run build
+node -e "const express = require('express'); express().use(express.static('dist')).listen(3000)"
 ```
 
 ---
@@ -274,10 +317,21 @@ export function TranscriptExport({ segments }) {
 Video doesn't exist, is private, or age-restricted. Verify on YouTube directly.
 
 ### "Captions not available"
-Video has no captions. Enable auto-generated captions in YouTube settings.
+Video has no captions. Enable auto-generated captions in YouTube settings. Some videos may not have any available captions.
+
+### "Transcript fetch failed: LOGIN_REQUIRED" (Vercel)
+YouTube blocks requests from datacenter IPs. **See [VERCEL_SETUP.md](VERCEL_SETUP.md)** for complete proxy setup. Quick fix:
+
+```bash
+vercel env add YOUTUBE_PROXY_URL
+# Set to: https://api.allorigins.win/raw?url=
+vercel deploy --prod
+```
+
+Works locally? Then it's a Vercel/proxy issue, not your code.
 
 ### "Failed to fetch transcript (production)"
-YouTube blocks datacenter IPs. Set up residential proxy (see Environment Variables).
+Datacenter IP blocked. Configure proxy (see above) or check if proxy URL is correctly set in Vercel environment variables.
 
 ### "Build fails with TypeScript errors"
 ```bash
@@ -285,6 +339,9 @@ rm -rf node_modules package-lock.json
 npm install
 npm run build
 ```
+
+### Discovery search returns no results
+YouTube may be blocking the request. This is intermittent. Try searching again in a minute.
 
 ---
 

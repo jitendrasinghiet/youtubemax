@@ -332,9 +332,52 @@ return topSentences.map(s => s.text).join(' ')
 
 **Benefit:** Fast, no API costs, no dependency on external services.
 
----
+### Transcript Fetching with Proxy Support
 
-## Build & Deployment
+**Problem:** YouTube blocks transcript requests from datacenter IPs (Vercel, AWS Lambda, etc.) with anti-bot protection.
+
+**Solution:** Route requests through a residential proxy.
+
+```typescript
+// server/proxy.ts
+export async function createProxyFetch(): Promise<typeof fetch> {
+  const proxyUrl = process.env.YOUTUBE_PROXY_URL?.trim()
+  
+  if (!proxyUrl) return fetch  // No proxy, use direct fetch
+  
+  // If proxy is an API endpoint (recommended for Vercel)
+  if (proxyUrl.includes('?url=')) {
+    return async (input, init) => {
+      const targetUrl = typeof input === 'string' ? input : input.toString()
+      const encoded = encodeURIComponent(targetUrl)
+      const proxyApiUrl = `${proxyUrl}${encoded}`
+      return fetch(proxyApiUrl, init)  // Fetch through proxy API
+    }
+  }
+  
+  return fetch  // Fallback to direct fetch
+}
+
+// server/analyze.ts
+const customFetch = await createProxyFetch()
+const details = await getVideoDetails({
+  videoID: videoId,
+  lang: 'en',
+  fetch: customFetch,  // Pass proxy fetch to caption extractor
+})
+```
+
+**Proxy Configuration:**
+
+| Type | Example | Best For |
+|------|---------|----------|
+| **API Proxy** | `https://api.allorigins.win/raw?url=` | Vercel (free & paid) |
+| **Residential Proxy** | `https://api.brightdata.com/request?url=` | High reliability |
+| **HTTP Proxy** | `http://user:pass@proxy.com:8080` | Self-hosted VPS |
+
+**For Vercel:** Use an API-based proxy service (doesn't require traditional proxy agents).
+
+
 
 ### Vite Build Pipeline
 
