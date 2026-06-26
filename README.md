@@ -209,39 +209,33 @@ vercel
 
 Auto-configures via `vercel.json`. Free tier includes serverless functions and 100GB bandwidth.
 
-#### Fixing Transcript Fetch Errors on Vercel
+#### Transcript Fetching - Browser Identity First
 
-YouTube blocks transcript requests from datacenter IPs (like Vercel) with `LOGIN_REQUIRED` errors. To fix this, use a **residential proxy service**:
+YouTubeMax now uses **browser-like identity headers** (User-Agent, Referer, etc.) to fetch transcripts, which **often works without a proxy**!
 
-**Option 1: AllOrigins (Free, Works Great)**
-```bash
-vercel env add YOUTUBE_PROXY_URL
-# Set value to: https://api.allorigins.win/raw?url=
-vercel deploy
-```
-
-**Option 2: Residential Proxy Services (Paid, Best Quality)**
-- [BrightData](https://brightdata.com/) — $5/GB, excellent uptime
-- [Oxylabs](https://oxylabs.io/) — €5/GB, residential & datacenter
-- [ScraperAPI](https://www.scraperapi.com/) — Paid, YouTube-optimized
-
-For these, use the proxy API URL provided by the service. Most accept URLs like:
-```
-YOUTUBE_PROXY_URL=https://api.provider.com/fetch?url=
-```
-
-**Option 3: Self-Hosted Proxy**
-Run a proxy on a residential IP or VPS, then:
-```bash
-vercel env add YOUTUBE_PROXY_URL
-# Set value to: http://username:password@your-proxy.com:8080
-vercel deploy
-```
-
-After setting `YOUTUBE_PROXY_URL`, redeploy:
+**Try without proxy first:**
 ```bash
 vercel deploy --prod
 ```
+
+If transcripts load successfully, you're done! ✅
+
+**If transcripts fail (optional proxy):**
+If browser headers don't work, you can add a residential proxy as fallback:
+
+```bash
+vercel env add YOUTUBE_PROXY_URL
+# Use a residential proxy URL (e.g., Oxylabs, BrightData, ScraperAPI)
+vercel deploy --prod
+```
+
+See [VERCEL_SETUP.md](VERCEL_SETUP.md) for proxy options if needed.
+
+**Why browser identity works?**
+- Rotating realistic User-Agent strings
+- Browser-compatible headers (Accept, Accept-Language, DNT, etc.)
+- Simulates genuine browser requests
+- Often sufficient for transcript fetching without proxy
 
 ### Netlify
 
@@ -325,25 +319,34 @@ YouTube's oEmbed API occasionally times out from Vercel. This should auto-recove
 - Wait a few minutes and try again
 - Check if video is still public on YouTube
 
-### "Transcript fetch failed: LOGIN_REQUIRED" (Vercel)
-YouTube blocks **transcript** requests from datacenter IPs. **See [VERCEL_SETUP.md](VERCEL_SETUP.md)** for proxy setup:
+### "Transcript fetch failed: InnerTube /player failed (522/500)" (Vercel)
 
-```bash
-vercel env add YOUTUBE_PROXY_URL
-# Set to: https://api.allorigins.win/raw?url=
-vercel deploy --prod
-```
+YouTube's InnerTube API is rejecting transcript requests. Simple proxies like AllOrigins don't work with InnerTube. **Use a residential proxy service:**
+
+**See [VERCEL_SETUP.md](VERCEL_SETUP.md)** for setup. Recommended services:
+- **Oxylabs** (€5/GB, YouTube-optimized)
+- **BrightData** ($5/GB, very reliable)
+- **ScraperAPI** ($9-99/month, affordable)
+
+### "Transcript fetch failed: LOGIN_REQUIRED" (Vercel)
+
+YouTube blocks **transcript** requests from datacenter IPs. **See [VERCEL_SETUP.md](VERCEL_SETUP.md)** for proxy setup with a residential proxy service.
+
+### "Transcript fetch failed even with proxy"
+
+The proxy service may not be working properly or YouTube is blocking it. Try:
+1. Verify proxy service credentials are correct
+2. Test proxy manually: `curl "PROXY_URL" -d "url=https://youtube.com"`
+3. Try a different residential proxy service (see Vercel setup guide)
 
 ### "In-app results unavailable" (Search broken)
-Search doesn't need a proxy. Remove it if you added it:
+
+Search doesn't need a proxy and proxy URLs can break search. Remove proxy if search stops working:
 
 ```bash
 vercel env rm YOUTUBE_PROXY_URL
 vercel deploy --prod
 ```
-
-### "Failed to fetch transcript (production)"
-Datacenter IP blocked. Configure proxy for transcripts (see Transcript fetch failed section above).
 
 ### "Build fails with TypeScript errors"
 ```bash

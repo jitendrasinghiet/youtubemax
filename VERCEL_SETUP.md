@@ -34,53 +34,48 @@ URL appears in ~1 minute.
 
 ---
 
-## Fixing Transcript Fetch Errors
+## Transcript Fetching - No Proxy Needed (Usually!)
 
-If you see these errors:
+YouTubeMax uses **browser-identity headers** to fetch transcripts, which works for most cases without a proxy.
 
-```
-Transcript fetch failed: Video not playable on any client.
-LOGIN_REQUIRED - Sign in to confirm you're not a bot
-```
+**Status: Transcripts loading?**
+- ✅ **Yes** → You're all set! No proxy needed.
+- ❌ **No, seeing InnerTube/LOGIN_REQUIRED errors** → Optional: Add proxy (see below)
 
-This means YouTube is blocking **transcript** requests from Vercel's datacenter IPs. 
+### Optional: Add a Proxy for Extra Resilience
 
-**Important:** The proxy is **only for transcripts**. Search results work fine without a proxy on Vercel. If you're having search issues, see the [Common Errors & Fixes](#common-errors--fixes) section below.
+If transcript fetching fails (rare), you can optionally configure a residential proxy as fallback:
 
-### Solution: Add a Proxy
+### Step 1: Choose a Proxy Service (Optional)
 
-### Step 1: Choose a Proxy Service
+**Only needed if browser headers don't work.** For most use cases, the browser identity approach is sufficient.
 
-Pick ONE option:
+**Best residential proxy services for YouTube:**
 
-#### **Option A: AllOrigins (Recommended - Free)**
-- Works with YouTubeMax out of the box
-- No signup required
-- Generous rate limits
-- URL: `https://api.allorigins.win/raw?url=`
+#### **Option A: Oxylabs (Recommended)**
+- €5/GB, YouTube-optimized
+- Excellent uptime and support
+- https://oxylabs.io
 
-#### **Option B: CORS Anywhere Fork (Free)**
-- Similar to AllOrigins
-- URL: `https://cors-anywhere.herokuapp.com/` (may need to request access)
+#### **Option B: BrightData**
+- $5/GB, highly reliable
+- Extensive YouTube support
+- https://brightdata.com
 
-#### **Option C: Paid Residential Proxy (Best Quality)**
-- **BrightData** — $5/GB — https://brightdata.com
-  - Supports residential & datacenter IPs
-  - 99.9% uptime
-  - Example: `https://api.brightdata.com/request?api_key=YOUR_KEY&url=`
+#### **Option C: ScraperAPI**
+- $9-99/month, affordable
+- Simple setup
+- https://www.scraperapi.com
 
-- **Oxylabs** — €5/GB — https://oxylabs.io
-  - YouTube-optimized
-  - API-based proxy
-  - Example: `https://api.oxylabs.io/v1/queries?access_token=YOUR_KEY&target=url&url=`
-
-- **ScraperAPI** — Paid — https://www.scraperapi.com
-  - Simple URL parameter: `https://api.scraperapi.com?url=`
+**Avoid:** Simple CORS proxies (AllOrigins, CORS Anywhere, etc.) - they don't support YouTube's API properly.
 
 ### Step 2: Get Your Proxy URL
 
-- **AllOrigins:** Copy → `https://api.allorigins.win/raw?url=`
-- **Paid Service:** Sign up, get API key, format the URL with your key
+- **Oxylabs:** Sign up at https://oxylabs.io, get API endpoint from dashboard
+- **BrightData:** Sign up, get residential proxy URL with auth
+- **ScraperAPI:** Sign up, get API key, use `https://api.scraperapi.com?url=`
+
+Check service's documentation for exact URL format.
 
 ### Step 3: Add to Vercel
 
@@ -91,7 +86,8 @@ Pick ONE option:
 vercel env add YOUTUBE_PROXY_URL
 
 # Paste your proxy URL when prompted:
-# https://api.allorigins.win/raw?url=
+# Example (ScraperAPI): https://api.scraperapi.com?url=
+# Example (Oxylabs): https://YOUR_KEY@YOUR_ENDPOINT.oxylabs.io:...
 
 # Redeploy
 vercel deploy --prod
@@ -103,7 +99,7 @@ vercel deploy --prod
 2. **Settings** → **Environment Variables**
 3. **Add New**
    - Name: `YOUTUBE_PROXY_URL`
-   - Value: `https://api.allorigins.win/raw?url=`
+   - Value: Your proxy service URL (with auth if needed)
    - Environments: **Production, Preview, Development** ✓
 4. **Save**
 5. **Deployments** → **Redeploy** (select latest) → **Redeploy**
@@ -113,7 +109,7 @@ vercel deploy --prod
 ```json
 {
   "env": {
-    "YOUTUBE_PROXY_URL": "https://api.allorigins.win/raw?url="
+    "YOUTUBE_PROXY_URL": "https://YOUR_PROXY_URL_HERE"
   }
 }
 ```
@@ -170,14 +166,15 @@ vercel logs
 
 | Error | Cause | Fix |
 |-------|-------|-----|
+| `InnerTube /player failed (522/500)` | Simple proxies don't work with YouTube's API | Use residential proxy: Oxylabs, BrightData, or ScraperAPI (see Step 1) |
 | `Could not load oEmbed metadata (408)` | YouTube oEmbed API timeout from Vercel | This should auto-recover. Ensure you don't have proxy set for oEmbed. Verify by checking that YOUTUBE_PROXY_URL is **only for transcripts**, not metadata |
+| `Transcript fetch failed even with proxy` | Proxy not configured correctly or YouTube is blocking it | Verify proxy service is working (test in curl). Try a different residential proxy service |
 | `LOGIN_REQUIRED` in transcript | YouTube blocking datacenter IP | Add proxy URL (see above) |
 | `In-app results unavailable` in search | Proxy misconfigured for search | Search should work without proxy. Remove `YOUTUBE_PROXY_URL` if search was working before |
-| `Proxy failed` | Proxy misconfigured or down | Verify proxy URL format ends with `?url=` |
-| `403 Forbidden` | Proxy rate limited | Wait 1 min, try again |
-| `Connection timeout` | Network issue | Redeploy or try different proxy |
+| `403 Forbidden` | Proxy rate limited or blocked | Wait 1 min, try again, or upgrade proxy service plan |
+| `Connection timeout` | Network issue or proxy endpoint down | Redeploy or try different proxy |
 
-**Key:** Proxy is **only for transcripts** (LOGIN_REQUIRED errors). Metadata and search work fine on Vercel without a proxy.
+**Key:** Proxy is **only for transcripts**. Metadata and search work fine on Vercel without a proxy. Always use a residential proxy service (never simple CORS proxies).
 
 ---
 

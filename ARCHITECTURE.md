@@ -332,51 +332,116 @@ return topSentences.map(s => s.text).join(' ')
 
 **Benefit:** Fast, no API costs, no dependency on external services.
 
-### Request Routing Strategy
+### Request Routing Strategy with Resilience
 
 **YouTube has different anti-bot protection levels:**
 
 | Request Type | Protection | Solution |
 |--------------|-----------|----------|
-| **oEmbed (metadata)** | Moderate | Direct fetch (works on Vercel) |
-| **Captions/Transcripts** | Strict (LOGIN_REQUIRED) | Proxy API required |
-| **Search** | Moderate | Direct fetch (works on Vercel) |
+| **oEmbed (metadata)** | Moderate | Direct fetch with browser headers + 10s timeout |
+| **Captions/Transcripts** | Strict (InnerTube API) | Browser headers + retry logic (optional: residential proxy fallback) |
+| **Search** | Moderate | Direct fetch with browser headers |
 
-**Implementation:**
+**Multi-Tier Fetch Strategy:**
+
+1. **Primary:** Browser-like headers (User-Agent rotation, Accept-Language, DNT, etc.)
+2. **Fallback:** Residential proxy (if configured) - only for 5xx errors
+3. **Last resort:** Throw error with helpful message
+
+**Browser Identity Approach:**
+
+YouTubeMax now uses rotating realistic User-Agent strings and comprehensive browser headers to simulate genuine browser requests:
+
+```typescript
+// server/proxy.ts - Browser identity headers
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Firefox/121.0',
+]
+
+function getBrowserHeaders(init?: RequestInit): Record<string, string> {
+  return {
+    'User-Agent': getRandomUserAgent(),
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'DNT': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Cache-Control': 'max-age=0',
+  }
+}
+
+export async function createBrowserFetch(): Promise<typeof fetch> {
+  return async (input, init) => {
+    try {
+      // Try direct browser fetch first with headers
+      const res = await fetch(url, {
+        ...init,
+        headers: getBrowserHeaders(init),
+      })
+      if (res.ok || isPermanentError(res.status)) {
+        return res
+      }
+      // If 5xx and proxy available, fall through
+      if (res.status >= 500 && proxyUrl) {
+        // Try proxy
+      } else {
+        return res
+      }
+    } catch (error) {
+      if (!proxyUrl) throw error
+    }
+    
+    // Fallback to proxy if configured and browser fetch failed
+    if (proxyUrl) {
+      return proxyFetch(url, init)
+    }
+  }
+}
+```
+
+**Retry Logic for Transient Failures:**
 
 ```typescript
 // server/analyze.ts
-const customFetch = await createProxyFetch()
-
-// 1. oEmbed uses direct fetch (no proxy needed, includes timeout)
-await fetchOEmbed(videoId, fetch)  // Direct fetch with 10-second timeout
-
-// 2. Transcripts use proxy if configured
-await getVideoDetails({
-  videoID: videoId,
-  fetch: customFetch  // Proxy if YOUTUBE_PROXY_URL set
-})
-
-// server/search.ts
-// 3. Search uses direct fetch (no proxy needed)
-const fetchFn = fetch  // Always direct
+async function fetchTranscriptWithRetry(
+  videoId: string,
+  browserFetch: typeof fetch,
+  maxRetries = 2  // Exponential backoff: 1s, 2s
+): Promise<{ transcript, title?, description? }> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const details = await getVideoDetails({
+        videoID: videoId,
+        fetch: browserFetch  // Now uses browser headers
+      })
+      return { transcript: details.subtitles, title: details.title }
+    } catch (err) {
+      // Don't retry on permanent errors
+      if (isPermanentError(err)) throw err
+      
+      // Retry with exponential backoff on transient errors
+      if (attempt < maxRetries) {
+        await sleep(Math.pow(2, attempt) * 1000)
+      } else {
+        throw err
+      }
+    }
+  }
+}
 ```
 
-**Why this approach?**
-- oEmbed is lightweight and works on Vercel directly
-- Transcripts need strict circumvention (proxy required)
-- Search works via HTML scraping (direct fetch sufficient)
-- Reduces latency by avoiding unnecessary proxy routing
+**Why This Works Better:**
 
-**Proxy Configuration:**
-
-| Type | Example | Best For |
-|------|---------|----------|
-| **API Proxy** | `https://api.allorigins.win/raw?url=` | Vercel (free & paid) |
-| **Residential Proxy** | `https://api.brightdata.com/request?url=` | High reliability |
-| **HTTP Proxy** | `http://user:pass@proxy.com:8080` | Self-hosted VPS |
-
-**For Vercel:** Use an API-based proxy service (doesn't require traditional proxy agents).
+- **Browser headers alone often sufficient** for most YouTube requests
+- **Zero cost** - no proxy fees for many use cases
+- **Faster** - direct browser requests beat proxy routing
+- **Residential proxy optional** - only needed if browser headers insufficient
+- **Backward compatible** - existing YOUTUBE_PROXY_URL configs still work
+- **Smart fallback** - uses proxy only when browser approach fails with 5xx errors
 
 
 

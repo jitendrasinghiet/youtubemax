@@ -97,6 +97,10 @@ export async function fetchOEmbed(
         "Accept": "application/json",
         "Referer": "https://www.youtube.com/",
         "Origin": "https://www.youtube.com",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Site": "same-site",
+        "Sec-Fetch-Mode": "cors",
       }
     })
 
