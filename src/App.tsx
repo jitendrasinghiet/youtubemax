@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChapterList } from './components/ChapterList'
 import { KeywordMasterList } from './components/KeywordMasterList'
 import { SearchBar } from './components/SearchBar'
-import { StrategySelector } from './components/StrategySelector'
 import { SummaryCard } from './components/SummaryCard'
 import { TranscriptPanel } from './components/TranscriptPanel'
 import { VideoPlayer } from './components/VideoPlayer'
@@ -22,16 +21,16 @@ function App() {
   const [showFilteredChapters, setShowFilteredChapters] = useState(false)
   const [activeTab, setActiveTab] = useState<'discovery' | 'viewer'>('discovery')
   const [showSummary, setShowSummary] = useState(true)
-  const [showTranscript, setShowTranscript] = useState(false)
-  const [transcriptStrategy, setTranscriptStrategy] = useState<'jdepoix' | 'direct' | 'proxy'>(
-    'jdepoix',
-  )
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchSoftWarning, setSearchSoftWarning] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([])
+  const [searchSortType, setSearchSortType] = useState<'relevance' | 'publishDate' | 'viewCount' | 'duration'>('relevance')
+  const [defaultsLoaded, setDefaultsLoaded] = useState(false)
+  const [isVoiceListening, setIsVoiceListening] = useState(false)
+  const voiceRecognitionRef = useRef<any>(null)
 
   const {
     keywords: masterKeywords,
@@ -49,7 +48,7 @@ function App() {
       setActiveTab('viewer')
 
       try {
-        const data = await analyzeVideo(input, transcriptStrategy)
+        const data = await analyzeVideo(input)
         setResult(data)
         ingestFromAnalysis(data)
       } catch (err) {
@@ -58,19 +57,7 @@ function App() {
         setLoading(false)
       }
     },
-    [ingestFromAnalysis, transcriptStrategy],
-  )
-
-  // Handle strategy change - re-analyze current video with new strategy
-  const handleStrategyChange = useCallback(
-    (newStrategy: 'jdepoix' | 'direct' | 'proxy') => {
-      setTranscriptStrategy(newStrategy)
-      if (result) {
-        // Re-analyze current video with new strategy
-        runAnalysis(result.meta.videoId)
-      }
-    },
-    [result, runAnalysis],
+    [ingestFromAnalysis],
   )
 
   const handleVideoSearch = useCallback(async (input: string) => {
@@ -78,6 +65,7 @@ function App() {
     setSearchError(null)
     setSearchSoftWarning(null)
     setSearchResults([])
+    setSearchSortType('relevance') // Reset sort to relevance on new search
 
     try {
       const { results, warning } = await searchVideos(input)
@@ -100,6 +88,40 @@ function App() {
     })
   }, [])
 
+  const startVoiceSearch = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Voice search not supported in your browser')
+      return
+    }
+
+    if (!voiceRecognitionRef.current) {
+      voiceRecognitionRef.current = new SpeechRecognition()
+      voiceRecognitionRef.current.continuous = false
+      voiceRecognitionRef.current.interimResults = true
+      voiceRecognitionRef.current.lang = 'en-US'
+
+      voiceRecognitionRef.current.onstart = () => setIsVoiceListening(true)
+      voiceRecognitionRef.current.onend = () => setIsVoiceListening(false)
+      voiceRecognitionRef.current.onresult = (event: any) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript
+          if (event.results[i].isFinal) {
+            setSearchQuery((prev) => (prev ? `${prev} ${transcript}` : transcript))
+          }
+        }
+      }
+      voiceRecognitionRef.current.onerror = () => setIsVoiceListening(false)
+    }
+
+    if (isVoiceListening) {
+      voiceRecognitionRef.current.stop()
+      setIsVoiceListening(false)
+    } else {
+      voiceRecognitionRef.current.start()
+    }
+  }, [isVoiceListening])
+
   const handleSearchFromDiscovery = useCallback(
     (query: string) => {
       setSearchQuery(query)
@@ -116,6 +138,70 @@ function App() {
     },
     [runAnalysis],
   )
+
+  // Parse duration string to seconds for sorting
+  const parseDuration = (durationStr: string | undefined): number => {
+    if (!durationStr) return 0
+    const parts = durationStr.split(':').map(Number)
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    if (parts.length === 2) return parts[0] * 60 + parts[1]
+    return parts[0] || 0
+  }
+
+  // Parse view count string to number for sorting
+  const parseViewCount = (viewCountStr: string | undefined): number => {
+    if (!viewCountStr) return 0
+    const match = viewCountStr.match(/(\d+(?:\.\d+)?)\s*([KMB])/i)
+    if (match) {
+      const num = parseFloat(match[1])
+      const unit = match[2].toUpperCase()
+      if (unit === 'K') return num * 1000
+      if (unit === 'M') return num * 1000000
+      if (unit === 'B') return num * 1000000000
+      return num
+    }
+    return parseInt(viewCountStr.replace(/\D/g, ''), 10) || 0
+  }
+
+  // Parse publish date to days ago for sorting
+  const parseDateToDaysAgo = (dateStr: string | undefined): number => {
+    if (!dateStr) return Infinity
+    const match = dateStr.match(/(\d+)\s*(second|minute|hour|day|week|month|year)/i)
+    if (!match) return Infinity
+    const [, num, unit] = match
+    const n = parseInt(num, 10)
+    const u = unit.toLowerCase()
+    if (u.startsWith('second')) return n / (24 * 3600)
+    if (u.startsWith('minute')) return n / (24 * 60)
+    if (u.startsWith('hour')) return n / 24
+    if (u.startsWith('day')) return n
+    if (u.startsWith('week')) return n * 7
+    if (u.startsWith('month')) return n * 30
+    if (u.startsWith('year')) return n * 365
+    return Infinity
+  }
+
+  // Sort results based on selected sort type
+  const sortedSearchResults = useMemo(() => {
+    if (searchSortType === 'relevance') return searchResults
+    const sorted = [...searchResults]
+    if (searchSortType === 'viewCount') {
+      sorted.sort((a, b) => parseViewCount(b.viewCount) - parseViewCount(a.viewCount))
+    } else if (searchSortType === 'duration') {
+      sorted.sort((a, b) => parseDuration(b.duration) - parseDuration(a.duration))
+    } else if (searchSortType === 'publishDate') {
+      sorted.sort((a, b) => parseDateToDaysAgo(a.publishedAt) - parseDateToDaysAgo(b.publishedAt))
+    }
+    return sorted
+  }, [searchResults, searchSortType])
+
+  // Load default trending videos on first mount (session-based)
+  useEffect(() => {
+    if (!defaultsLoaded && searchResults.length === 0 && !searchQuery) {
+      setDefaultsLoaded(true)
+      handleVideoSearch('trending')
+    }
+  }, [defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
 
   const filteredChapters = useMemo(() => {
     if (!result) return []
@@ -197,7 +283,7 @@ function App() {
 
       <div className="relative mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
         <header className="mb-4 flex flex-col gap-2 sm:gap-3">
-          <div className="flex items-center justify-between gap-3 sm:flex-row flex-col">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
               <div>
                 <h1 className="text-sm font-bold tracking-tight sm:text-base">
@@ -205,13 +291,6 @@ function App() {
                 </h1>              
               </div>
             </div>
-            <StrategySelector
-              value={transcriptStrategy}
-              onChange={handleStrategyChange}
-              disabled={loading}
-              usedStrategy={result?.transcriptStrategy}
-              compact={true}
-            />
           </div>
           <div>
             <SearchBar onSearch={runAnalysis} loading={loading} />
@@ -239,6 +318,19 @@ function App() {
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20"
                   disabled={searchLoading}
                 />
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  disabled={searchLoading}
+                  className={`absolute right-10 top-1/2 -translate-y-1/2 text-sm transition ${
+                    isVoiceListening
+                      ? 'text-red-400 animate-pulse'
+                      : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  title="Voice search"
+                >
+                  🎤
+                </button>
               </div>
               <button
                 type="submit"
@@ -321,12 +413,36 @@ function App() {
               {activeTab === 'discovery' && (
                 <div className="flex flex-col gap-3">
                   {searchResults.length > 0 ? (
-                    <div>
-                      <p className="text-xs text-zinc-500 mb-2">
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-zinc-500">
                         Found {searchResults.length} video{searchResults.length !== 1 ? 's' : ''}
                       </p>
-                      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                        {searchResults.map((video) => (
+                      {searchResults.length > 0 && (
+                        <div className="flex gap-1 flex-wrap justify-end">
+                          {[
+                            { type: 'relevance' as const, label: 'Relevance' },
+                            { type: 'publishDate' as const, label: 'Newest' },
+                            { type: 'viewCount' as const, label: 'Most viewed' },
+                            { type: 'duration' as const, label: 'Longest' },
+                          ].map(({ type, label }) => (
+                            <button
+                              key={type}
+                              onClick={() => setSearchSortType(type)}
+                              className={`px-2 py-1 text-xs font-medium rounded transition whitespace-nowrap ${
+                                searchSortType === type
+                                  ? 'bg-red-500/20 border border-red-500 text-red-300'
+                                  : 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                      {sortedSearchResults.map((video) => (
                           <button
                             key={video.videoId}
                             type="button"
@@ -369,13 +485,6 @@ function App() {
               {activeTab === 'viewer' && result && (
                 <div className="flex flex-col gap-3">
                   <WarningsBanner warnings={result.warnings} />
-                  <StrategySelector
-                    value={transcriptStrategy}
-                    onChange={handleStrategyChange}
-                    disabled={loading}
-                    usedStrategy={result.transcriptStrategy}
-                    compact={false}
-                  />
                   <div className="grid gap-4 lg:grid-cols-[1fr_280px] relative group">
                     <div className="flex flex-col gap-2">
                       {clipMode && displayedChapters[clipIndex] && (
@@ -400,7 +509,7 @@ function App() {
                       <VideoPlayer videoId={result.meta.videoId} startAt={playStart} />
                     </div>
                     {/* Chapters - Right sidebar */}
-                    <aside className="rounded-lg border border-white/10 bg-white/[0.03] p-2 lg:max-h-[min(70vh,480px)] lg:overflow-y-auto">
+                    <aside className="rounded-lg border border-white/10 bg-white/[0.03] p-2 lg:max-h-[min(70vh,480px)] lg:flex lg:flex-col">
                       <ChapterList
                         chapters={displayedChapters}
                         allChapters={result.chapters}
@@ -474,24 +583,7 @@ function App() {
             </div>
 
             {/* Transcript */}
-            <div className="rounded-lg border border-white/10 bg-white/[0.03]">
-              <button
-                onClick={() => setShowTranscript(!showTranscript)}
-                className="flex w-full items-center justify-between px-4 py-3 hover:bg-white/[0.05] transition"
-              >
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-                  Transcript
-                </h3>
-                <span className={`text-xs text-zinc-500 transition ${showTranscript ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </button>
-              {showTranscript && (
-                <div className="border-t border-white/5 px-4 py-3">
-                  <TranscriptPanel segments={result.transcript} />
-                </div>
-              )}
-            </div>
+            <TranscriptPanel segments={result.transcript} />
           </div>
         )}
       </div>

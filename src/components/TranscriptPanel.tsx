@@ -12,19 +12,19 @@ export function TranscriptPanel({ segments }: TranscriptPanelProps) {
   if (segments.length === 0) return null
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/5">
+    <section className="rounded-lg border border-white/10 bg-white/[0.03]">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-5 py-4 text-left"
+        className="flex w-full items-center justify-between px-4 py-3 hover:bg-white/[0.05] transition"
       >
         <span className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-          Full transcript ({segments.length} segments)
+          Transcript ({segments.length} segments)
         </span>
-        <span className="text-zinc-500">{open ? '▲' : '▼'}</span>
+        <span className={`text-xs text-zinc-500 transition ${open ? 'rotate-180' : ''}`}>▼</span>
       </button>
       {open && (
-        <div className="max-h-80 overflow-y-auto border-t border-white/10 px-5 py-3">
+        <div className="max-h-80 overflow-y-auto border-t border-white/10 px-4 py-3">
           <ul className="flex flex-col gap-2">
             {segments.map((seg, i) => (
               <li key={i} className="flex gap-3 text-sm">

@@ -124,10 +124,7 @@ async function fetchTranscriptWithStrategy(
   )
 }
 
-export async function analyzeVideo(
-  videoId: string,
-  transcriptStrategy: 'jdepoix' | 'direct' | 'proxy' = 'jdepoix',
-): Promise<AnalyzeResult> {
+export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
   const warnings: string[] = []
   // Use browser-like fetch (tries direct with headers first, proxy as fallback)
   const browserFetch = await createBrowserFetch()
@@ -154,11 +151,7 @@ export async function analyzeVideo(
   // --- START OF TRANSCRIPT FETCH ---
   let transcriptFetched = false
   try {
-    const result = await fetchTranscriptWithStrategy(
-      videoId,
-      browserFetch,
-      transcriptStrategy,
-    )
+    const result = await fetchTranscriptWithStrategy(videoId, browserFetch)
     transcript = result.transcript
     usedStrategy = result.strategy
     // Update title and description from transcript fetch if available

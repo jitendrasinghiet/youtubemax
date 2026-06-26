@@ -103,38 +103,3 @@ export async function createBrowserFetch(): Promise<typeof fetch> {
     throw new Error(`Failed to fetch ${url} (no proxy configured)`)
   }
 }
-
-/**
- * Legacy: Creates proxy fetch (deprecated in favor of createBrowserFetch)
- * Kept for backward compatibility.
- */
-export async function createProxyFetch(): Promise<typeof fetch> {
-  const proxyUrl = process.env.YOUTUBE_PROXY_URL?.trim()
-
-  if (!proxyUrl) return fetch
-
-  // If proxy URL is an API endpoint (not a traditional HTTP proxy)
-  // This pattern works with proxy services that accept URL parameters
-  if (proxyUrl.includes('?url=') || proxyUrl.endsWith('?')) {
-    return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-      try {
-        const targetUrl = typeof input === 'string' ? input : input.toString()
-        const encoded = encodeURIComponent(targetUrl)
-        const proxyApiUrl = proxyUrl.includes('?url=')
-          ? `${proxyUrl}${encoded}`
-          : `${proxyUrl}url=${encoded}`
-
-        return fetch(proxyApiUrl, {
-          ...init,
-          headers: getBrowserHeaders(init),
-        })
-      } catch (error) {
-        // Fallback to browser fetch if proxy API fails
-        console.error('[Proxy API Error]', error instanceof Error ? error.message : error)
-        return fetch(input, init)
-      }
-    }
-  }
-
-  return fetch
-}

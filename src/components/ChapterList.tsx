@@ -51,9 +51,9 @@ export function ChapterList({
 }: ChapterListProps) {
   if (chapters.length === 0) {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 h-full">
         {filteredCount < allCount && (
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 shrink-0">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
               Chapters{' '}
               <span className="text-xs font-normal normal-case text-zinc-500">
@@ -79,8 +79,8 @@ export function ChapterList({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col gap-3 h-full">
+      <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-white/10">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
           Chapters
           {showFiltered && filteredCount < allCount && (
@@ -94,7 +94,7 @@ export function ChapterList({
             <button
               type="button"
               onClick={onToggleFilter}
-              className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs transition hover:bg-white/10"
+              className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs transition hover:bg-white/10 shrink-0"
             >
               {showFiltered ? `Show all (${allCount})` : `Filter (${filteredCount})`}
             </button>
@@ -104,7 +104,7 @@ export function ChapterList({
               <button
                 type="button"
                 onClick={onStopClips}
-                className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-xs text-red-300 ring-1 ring-red-500/30 transition hover:bg-red-500/25"
+                className="flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-xs text-red-300 ring-1 ring-red-500/30 transition hover:bg-red-500/25 shrink-0"
               >
                 ⏹ Stop
               </button>
@@ -112,14 +112,14 @@ export function ChapterList({
               <button
                 type="button"
                 onClick={onPlayClips}
-                className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25"
+                className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25 shrink-0"
               >
                 ▶ Play clips
               </button>
             ))}
         </div>
       </div>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1 overflow-y-auto min-h-0">
         {chapters.map((chapter, i) => {
           const isActive = activeStart === chapter.start
           const isClipActive = clipMode && clipIndex === i
