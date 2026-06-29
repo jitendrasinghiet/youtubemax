@@ -6,12 +6,20 @@ import { generateSummary } from './summary.js'
 import type { AnalyzeResult, Keyword, TranscriptSegment } from './types.js'
 import { fetchOEmbed } from './youtube.js'
 
-// Conditionally import youtube-transcript (may not be installed yet)
-let YoutubeTranscript: any = null
-try {
-  YoutubeTranscript = require('youtube-transcript').YoutubeTranscript
-} catch (err) {
-  console.warn('[warn] youtube-transcript not installed, will use InnerTube API only')
+// Lazily load youtube-transcript via ESM-safe dynamic import (may not be installed yet).
+// `require` is unavailable in ESM ("type": "module"), so we cache the import promise.
+let youtubeTranscriptPromise: Promise<any> | null = null
+
+function loadYoutubeTranscript(): Promise<any> {
+  if (youtubeTranscriptPromise === null) {
+    youtubeTranscriptPromise = import('youtube-transcript')
+      .then((mod) => mod.YoutubeTranscript ?? null)
+      .catch(() => {
+        console.warn('[warn] youtube-transcript not installed, will use InnerTube API only')
+        return null
+      })
+  }
+  return youtubeTranscriptPromise
 }
 
 function parseSubtitleStart(start: string): number {
@@ -54,6 +62,7 @@ async function fetchTranscriptWithStrategy(
 
       if (strategy === 'jdepoix') {
         // Strategy 1: youtube-transcript (HTML scraping)
+        const YoutubeTranscript = await loadYoutubeTranscript()
         if (!YoutubeTranscript) {
           throw new Error('youtube-transcript not available - run: npm install youtube-transcript')
         }

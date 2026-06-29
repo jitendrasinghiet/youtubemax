@@ -1,9 +1,5 @@
+import { INNERTUBE_CLIENT_VERSION, MAX_QUERY_LENGTH, PRIMARY_USER_AGENT } from './constants.js'
 import type { SearchResultItem } from './types.js'
-
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-
-const INNERTUBE_CLIENT_VERSION = '2.20241218.01.00'
 
 export function buildYouTubeSearchUrl(query: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`
@@ -130,7 +126,7 @@ async function fetchWithHeaders(
   return fetchFn(url, {
     ...init,
     headers: {
-      "User-Agent": USER_AGENT,
+      "User-Agent": PRIMARY_USER_AGENT,
       "Accept-Language": "en-US,en;q=0.9",
       "Accept": "*/*",
       ...(init?.headers as Record<string, string> | undefined),
@@ -202,7 +198,7 @@ export async function searchYouTubeVideos(
   query: string,
   maxResults = 12,
 ): Promise<{ results: SearchResultItem[]; searchUrl: string; warning?: string }> {
-  const trimmed = query.trim()
+  const trimmed = query.trim().slice(0, MAX_QUERY_LENGTH)
   const searchUrl = buildYouTubeSearchUrl(trimmed)
   if (!trimmed) {
     return { results: [], searchUrl }

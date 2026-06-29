@@ -1,4 +1,5 @@
 import type { Chapter } from './types.js'
+import { PRIMARY_USER_AGENT } from './constants.js'
 
 const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/
 
@@ -91,8 +92,7 @@ export async function fetchOEmbed(
     const res = await fetchFn(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+        "User-Agent": PRIMARY_USER_AGENT,
         "Accept-Language": "en-US,en;q=0.9",
         "Accept": "application/json",
         "Referer": "https://www.youtube.com/",
