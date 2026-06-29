@@ -117,20 +117,29 @@ Data: YouTube oEmbed, Caption Extractor, Description Parsing
 youtubemax/
 ├── src/
 │   ├── components/            # React UI components
+│   │   ├── DiscoverySearchBar.tsx   # Search input + voice button
+│   │   ├── SearchResultsGrid.tsx    # Results grid + sort controls
+│   │   └── …                        # VideoPlayer, ChapterList, etc.
 │   ├── hooks/
-│   │   └── useKeywordMasterList.ts  # Keyword state + pruning
-│   ├── lib/api.ts             # API calls & formatting
+│   │   ├── useKeywordMasterList.ts  # Keyword state + pruning
+│   │   ├── useClipMode.ts           # Playback position + clip auto-advance
+│   │   └── useVoiceSearch.ts        # Typed Web Speech API wrapper
+│   ├── lib/
+│   │   ├── api.ts             # API calls & formatting
+│   │   └── searchSort.ts      # Duration/view/date parsing + sorting
 │   ├── types.ts               # Shared interfaces
-│   └── App.tsx                # Main layout
+│   └── App.tsx                # Main layout / orchestration
 ├── server/
 │   ├── analyze.ts             # Video analysis logic
 │   ├── search.ts              # YouTube search logic
 │   ├── keywords.ts            # Keyword extraction
 │   ├── summary.ts             # Summarization
 │   ├── chapters.ts            # Chapter parsing
+│   ├── constants.ts           # Shared scraping config (UA pool, limits)
 │   └── youtube.ts             # YouTube API wrapper
 ├── api/                       # Vercel serverless functions
 ├── vite.config.ts
+├── vitest.config.ts
 ├── vercel.json
 └── package.json
 ```
@@ -272,7 +281,8 @@ node -e "const express = require('express'); express().use(express.static('dist'
 npm install
 npm run dev    # Starts dev server with API middleware
 npm run build  # Production build
-npm run lint   # TypeScript & linting
+npm run lint   # Linting (oxlint)
+npm test       # Run unit tests (Vitest)
 ```
 
 ### Code Style

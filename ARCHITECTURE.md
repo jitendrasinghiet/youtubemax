@@ -9,8 +9,10 @@ YouTubeMax is a **React + TypeScript frontend** with **Node.js serverless backen
 │                        Browser (React)                       │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │ App.tsx (state orchestration)                        │   │
-│  │ ├─ Components: VideoPlayer, ChapterList, etc        │   │
-│  │ ├─ Hooks: useKeywordMasterList                      │   │
+│  │ ├─ Components: VideoPlayer, ChapterList,            │   │
+│  │ │   DiscoverySearchBar, SearchResultsGrid, etc      │   │
+│  │ ├─ Hooks: useKeywordMasterList, useClipMode,        │   │
+│  │ │   useVoiceSearch                                  │   │
 │  │ └─ State: result, searchQuery, activeTab, etc       │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                           ↕ JSON                             │
@@ -22,8 +24,8 @@ YouTubeMax is a **React + TypeScript frontend** with **Node.js serverless backen
 │  ├─ server/analyze.ts          ├─ server/search.ts         │
 │  ├─ server/keywords.ts         └─ Dynamic filtering        │
 │  ├─ server/chapters.ts                                     │
-│  ├─ server/summary.ts                                      │
-│  └─ server/youtube.ts                                      │
+│  ├─ server/summary.ts          server/constants.ts         │
+│  └─ server/youtube.ts          (shared scraping config)    │
 └─────────────────────────────────────────────────────────────┘
               ↕ (HTTP / oEmbed / Caption API)
 ┌─────────────────────────────────────────────────────────────┐
@@ -40,10 +42,10 @@ YouTubeMax is a **React + TypeScript frontend** with **Node.js serverless backen
 
 ### State Management
 
-All state lives in **App.tsx** and custom hooks:
+State is split between **App.tsx** (orchestration) and focused **custom hooks**:
 
 ```typescript
-// Video & Analysis
+// App.tsx — top-level orchestration state
 const [result, setResult] = useState<AnalyzeResult | null>(null)
 const [loading, setLoading] = useState(false)
 
@@ -51,20 +53,31 @@ const [loading, setLoading] = useState(false)
 const [searchQuery, setSearchQuery] = useState('')
 const [searchResults, setSearchResults] = useState<SearchResultItem[]>([])
 const [searchLoading, setSearchLoading] = useState(false)
-
-// Player
-const [playStart, setPlayStart] = useState(0)
-const [clipMode, setClipMode] = useState(false)
-const [clipIndex, setClipIndex] = useState(0)
+const [searchSortType, setSearchSortType] = useState<SearchSortType>('relevance')
 
 // UI
 const [activeTab, setActiveTab] = useState<'discovery' | 'viewer'>('discovery')
 const [showFilteredChapters, setShowFilteredChapters] = useState(false)
 const [showSummary, setShowSummary] = useState(true)
 
-// Master Keywords (from hook)
+// Player & clip mode (encapsulated in useClipMode)
+const { playStart, setPlayStart, clipMode, clipIndex, startClips, stopClips, selectChapter } =
+  useClipMode(displayedChapters)
+
+// Voice dictation (encapsulated in useVoiceSearch)
+const { isListening, toggle } = useVoiceSearch(handleVoiceTranscript)
+
+// Master keywords (from hook)
 const { keywords, ingestFromAnalysis, removeKeyword, clearKeywords } = useKeywordMasterList()
 ```
+
+**Custom hooks** keep `App.tsx` lean and the logic testable in isolation:
+
+| Hook | Responsibility |
+|------|----------------|
+| `useKeywordMasterList` | Aggregates + prunes keywords across analyses |
+| `useClipMode` | Playback position, clip timer, sequential auto-advance |
+| `useVoiceSearch` | Typed Web Speech API wrapper for voice dictation |
 
 **Why not Redux/Zustand?**
 - App is relatively small (single analysis + search result)
@@ -80,12 +93,12 @@ App
 │  ├─ Logo
 │  └─ SearchBar (URL input)
 ├─ Main
-│  ├─ Discovery Search Bar (search query input)
+│  ├─ DiscoverySearchBar (search query input + voice)
 │  ├─ Master List (floating overlay, always visible)
 │  ├─ Tabs Navigation
 │  └─ Tab Content
 │     ├─ Discovery Tab
-│     │  └─ Grid of video cards (4-column responsive)
+│     │  └─ SearchResultsGrid (4-column responsive + sort controls)
 │     └─ Viewer Tab
 │        ├─ VideoPlayer
 │        ├─ ChapterList (with filtering)
@@ -136,17 +149,16 @@ ChapterList re-renders with highlighted matches
 ```
 User clicks "Play Clips"
     ↓
-ChapterList.onPlayClips()
+ChapterList.onPlayClips() → useClipMode.startClips()
     ├─ setClipMode(true)
-    ├─ setClipIndex(0)
-    └─ setPlayStart(displayedChapters[0].start)
+    └─ setClipIndex(0)
     ↓
-useEffect watches clipMode & calculates duration
+useClipMode effect watches clipMode & calculates duration
     ├─ Find next filtered chapter
     ├─ Duration = nextChapter.start - currentChapter.start
     └─ setTimeout(() => setClipIndex(i+1))
     ↓
-VideoPlayer changes startAt prop
+VideoPlayer changes startAt prop (via playStart)
     ↓
 Repeat until user clicks "Stop" or reaches last chapter
 ```
@@ -163,6 +175,13 @@ Repeat until user clicks "Stop" or reaches last chapter
        terms.some(term => ch.title.toLowerCase().includes(term))
      )
    }, [result, searchQuery])
+
+   // displayedChapters is also memoized so it stays referentially stable,
+   // preventing useClipMode's timer effect from restarting every render.
+   const displayedChapters = useMemo(
+     () => (showFilteredChapters ? filteredChapters : result?.chapters ?? []),
+     [showFilteredChapters, filteredChapters, result],
+   )
    ```
 
 2. **useCallback for event handlers:**
@@ -350,17 +369,21 @@ return topSentences.map(s => s.text).join(' ')
 
 **Browser Identity Approach:**
 
-YouTubeMax now uses rotating realistic User-Agent strings and comprehensive browser headers to simulate genuine browser requests:
+YouTubeMax uses rotating realistic User-Agent strings and comprehensive browser headers to simulate genuine browser requests. The scraping constants (user-agent pool, InnerTube client version, query length cap) are centralized in **`server/constants.ts`** so they can be updated in one place when YouTube changes its behavior:
 
 ```typescript
-// server/proxy.ts - Browser identity headers
-const USER_AGENTS = [
+// server/constants.ts - shared scraping configuration
+export const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/120.0.0.0 Safari/537.36',
   'Mozilla/5.0 (X11; Linux x86_64) Chrome/120.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Firefox/121.0',
 ]
+export const INNERTUBE_CLIENT_VERSION = '2.20241218.01.00'
+export const MAX_QUERY_LENGTH = 200
+export function getRandomUserAgent(): string { /* ... */ }
 
+// server/proxy.ts consumes the shared pool
 function getBrowserHeaders(init?: RequestInit): Record<string, string> {
   return {
     'User-Agent': getRandomUserAgent(),
@@ -403,15 +426,31 @@ export async function createBrowserFetch(): Promise<typeof fetch> {
 }
 ```
 
-**Retry Logic for Transient Failures:**
+**Multi-Strategy Fetch with Retry:**
+
+`server/analyze.ts` tries transcript strategies in order (`jdepoix` \u2192 `direct` \u2192
+`proxy`), with exponential backoff on transient failures. The `youtube-transcript`
+package is loaded via an ESM-safe **dynamic `import()`** (cached) rather than
+`require`, since the project is ESM (`"type": "module"`):
 
 ```typescript
 // server/analyze.ts
-async function fetchTranscriptWithRetry(
+let youtubeTranscriptPromise: Promise<any> | null = null
+function loadYoutubeTranscript(): Promise<any> {
+  if (youtubeTranscriptPromise === null) {
+    youtubeTranscriptPromise = import('youtube-transcript')
+      .then((mod) => mod.YoutubeTranscript ?? null)
+      .catch(() => null)
+  }
+  return youtubeTranscriptPromise
+}
+
+async function fetchTranscriptWithStrategy(
   videoId: string,
   browserFetch: typeof fetch,
+  preferredStrategy: 'jdepoix' | 'direct' | 'proxy' = 'jdepoix',
   maxRetries = 2  // Exponential backoff: 1s, 2s
-): Promise<{ transcript, title?, description? }> {
+): Promise<{ transcript, title?, description?, strategy }> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const details = await getVideoDetails({
@@ -562,40 +601,42 @@ export async function analyzeVideo(videoId: string) {
 
 ## Testing Strategy
 
-### Unit Tests
+Tests run with **Vitest** (`npm test` / `npm run test:watch`). The current suite
+covers the pure, framework-agnostic functions where bugs are most costly:
+
+```
+src/lib/searchSort.test.ts   # duration/view/date parsing + sort ordering
+src/lib/api.test.ts          # search-term parse/append/remove helpers
+server/youtube.test.ts       # parseVideoId, formatTimestamp, description chapters
+```
+
+### Example
 
 ```typescript
-// src/__tests__/keywords.test.ts
-import { pruneNoise } from '../hooks/useKeywordMasterList'
+// server/youtube.test.ts
+import { parseVideoId } from './youtube'
 
-describe('pruneNoise', () => {
-  it('removes substrings of higher-scoring keywords', () => {
-    const keywords = [
-      { term: 'react', score: 10 },
-      { term: 'react hooks', score: 15 }
-    ]
-    const result = pruneNoise(keywords)
-    expect(result).toHaveLength(1)
-    expect(result[0].term).toBe('react hooks')
+describe('parseVideoId', () => {
+  it('parses a youtu.be short link', () => {
+    expect(parseVideoId('https://youtu.be/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+  })
+  it('rejects foreign hosts', () => {
+    expect(parseVideoId('https://example.com/watch?v=dQw4w9WgXcQ')).toBeNull()
   })
 })
 ```
 
-### Integration Tests
+Test files are excluded from the production build (`tsconfig.app.json`) and matched
+by `vitest.config.ts` (`src/**/*.test.ts`, `server/**/*.test.ts`).
 
-```typescript
-// src/__tests__/api.test.ts
-describe('analyzeVideo', () => {
-  it('fetches and analyzes video', async () => {
-    const result = await analyzeVideo('dQw4w9WgXcQ')
-    expect(result.meta.videoId).toBe('dQw4w9WgXcQ')
-    expect(result.chapters.length).toBeGreaterThan(0)
-    expect(result.keywords.length).toBeGreaterThan(0)
-  })
-})
-```
+### Not yet covered (good next candidates)
 
-### E2E Tests
+- `server/keywords.ts` 4-source scoring + `pruneNoise` filtering
+- `server/summary.ts` extractive summary scoring
+- `server/chapters.ts` auto-chapter generation
+- `useClipMode` / `useVoiceSearch` hooks (would need a DOM test environment)
+
+### E2E (future)
 
 ```typescript
 // e2e/search-to-analysis.test.ts
@@ -615,10 +656,11 @@ describe('Search to Analysis Flow', () => {
 ## Security Considerations
 
 1. **No API keys stored** — All APIs are public (oEmbed, caption extraction)
-2. **User input validation** — VideoID validated before API calls
-3. **HTTPS only** — Vercel auto-enforces TLS
-4. **CORS headers** — API functions should set appropriate CORS headers
-5. **Rate limiting** — Implement on Vercel to prevent abuse
+2. **User input validation** — VideoID validated against a strict regex before any API call
+3. **Query length cap** — Search queries are truncated to `MAX_QUERY_LENGTH` (200) in `server/constants.ts` before reaching outbound fetches
+4. **HTTPS only** — Vercel auto-enforces TLS
+5. **CORS headers** — API functions should set appropriate CORS headers
+6. **Rate limiting** — Not yet implemented; recommended on Vercel/edge to prevent scraping abuse
 
 ---
 

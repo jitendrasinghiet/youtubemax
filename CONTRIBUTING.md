@@ -202,54 +202,42 @@ const isSuperstring = keywords.some(
 ```
 src/components/          # React components (one per file)
   MyComponent.tsx
-  
+
 src/hooks/              # Custom React hooks
   useMyHook.ts
-  
+
 src/lib/                # Utilities & helpers
   api.ts                # API calls
-  formatting.ts         # Formatting functions
-  
-src/__tests__/          # Tests (co-located)
-  MyComponent.test.ts
-  hooks/useMyHook.test.ts
-  lib/api.test.ts
+  searchSort.ts         # Sorting/parsing helpers
+
+# Tests are co-located next to the code they cover, named *.test.ts
+src/lib/searchSort.test.ts
+src/lib/api.test.ts
+server/youtube.test.ts
 ```
 
 ### Testing
 
-```typescript
-// Add tests for new features or bug fixes
-import { renderHook, act } from '@testing-library/react'
-import { useKeywordMasterList } from '../hooks/useKeywordMasterList'
+Tests use **Vitest**. Co-locate a `*.test.ts` file next to the module under test
+(`vitest.config.ts` matches `src/**/*.test.ts` and `server/**/*.test.ts`). Focus on
+pure functions \u2014 parsers, scoring, formatting \u2014 which are fast and reliable to test.
 
-describe('useKeywordMasterList', () => {
-  it('removes keyword when requested', () => {
-    const { result } = renderHook(() => useKeywordMasterList())
-    
-    act(() => {
-      result.current.ingestFromAnalysis({
-        keywords: [{ term: 'react', score: 10, source: 'title' }],
-        meta: { videoId: '123', ... }
-      })
-    })
-    
-    expect(result.current.keywords).toHaveLength(1)
-    
-    act(() => {
-      result.current.removeKeyword('react')
-    })
-    
-    expect(result.current.keywords).toHaveLength(0)
+```typescript
+// src/lib/searchSort.test.ts
+import { describe, it, expect } from 'vitest'
+import { parseViewCountToNumber } from './searchSort'
+
+describe('parseViewCountToNumber', () => {
+  it('parses K/M/B suffixes', () => {
+    expect(parseViewCountToNumber('3.5M')).toBe(3_500_000)
   })
 })
 ```
 
 **Run tests:**
 ```bash
-npm test
-npm test -- --watch        # Watch mode
-npm test -- --coverage     # Coverage report
+npm test                   # Run once
+npm run test:watch         # Watch mode
 ```
 
 ### Before Submitting
