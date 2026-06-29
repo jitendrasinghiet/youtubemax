@@ -1,23 +1,24 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChapterList } from './components/ChapterList'
+import { DiscoverySearchBar } from './components/DiscoverySearchBar'
 import { KeywordMasterList } from './components/KeywordMasterList'
 import { SearchBar } from './components/SearchBar'
+import { SearchResultsGrid } from './components/SearchResultsGrid'
 import { SummaryCard } from './components/SummaryCard'
 import { TranscriptPanel } from './components/TranscriptPanel'
 import { VideoPlayer } from './components/VideoPlayer'
 import { WarningsBanner } from './components/WarningsBanner'
+import { useClipMode } from './hooks/useClipMode'
 import { useKeywordMasterList } from './hooks/useKeywordMasterList'
-import { analyzeVideo, appendSearchTerm, parseSearchTerms, removeSearchTerm, searchVideos, formatViewCount, youtubeSearchUrl } from './lib/api'
+import { useVoiceSearch } from './hooks/useVoiceSearch'
+import { analyzeVideo, appendSearchTerm, parseSearchTerms, removeSearchTerm, searchVideos } from './lib/api'
+import { sortSearchResults, type SearchSortType } from './lib/searchSort'
 import type { AnalyzeResult, SearchResultItem } from './types'
 
 function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<AnalyzeResult | null>(null)
-  const [playStart, setPlayStart] = useState(0)
-  const [clipMode, setClipMode] = useState(false)
-  const [clipIndex, setClipIndex] = useState(0)
-  const clipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showFilteredChapters, setShowFilteredChapters] = useState(false)
   const [activeTab, setActiveTab] = useState<'discovery' | 'viewer'>('discovery')
   const [showSummary, setShowSummary] = useState(true)
@@ -27,10 +28,8 @@ function App() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchSoftWarning, setSearchSoftWarning] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([])
-  const [searchSortType, setSearchSortType] = useState<'relevance' | 'publishDate' | 'viewCount' | 'duration'>('relevance')
+  const [searchSortType, setSearchSortType] = useState<SearchSortType>('relevance')
   const [defaultsLoaded, setDefaultsLoaded] = useState(false)
-  const [isVoiceListening, setIsVoiceListening] = useState(false)
-  const voiceRecognitionRef = useRef<any>(null)
 
   const {
     keywords: masterKeywords,
@@ -38,6 +37,30 @@ function App() {
     removeKeyword,
     clearKeywords,
   } = useKeywordMasterList()
+
+  const filteredChapters = useMemo(() => {
+    if (!result) return []
+    const terms = parseSearchTerms(searchQuery)
+    if (terms.length === 0) return result.chapters
+    return result.chapters.filter((ch) =>
+      terms.some((term) => ch.title.toLowerCase().includes(term)),
+    )
+  }, [result, searchQuery])
+
+  const displayedChapters = useMemo(
+    () => (showFilteredChapters ? filteredChapters : result?.chapters ?? []),
+    [showFilteredChapters, filteredChapters, result],
+  )
+
+  const {
+    playStart,
+    setPlayStart,
+    clipMode,
+    clipIndex,
+    startClips,
+    stopClips,
+    selectChapter,
+  } = useClipMode(displayedChapters)
 
   const runAnalysis = useCallback(
     async (input: string) => {
@@ -57,7 +80,7 @@ function App() {
         setLoading(false)
       }
     },
-    [ingestFromAnalysis],
+    [ingestFromAnalysis, setPlayStart],
   )
 
   const handleVideoSearch = useCallback(async (input: string) => {
@@ -88,39 +111,12 @@ function App() {
     })
   }, [])
 
-  const startVoiceSearch = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      alert('Voice search not supported in your browser')
-      return
-    }
+  const handleVoiceTranscript = useCallback((transcript: string) => {
+    setSearchQuery((prev) => (prev ? `${prev} ${transcript}` : transcript))
+  }, [])
 
-    if (!voiceRecognitionRef.current) {
-      voiceRecognitionRef.current = new SpeechRecognition()
-      voiceRecognitionRef.current.continuous = false
-      voiceRecognitionRef.current.interimResults = true
-      voiceRecognitionRef.current.lang = 'en-US'
-
-      voiceRecognitionRef.current.onstart = () => setIsVoiceListening(true)
-      voiceRecognitionRef.current.onend = () => setIsVoiceListening(false)
-      voiceRecognitionRef.current.onresult = (event: any) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript
-          if (event.results[i].isFinal) {
-            setSearchQuery((prev) => (prev ? `${prev} ${transcript}` : transcript))
-          }
-        }
-      }
-      voiceRecognitionRef.current.onerror = () => setIsVoiceListening(false)
-    }
-
-    if (isVoiceListening) {
-      voiceRecognitionRef.current.stop()
-      setIsVoiceListening(false)
-    } else {
-      voiceRecognitionRef.current.start()
-    }
-  }, [isVoiceListening])
+  const { isListening: isVoiceListening, toggle: toggleVoiceSearch } =
+    useVoiceSearch(handleVoiceTranscript)
 
   const handleSearchFromDiscovery = useCallback(
     (query: string) => {
@@ -139,61 +135,11 @@ function App() {
     [runAnalysis],
   )
 
-  // Parse duration string to seconds for sorting
-  const parseDuration = (durationStr: string | undefined): number => {
-    if (!durationStr) return 0
-    const parts = durationStr.split(':').map(Number)
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
-    if (parts.length === 2) return parts[0] * 60 + parts[1]
-    return parts[0] || 0
-  }
-
-  // Parse view count string to number for sorting
-  const parseViewCount = (viewCountStr: string | undefined): number => {
-    if (!viewCountStr) return 0
-    const match = viewCountStr.match(/(\d+(?:\.\d+)?)\s*([KMB])/i)
-    if (match) {
-      const num = parseFloat(match[1])
-      const unit = match[2].toUpperCase()
-      if (unit === 'K') return num * 1000
-      if (unit === 'M') return num * 1000000
-      if (unit === 'B') return num * 1000000000
-      return num
-    }
-    return parseInt(viewCountStr.replace(/\D/g, ''), 10) || 0
-  }
-
-  // Parse publish date to days ago for sorting
-  const parseDateToDaysAgo = (dateStr: string | undefined): number => {
-    if (!dateStr) return Infinity
-    const match = dateStr.match(/(\d+)\s*(second|minute|hour|day|week|month|year)/i)
-    if (!match) return Infinity
-    const [, num, unit] = match
-    const n = parseInt(num, 10)
-    const u = unit.toLowerCase()
-    if (u.startsWith('second')) return n / (24 * 3600)
-    if (u.startsWith('minute')) return n / (24 * 60)
-    if (u.startsWith('hour')) return n / 24
-    if (u.startsWith('day')) return n
-    if (u.startsWith('week')) return n * 7
-    if (u.startsWith('month')) return n * 30
-    if (u.startsWith('year')) return n * 365
-    return Infinity
-  }
-
   // Sort results based on selected sort type
-  const sortedSearchResults = useMemo(() => {
-    if (searchSortType === 'relevance') return searchResults
-    const sorted = [...searchResults]
-    if (searchSortType === 'viewCount') {
-      sorted.sort((a, b) => parseViewCount(b.viewCount) - parseViewCount(a.viewCount))
-    } else if (searchSortType === 'duration') {
-      sorted.sort((a, b) => parseDuration(b.duration) - parseDuration(a.duration))
-    } else if (searchSortType === 'publishDate') {
-      sorted.sort((a, b) => parseDateToDaysAgo(a.publishedAt) - parseDateToDaysAgo(b.publishedAt))
-    }
-    return sorted
-  }, [searchResults, searchSortType])
+  const sortedSearchResults = useMemo(
+    () => sortSearchResults(searchResults, searchSortType),
+    [searchResults, searchSortType],
+  )
 
   // Load default trending videos on first mount (session-based)
   useEffect(() => {
@@ -202,77 +148,6 @@ function App() {
       handleVideoSearch('trending')
     }
   }, [defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
-
-  const filteredChapters = useMemo(() => {
-    if (!result) return []
-    const terms = parseSearchTerms(searchQuery)
-    if (terms.length === 0) return result.chapters
-    return result.chapters.filter((ch) =>
-      terms.some((term) => ch.title.toLowerCase().includes(term)),
-    )
-  }, [result, searchQuery])
-
-  const displayedChapters = showFilteredChapters ? filteredChapters : result?.chapters ?? []
-
-  const handleStartClips = useCallback(() => {
-    if (displayedChapters.length === 0) return
-    setClipMode(true)
-    setClipIndex(0)
-  }, [displayedChapters.length])
-
-  const handleStopClips = useCallback(() => {
-    setClipMode(false)
-    if (clipTimerRef.current) clearTimeout(clipTimerRef.current)
-  }, [])
-
-  const handleChapterSelect = useCallback(
-    (start: number) => {
-      if (clipMode) {
-        const idx = displayedChapters.findIndex((ch) => ch.start === start)
-        if (idx !== -1) {
-          setClipIndex(idx)
-          return
-        }
-      }
-      setPlayStart(start)
-    },
-    [clipMode, displayedChapters],
-  )
-
-  useEffect(() => {
-    if (!clipMode) return
-    if (displayedChapters.length === 0) {
-      setClipMode(false)
-      return
-    }
-
-    const validIndex = Math.min(clipIndex, displayedChapters.length - 1)
-    if (validIndex !== clipIndex) {
-      setClipIndex(validIndex)
-      return
-    }
-
-    if (clipTimerRef.current) clearTimeout(clipTimerRef.current)
-
-    const current = displayedChapters[validIndex]
-    setPlayStart(current.start)
-
-    const next = displayedChapters[validIndex + 1]
-    if (!next) {
-      // Last clip - continue playing it indefinitely until user stops
-      return
-    }
-
-    // Calculate duration until next filtered clip starts
-    const duration = Math.max((next.start - current.start) * 1000, 3000)
-    clipTimerRef.current = setTimeout(() => {
-      setClipIndex((i) => i + 1)
-    }, duration)
-
-    return () => {
-      if (clipTimerRef.current) clearTimeout(clipTimerRef.current)
-    }
-  }, [clipMode, clipIndex, displayedChapters])
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -299,58 +174,14 @@ function App() {
 
         <div className="flex flex-col gap-1">
           {/* Discovery Search Bar (outside tabs) */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (searchQuery.trim() && !searchLoading) {
-                handleSearchFromDiscovery(searchQuery.trim())
-              }
-            }}
-            className="flex flex-col gap-2.5"
-          >
-            <div className="flex gap-2 sm:flex-row flex-col">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search YouTube for videos…"
-                  className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20"
-                  disabled={searchLoading}
-                />
-                <button
-                  type="button"
-                  onClick={startVoiceSearch}
-                  disabled={searchLoading}
-                  className={`absolute right-10 top-1/2 -translate-y-1/2 text-sm transition ${
-                    isVoiceListening
-                      ? 'text-red-400 animate-pulse'
-                      : 'text-zinc-600 hover:text-zinc-400'
-                  }`}
-                  title="Voice search"
-                >
-                  🎤
-                </button>
-              </div>
-              <button
-                type="submit"
-                disabled={searchLoading || !searchQuery.trim()}
-                className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
-              >
-                {searchLoading ? 'Searching…' : 'Search'}
-              </button>
-              {searchQuery.trim() && (
-                <a
-                  href={youtubeSearchUrl(searchQuery)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-400 transition hover:text-white hover:border-white/20 shrink-0"
-                >
-                  YouTube
-                </a>
-              )}
-            </div>
-          </form>
+          <DiscoverySearchBar
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            onSubmit={handleSearchFromDiscovery}
+            loading={searchLoading}
+            isVoiceListening={isVoiceListening}
+            onToggleVoice={toggleVoiceSearch}
+          />
 
 
           {searchError && (
@@ -412,72 +243,14 @@ function App() {
             {/* Discovery Tab - Results Grid */}
               {activeTab === 'discovery' && (
                 <div className="flex flex-col gap-3">
-                  {searchResults.length > 0 ? (
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-zinc-500">
-                        Found {searchResults.length} video{searchResults.length !== 1 ? 's' : ''}
-                      </p>
-                      {searchResults.length > 0 && (
-                        <div className="flex gap-1 flex-wrap justify-end">
-                          {[
-                            { type: 'relevance' as const, label: 'Relevance' },
-                            { type: 'publishDate' as const, label: 'Newest' },
-                            { type: 'viewCount' as const, label: 'Most viewed' },
-                            { type: 'duration' as const, label: 'Longest' },
-                          ].map(({ type, label }) => (
-                            <button
-                              key={type}
-                              onClick={() => setSearchSortType(type)}
-                              className={`px-2 py-1 text-xs font-medium rounded transition whitespace-nowrap ${
-                                searchSortType === type
-                                  ? 'bg-red-500/20 border border-red-500 text-red-300'
-                                  : 'bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:border-white/20'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                      {sortedSearchResults.map((video) => (
-                          <button
-                            key={video.videoId}
-                            type="button"
-                            onClick={() => handleSelectSearchResult(video.videoId)}
-                            className="group rounded-lg border border-white/10 bg-black/20 overflow-hidden transition hover:border-red-500/30 hover:bg-white/5"
-                          >
-                            <img
-                              src={video.thumbnail}
-                              alt=""
-                              className="w-full h-32 object-cover"
-                            />
-                            <div className="p-3">
-                              <p className="line-clamp-2 text-xs font-medium text-white group-hover:text-red-200">
-                                {video.title}
-                              </p>
-                              <p className="mt-1 text-[10px] text-zinc-500">{video.channel}</p>
-                              <div className="mt-1.5 flex flex-wrap gap-1 text-sm text-zinc-600">
-                                {video.viewCount && <span>{formatViewCount(video.viewCount)}</span>}
-                                {video.duration && <span>·</span>}
-                                {video.duration && <span>{video.duration}</span>}
-                                {video.publishedAt && <span>·</span>}
-                                {video.publishedAt && <span>{video.publishedAt}</span>}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-6 text-center">
-                      <p className="text-sm text-zinc-400">
-                        {searchQuery.trim() ? 'No videos found. Try a different search.' : 'Enter a search query above to discover videos.'}
-                      </p>
-                    </div>
-                  )}
+                  <SearchResultsGrid
+                    results={searchResults}
+                    sortedResults={sortedSearchResults}
+                    sortType={searchSortType}
+                    onSortChange={setSearchSortType}
+                    onSelect={handleSelectSearchResult}
+                    hasQuery={Boolean(searchQuery.trim())}
+                  />
                 </div>
               )}
 
@@ -499,7 +272,7 @@ function App() {
                           </span>
                           <button
                             type="button"
-                            onClick={handleStopClips}
+                            onClick={stopClips}
                             className="ml-auto shrink-0 text-xs text-zinc-500 transition hover:text-white"
                           >
                             ✕ Stop
@@ -519,11 +292,11 @@ function App() {
                         onToggleFilter={() => setShowFilteredChapters((v) => !v)}
                         filterTerms={parseSearchTerms(searchQuery)}
                         activeStart={playStart}
-                        onSelect={handleChapterSelect}
+                        onSelect={selectChapter}
                         clipMode={clipMode}
                         clipIndex={clipIndex}
-                        onPlayClips={handleStartClips}
-                        onStopClips={handleStopClips}
+                        onPlayClips={startClips}
+                        onStopClips={stopClips}
                       />
                     </aside>
 
