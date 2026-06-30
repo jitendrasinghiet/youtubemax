@@ -70,4 +70,10 @@ function apiPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), apiPlugin()],
+  server: {
+    host: '0.0.0.0',
+  },
+  preview: {
+    host: '0.0.0.0',
+  },
 })
