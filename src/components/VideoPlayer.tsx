@@ -6,6 +6,7 @@ interface VideoPlayerProps {
   captionsEnabled?: boolean
   playbackRate?: number
   pauseSignal?: number
+  onCurrentTimeChange?: (seconds: number) => void
 }
 
 function buildEmbedUrl(videoId: string, startAt: number, captionsEnabled: boolean): string {
@@ -41,6 +42,7 @@ export function VideoPlayer({
   captionsEnabled = false,
   playbackRate = 1,
   pauseSignal = 0,
+  onCurrentTimeChange,
 }: VideoPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const lastStart = useRef(startAt)
@@ -96,6 +98,51 @@ export function VideoPlayer({
     if (pauseSignal <= 0) return
     sendPlayerCommand(iframeRef.current, 'pauseVideo')
   }, [pauseSignal])
+
+  useEffect(() => {
+    if (!onCurrentTimeChange) return
+
+    const emitCurrentTime = (value: unknown) => {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return
+      onCurrentTimeChange(value)
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin.toLowerCase()
+      const trustedYoutubeOrigin =
+        origin.includes('youtube.com') || origin.includes('youtube-nocookie.com')
+      if (!trustedYoutubeOrigin) return
+
+      let payload: unknown = event.data
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload)
+        } catch {
+          return
+        }
+      }
+
+      if (!payload || typeof payload !== 'object') return
+      const record = payload as { event?: string; info?: { currentTime?: unknown } }
+      if (record.event !== 'infoDelivery') return
+
+      emitCurrentTime(record.info?.currentTime)
+    }
+
+    const requestCurrentTime = () => {
+      sendPlayerCommand(iframeRef.current, 'getCurrentTime')
+    }
+
+    window.addEventListener('message', handleMessage)
+    onCurrentTimeChange(Math.max(0, startAt))
+    requestCurrentTime()
+    const intervalId = setInterval(requestCurrentTime, 1000)
+
+    return () => {
+      window.removeEventListener('message', handleMessage)
+      clearInterval(intervalId)
+    }
+  }, [onCurrentTimeChange, startAt, videoId])
 
   useEffect(() => clearSyncTimeouts, [])
 

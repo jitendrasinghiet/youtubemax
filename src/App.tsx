@@ -32,6 +32,7 @@ const MIN_VIEWER_HEIGHT = 156
 const MID_VIEWER_WIDTH = MIN_VIEWER_WIDTH * 2
 const MID_VIEWER_HEIGHT = MIN_VIEWER_HEIGHT * 2
 const VIEWER_MARGIN = 16
+const POP_WINDOW_BOTTOM_OFFSET = 72
 const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const
 
 type ViewerSizePreset = 'S' | 'M' | 'L' | 'custom'
@@ -39,6 +40,10 @@ type ViewerSizePreset = 'S' | 'M' | 'L' | 'custom'
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
+type DocumentPictureInPictureApi = {
+  requestWindow: (options?: { width?: number; height?: number }) => Promise<Window>
 }
 
 function parsePlaybackRate(value: string | null): number {
@@ -123,6 +128,7 @@ function App() {
   const [playbackRate, setPlaybackRate] = useState<number>(
     () => parsePlaybackRate(searchParams.get('rate')),
   )
+  const [viewerCurrentTime, setViewerCurrentTime] = useState(0)
   const [pauseSignal, setPauseSignal] = useState(0)
   const [popoutSizePreset, setPopoutSizePreset] = useState<ViewerSizePreset>('M')
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -452,13 +458,15 @@ function App() {
     setPopoutSizePreset(preset)
   }, [])
 
-  const openViewerPopout = useCallback(() => {
+  const openViewerPopout = useCallback(async () => {
     if (typeof window === 'undefined' || !result) return
+
+    const resumeAt = Math.max(0, Math.floor(viewerCurrentTime > 0 ? viewerCurrentTime : playStart))
 
     const url = new URL(window.location.href)
     url.searchParams.set('popout', '1')
     url.searchParams.set('videoId', result.meta.videoId)
-    url.searchParams.set('start', String(Math.floor(playStart)))
+    url.searchParams.set('start', String(resumeAt))
     url.searchParams.set('cc', captionsEnabled ? '1' : '0')
     url.searchParams.set('rate', String(playbackRate))
     url.searchParams.set('sid', windowSessionId)
@@ -471,13 +479,42 @@ function App() {
     } catch {
       // Ignore storage failures.
     }
+    // Storage events do not fire in the same window, so pause locally too.
+    setPauseSignal((value) => value + 1)
 
     const width = Math.max(320, Math.round(viewerSize.width))
     const height = Math.max(240, Math.round(viewerSize.height))
     const availWidth = window.screen?.availWidth ?? window.innerWidth
     const availHeight = window.screen?.availHeight ?? window.innerHeight
-    const left = Math.max(0, Math.round((availWidth - width) / 2))
-    const top = Math.max(0, Math.round((availHeight - height) / 2))
+    const left = Math.max(VIEWER_MARGIN, Math.round(availWidth - width - VIEWER_MARGIN))
+    const top = Math.max(
+      VIEWER_MARGIN,
+      Math.round(availHeight - height - POP_WINDOW_BOTTOM_OFFSET),
+    )
+
+    const shouldUseNewTab = isLikelyMobileWindow()
+    const pipApi = (
+      document as Document & {
+        documentPictureInPicture?: DocumentPictureInPictureApi
+      }
+    ).documentPictureInPicture
+
+    if (!shouldUseNewTab && pipApi?.requestWindow) {
+      try {
+        const pipWindow = await pipApi.requestWindow({ width, height })
+        try {
+          pipWindow.resizeTo(width, height)
+          pipWindow.moveTo(left, top)
+        } catch {
+          // Browser may control PiP position and ignore move/resize.
+        }
+        pipWindow.location.href = url.toString()
+        pipWindow.focus()
+        return
+      } catch {
+        // Fall back to popup/new-tab below.
+      }
+    }
 
     const features = [
       `width=${width}`,
@@ -493,7 +530,6 @@ function App() {
       'menubar=no',
     ].join(',')
 
-    const shouldUseNewTab = isLikelyMobileWindow()
     const popup = shouldUseNewTab
       ? window.open(url.toString(), '_blank', 'noopener,noreferrer')
       : window.open('', 'youtubemax-viewer', features)
@@ -514,7 +550,11 @@ function App() {
 
     popup.location.href = url.toString()
     popup.focus()
-  }, [captionsEnabled, playbackRate, playStart, result, viewerSize.height, viewerSize.width, windowSessionId])
+  }, [captionsEnabled, playbackRate, playStart, result, viewerCurrentTime, viewerSize.height, viewerSize.width, windowSessionId])
+
+  useEffect(() => {
+    setViewerCurrentTime(playStart)
+  }, [playStart, result?.meta.videoId])
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
@@ -807,21 +847,6 @@ function App() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-        {!isStandaloneApp && deferredInstallPrompt && (
-          <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-            Install as app on Android for a cleaner no-address-bar experience.
-            <button
-              type="button"
-              onClick={() => {
-                void promptInstallApp()
-              }}
-              className="ml-2 rounded border border-emerald-400/50 bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-100 transition hover:bg-emerald-500/25"
-            >
-              Install
-            </button>
-          </div>
-        )}
-
         <header className="mb-4 flex flex-col gap-2 sm:gap-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
@@ -831,6 +856,20 @@ function App() {
                 </h1>              
               </div>
             </div>
+            {!isStandaloneApp && deferredInstallPrompt && (
+              <div className="min-w-0 flex-1 px-1 text-center text-[11px] text-emerald-200 sm:text-xs">
+                <span className="hidden sm:inline">Install as app on Android for a cleaner no-address-bar experience.</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void promptInstallApp()
+                  }}
+                  className="ml-0 rounded border border-emerald-400/50 bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-100 transition hover:bg-emerald-500/25 sm:ml-2"
+                >
+                  Install
+                </button>
+              </div>
+            )}
             <div className="relative shrink-0">
               <button
                 type="button"
@@ -1065,14 +1104,14 @@ function App() {
                 </button>
                 <button
                   type="button"
-                  aria-label="Open viewer in separate window"
+                  aria-label="Open viewer in picture-in-picture window"
                   onClick={(event) => {
                     event.stopPropagation()
-                    openViewerPopout()
+                    void openViewerPopout()
                   }}
                   className="rounded border border-white/10 bg-white/5 px-2 py-1 text-zinc-300 transition hover:border-white/20 hover:text-white"
                 >
-                  Pop
+                  PiP
                 </button>
                 <button
                   type="button"
@@ -1175,6 +1214,7 @@ function App() {
                         captionsEnabled={captionsEnabled}
                         playbackRate={playbackRate}
                         pauseSignal={pauseSignal}
+                        onCurrentTimeChange={setViewerCurrentTime}
                       />
                     </div>
 
