@@ -6,6 +6,12 @@ import { generateSummary } from './summary.js'
 import type { AnalyzeResult, Keyword, TranscriptSegment } from './types.js'
 import { fetchOEmbed } from './youtube.js'
 
+interface AnalyzeOptions {
+  includeTranscript?: boolean
+  includeSummary?: boolean
+  includeChapters?: boolean
+}
+
 // Lazily load youtube-transcript via ESM-safe dynamic import (may not be installed yet).
 // `require` is unavailable in ESM ("type": "module"), so we cache the import promise.
 let youtubeTranscriptPromise: Promise<any> | null = null
@@ -133,17 +139,22 @@ async function fetchTranscriptWithStrategy(
   )
 }
 
-export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
+export async function analyzeVideo(videoId: string, options: AnalyzeOptions = {}): Promise<AnalyzeResult> {
   const warnings: string[] = []
   // Use browser-like fetch (tries direct with headers first, proxy as fallback)
   const browserFetch = await createBrowserFetch()
+
+  const includeTranscript = options.includeTranscript ?? true
+  const includeSummary = options.includeSummary ?? true
+  const includeChapters = options.includeChapters ?? true
+  const shouldFetchTranscript = includeTranscript || includeSummary || includeChapters
 
   let title = ''
   let author = ''
   let thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
   let description = ''
   let transcript: TranscriptSegment[] = []
-  let usedStrategy: 'jdepoix' | 'direct' | 'proxy' = 'jdepoix'
+  let usedStrategy: AnalyzeResult['transcriptStrategy'] = undefined
 
   try {
     // oEmbed (metadata) - use browser fetch with headers
@@ -158,38 +169,45 @@ export async function analyzeVideo(videoId: string): Promise<AnalyzeResult> {
   }
 
   // --- START OF TRANSCRIPT FETCH ---
-  let transcriptFetched = false
-  try {
-    const result = await fetchTranscriptWithStrategy(videoId, browserFetch)
-    transcript = result.transcript
-    usedStrategy = result.strategy
-    // Update title and description from transcript fetch if available
-    if (result.title) title = result.title
-    if (result.description) description = result.description
-    transcriptFetched = true
-    console.log(`✓ Transcript fetched using "${usedStrategy}" strategy`)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'unknown error'
-    warnings.push(`Transcript fetch failed: ${message}`)
+  if (shouldFetchTranscript) {
+    let transcriptFetched = false
+    try {
+      const result = await fetchTranscriptWithStrategy(videoId, browserFetch)
+      transcript = result.transcript
+      usedStrategy = result.strategy
+      // Update title and description from transcript fetch if available
+      if (result.title) title = result.title
+      if (result.description) description = result.description
+      transcriptFetched = true
+      console.log(`✓ Transcript fetched using "${usedStrategy}" strategy`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'unknown error'
+      warnings.push(`Transcript fetch failed: ${message}`)
 
-    // Provide helpful context about why transcripts fail
-    if (message.includes('InnerTube') || message.includes('proxy')) {
-      warnings.push(
-        'Try switching to a different strategy using the UI toggle (youtube-transcript, direct, or proxy)',
-      )
+      // Provide helpful context about why transcripts fail
+      if (message.includes('InnerTube') || message.includes('proxy')) {
+        warnings.push(
+          'Try switching to a different strategy using the UI toggle (youtube-transcript, direct, or proxy)',
+        )
+      }
     }
-  }
 
-  if (!transcriptFetched) {
-    // Fallback if transcript fetching failed
-    warnings.push('Transcript is unavailable. Chapters and summary might be incomplete.')
+    if (!transcriptFetched) {
+      // Fallback if transcript fetching failed
+      warnings.push('Transcript is unavailable. Chapters and summary might be incomplete.')
+    }
   }
   // --- END OF TRANSCRIPT FETCH ---
 
-  const chapters = resolveChapters(description, transcript)
-  const summary = generateSummary(transcript)
+  const chapters = includeChapters ? resolveChapters(description, transcript) : []
+  const summary = includeSummary ? generateSummary(transcript) : ''
   const resolvedTitle = title || 'Unknown video'
-  const baseKeywords = extractKeywords(transcript, summary, resolvedTitle, description)
+  const baseKeywords = extractKeywords(
+    transcript,
+    includeSummary ? summary : '',
+    resolvedTitle,
+    description,
+  )
   const seenTerms = new Set(baseKeywords.map((k) => k.term.toLowerCase()))
   const chapterKeywords: Keyword[] = chapters
     .filter((c) => c.source === 'description')

@@ -2,6 +2,12 @@
 
 Complete step-by-step guide for deploying YouTubeMax to Vercel with transcript support.
 
+## Current Status (2026-08-05)
+
+- Discovery search default/fallback is 25 results (`maxResults` clamped to `1..25`).
+- Optional `YOUTUBE_DATA_API_KEY` still enables richer trust/safety discovery metadata.
+- Proxy setup remains optional and primarily relevant to transcript fetch resilience.
+
 ---
 
 ## Quick Deploy (2 minutes)
@@ -49,6 +55,20 @@ If transcript fetching fails (rare), you can optionally configure a residential 
 ### Step 1: Choose a Proxy Service (Optional)
 
 **Only needed if browser headers don't work.** For most use cases, the browser identity approach is sufficient.
+
+### Optional: Add `YOUTUBE_DATA_API_KEY` for richer discovery sorting
+
+If you want discovery results to expose `Trusted channels` and `Safer picks` sorting, add a YouTube Data API v3 key:
+
+1. Create an API key in Google Cloud for YouTube Data API v3.
+2. In Vercel, open **Settings** → **Environment Variables**.
+3. Add:
+   - Name: `YOUTUBE_DATA_API_KEY`
+   - Value: your API key
+   - Environments: **Production, Preview, Development**
+4. Redeploy.
+
+Without this key, discovery search still works, but it falls back to the base YouTube result metadata only.
 
 **Best residential proxy services for YouTube:**
 

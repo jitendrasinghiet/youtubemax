@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
 import { searchYouTubeVideos } from './server/search.ts'
+import { fetchYouTubeSuggestions } from './server/suggest.ts'
 import { parseVideoId } from './server/youtube.ts'
 
 function apiPlugin(): Plugin {
@@ -56,6 +57,28 @@ function apiPlugin(): Plugin {
             res.end(JSON.stringify({ results, searchUrl, warning }))
           } catch (err) {
             const message = err instanceof Error ? err.message : 'Search failed'
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: message }))
+          }
+          return
+        }
+
+        if (url.pathname === '/api/suggest') {
+          const query = url.searchParams.get('q')?.trim() ?? ''
+          const maxResults = Number(url.searchParams.get('maxResults') ?? 8)
+
+          if (!query) {
+            res.statusCode = 200
+            res.end(JSON.stringify({ suggestions: [] }))
+            return
+          }
+
+          try {
+            const suggestions = await fetchYouTubeSuggestions(query, maxResults)
+            res.statusCode = 200
+            res.end(JSON.stringify({ suggestions }))
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Suggestion lookup failed'
             res.statusCode = 500
             res.end(JSON.stringify({ error: message }))
           }

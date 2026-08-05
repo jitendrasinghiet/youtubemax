@@ -1,5 +1,13 @@
 # Strategy Toggle Implementation
 
+## Status
+
+This document is historical context.
+
+- Current UI does **not** expose a runtime transcript strategy selector.
+- `transcriptStrategy` remains in shared types for compatibility, but the selector flow described below is not active in the current app surface.
+- If strategy selector UI is reintroduced, this document should be revised from scratch to match actual components/routes.
+
 ## Feature Overview
 
 Users can now choose their preferred **transcript fetching strategy** at runtime directly in the UI without redeploying. Three strategies available:

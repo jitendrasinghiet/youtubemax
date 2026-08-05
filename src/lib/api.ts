@@ -1,7 +1,22 @@
 import type { AnalyzeResult, SearchResponse } from '../types'
 
-export async function analyzeVideo(input: string): Promise<AnalyzeResult> {
+interface AnalyzeOptions {
+  includeTranscript?: boolean
+  includeSummary?: boolean
+  includeChapters?: boolean
+}
+
+export async function analyzeVideo(input: string, options: AnalyzeOptions = {}): Promise<AnalyzeResult> {
   const params = new URLSearchParams({ videoId: input.trim() })
+  if (typeof options.includeTranscript === 'boolean') {
+    params.set('includeTranscript', String(options.includeTranscript))
+  }
+  if (typeof options.includeSummary === 'boolean') {
+    params.set('includeSummary', String(options.includeSummary))
+  }
+  if (typeof options.includeChapters === 'boolean') {
+    params.set('includeChapters', String(options.includeChapters))
+  }
   const res = await fetch(`/api/analyze?${params}`)
   const data = await res.json()
 
@@ -14,7 +29,7 @@ export async function analyzeVideo(input: string): Promise<AnalyzeResult> {
   return data as AnalyzeResult
 }
 
-export async function searchVideos(query: string, maxResults = 12): Promise<SearchResponse> {
+export async function searchVideos(query: string, maxResults = 25): Promise<SearchResponse> {
   const params = new URLSearchParams({ q: query.trim(), maxResults: String(maxResults) })
   const res = await fetch(`/api/search?${params}`)
   const data = await res.json()
@@ -26,6 +41,24 @@ export async function searchVideos(query: string, maxResults = 12): Promise<Sear
   }
 
   return data as SearchResponse
+}
+
+export async function fetchSearchSuggestions(query: string, maxResults = 8): Promise<string[]> {
+  const trimmed = query.trim()
+  if (!trimmed) return []
+
+  const params = new URLSearchParams({ q: trimmed, maxResults: String(maxResults) })
+  const res = await fetch(`/api/suggest?${params}`)
+  const data = await res.json()
+
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : 'Failed to load suggestions',
+    )
+  }
+
+  if (!Array.isArray(data.suggestions)) return []
+  return data.suggestions.filter((value: unknown): value is string => typeof value === 'string')
 }
 
 export function formatTimestamp(seconds: number): string {

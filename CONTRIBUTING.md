@@ -306,6 +306,16 @@ Related to #456
 
 ## Documentation Updates
 
+When behavior changes, update docs in the same PR.
+
+### Required docs sync checklist for behavior changes
+
+- Update `README.md` feature and API defaults if user-visible behavior changed.
+- Update `ARCHITECTURE.md` Status Snapshot when runtime flow changed.
+- Update `DOCS_UPDATE_SUMMARY.md` with rollback/feature state.
+- Update `VERCEL_SETUP.md` only when deployment/env behavior changed.
+- If transcript strategy UI behavior changes, update `STRATEGY_TOGGLE.md` status.
+
 ### Update README for:
 - New major features
 - Breaking changes

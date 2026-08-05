@@ -1,5 +1,14 @@
 # YouTubeMax Architecture
 
+## Status Snapshot (2026-08-05)
+
+- Discovery search defaults to `25` results and server clamps to `1..25`.
+- Main UX is discovery-first with a floating, draggable, resizable viewer.
+- Search-result click opens viewer centered in the viewport.
+- `Pop` opens a centered separate window (desktop) or new tab fallback (mobile).
+- Runtime transcript strategy selector (`jdepoix/direct/proxy`) is not currently surfaced in UI.
+- Notes below include historical design context; this section is the source of truth for current runtime behavior.
+
 ## Overview
 
 YouTubeMax is a **React + TypeScript frontend** with **Node.js serverless backend** architecture designed for maximum portability and zero infrastructure overhead.
@@ -243,7 +252,7 @@ export async function analyzeVideo(videoId: string) {
 
 #### **GET /api/search**
 
-**Input:** `q` (search query), `maxResults` (1-50, default 12)
+**Input:** `q` (search query), `maxResults` (1-25, default 25)
 
 **Process:**
 ```typescript

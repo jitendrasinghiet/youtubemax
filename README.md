@@ -1,6 +1,6 @@
 # YouTubeMax
 
-A powerful, standalone **React + TypeScript** SPA for intelligent YouTube video analysis with auto-generated chapters, transcript summarization, and smart keyword extraction. Deploy instantly to Vercel, Netlify, or any static host—no backend required.
+A powerful **React + TypeScript** app for intelligent YouTube video analysis with auto-generated chapters, transcript summarization, and smart keyword extraction. It ships with serverless API routes for analysis and discovery, and deploys cleanly to Vercel.
 
 **Live Features:**
 - 🎬 **Auto-Generated Chapters** — Extract from video descriptions or generate from captions
@@ -10,6 +10,7 @@ A powerful, standalone **React + TypeScript** SPA for intelligent YouTube video 
 - ▶️ **Smart Clip Mode** — Filter chapters by keywords and auto-play sequential clips
 - 🎯 **Real-time Filtering** — Click keywords to filter chapters instantly
 - 📊 **Full Transcript Viewer** — Browse complete captions with searchable text
+- 🪟 **Floating Viewer + Popout** — Draggable/resizable viewer with centered separate-window popout
 - ⚡ **Zero Configuration Deploy** — Works on Vercel, Netlify, GitHub Pages with serverless functions
 
 ---
@@ -60,6 +61,15 @@ vercel
 
 ## Features in Detail
 
+### Current Status (2026-08-05)
+
+- Discovery search default is **25** results, capped at 25 server-side.
+- Viewer opens centered on search-result click.
+- `Pop` opens a separate window centered on screen.
+- Cross-window pause signaling is active for viewer instances.
+- In-viewer top-middle PiP overlay control is **not** in current state (rolled back).
+- Runtime transcript strategy selector UI is **not currently exposed**.
+
 ### 1. **Video Analysis**
 Paste a YouTube URL or 11-character video ID to extract:
 - Video metadata (title, author, thumbnail, description)
@@ -92,9 +102,14 @@ Select "Play Clips" to auto-advance through filtered chapters with duration = ne
 ### 5. **Video Discovery Search**
 Search YouTube videos by keyword (4-column responsive grid). Shows title, channel, view count, upload date, duration.
 
+When `YOUTUBE_DATA_API_KEY` is configured, discovery results are enriched with:
+- channel trust metadata (subscriber count, channel age, total video count)
+- safety-oriented metadata (embeddable, made-for-kids, captions, likes/comments)
+- extra sort modes for `Trusted channels` and `Safer picks`
+
 ### 6. **Compact UI**
 - Collapsible Master List (header + 1 line, expands on hover)
-- Tabbed Navigation (Discovery | Viewer)
+- Unified discovery-first layout with floating viewer
 - Collapsible Summary & Transcript sections
 - Floating overlays (no layout shifting)
 
@@ -200,11 +215,20 @@ curl "http://localhost:5173/api/analyze?videoId=dQw4w9WgXcQ"
 
 ---
 
-### `GET /api/search?q=<query>&maxResults=12`
+### `GET /api/search?q=<query>&maxResults=25`
 
 **Search YouTube videos.**
 
+`maxResults` is clamped to `1..25` on the server.
+
 Returns: `{ results: SearchResultItem[], warning?: string }`
+
+With `YOUTUBE_DATA_API_KEY`, each `SearchResultItem` may also include optional discovery metadata such as `channelTrustScore`, `safetyScore`, `channelId`, `likeCount`, `commentCount`, `embeddable`, `madeForKids`, `captioned`, and channel statistics used by the discovery sort controls.
+
+### Optional Environment Variables
+
+- `YOUTUBE_DATA_API_KEY` — Enables YouTube Data API enrichment for discovery search results. Without it, search still works, but trust/safety metadata stays unavailable.
+- `YOUTUBE_PROXY_URL` — Optional transcript-fetch fallback proxy for environments where direct transcript requests are blocked.
 
 ---
 

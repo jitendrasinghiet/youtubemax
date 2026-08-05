@@ -1,0 +1,195 @@
+CURRENT IMPLEMENTATION STATUS (2026-08-05)
+==========================================
+
+Shipped now:
+- Discovery search defaults to 25 results.
+- Server clamps maxResults to 25.
+- Client sort options include: recommended, relevance, publishDate, viewCount, duration, channelTrust, safety.
+- Results can be reduced by embeddability and external-playback filters.
+
+Not shipped now:
+- No hard dislikes-based filtering (YouTube public dislike count unavailable).
+- No full age-tiered auto-accept/manual-review/auto-reject pipeline from the pseudocode below.
+- No runtime strategy-selector UI for transcript fetch strategy.
+
+Use the remainder of this file as design reference only, not as current behavior contract.
+
+Reasonable instinct — YouTube's own signals do encode real quality information, and automating a first-pass filter is far more scalable than manual review of every video. But there's one hard blocker and several soft ones worth knowing before you build the rule engine.
+
+## The hard blocker: dislikes aren't public anymore
+
+YouTube removed public dislike counts from the API in December 2021. `statistics.dislikeCount` is gone — only the channel owner can see it via authenticated calls on their own videos. So "min likes/dislikes ratio" as a filter is off the table entirely. You're left with `likeCount`, and even that's optional (creators can hide it), so treat missing likeCount as "unknown," not "zero."
+
+## What's actually available and useful
+
+From `videos.list` (`part=snippet,statistics,contentDetails,status`):
+
+| Field | Signal value | Caveat |
+|---|---|---|
+| `statistics.viewCount` | Popularity floor | Raw count is meaningless without channel size context — a 50k-view video from a 10M-sub channel is underperforming; same count from a 500-sub channel is a hit |
+| `statistics.likeCount` | Engagement quality | Can be hidden by creator; ratio to views matters more than absolute number |
+| `statistics.commentCount` | Engagement, but risky | High comments can mean controversy, not quality — and comments themselves may contain unmoderated content you don't want kids exposed to even indirectly |
+| `contentDetails.duration` | Filter shorts/too-long | Useful for age-appropriate pacing (5-7yo: cap at ~5-8 min) |
+| `contentDetails.caption` | Accessibility signal | `true`/`false` — captioned videos are generally more production-effort |
+| `status.madeForKids` | **Important** | YouTube's own COPPA self-flagging. Videos marked "made for kids" have comments/some features disabled — can be a positive trust signal *or* a red flag depending on content type |
+| `status.embeddable` | Hard requirement | Some videos block embedding — filter these out before they ever reach your UI, not after a broken player |
+| `snippet.channelId` + separate `channels.list` call | **Channel trust, the strongest signal** | Subscriber count, total video count, channel age (`snippet.publishedAt`) — an established channel with 500k subs and 8 years of history is a far better quality proxy than any single video's stats |
+| `snippet.tags`, `topicDetails.topicCategories` | Topic relevance check | Cross-check against your intended subject to catch mismatched search results |
+
+## Why "YouTube already has implicit discretion" is true but not sufficient
+
+You're right that ranking algorithms, monetization policies, and Trusted Flagger removals already filter out the worst content before it even shows up in search results. But implicit discretion optimizes for *engagement and policy compliance*, not for *age-appropriate pedagogical quality* — those are different objectives. A video can be 100% policy-compliant, highly engaged, from a legitimate channel, and still be wrong for your 5-7 age group (too fast-paced, too much ad-like sponsor content, tone aimed at teens, etc.). Metadata rules catch spam/low-effort/mismatched content well; they don't catch "technically fine but wrong fit," which is the actual moderation problem for a kids' learning app.
+
+## Recommended: tiered rule engine, not a single filter
+
+```js
+// scoring at snapshot-refresh time, not runtime
+function scoreVideo(video, channel) {
+  const flags = [];
+  if (!video.status.embeddable) return { reject: true, reason: 'not embeddable' };
+  if (video.contentDetails.duration > MAX_DURATION[ageGroup]) flags.push('too long');
+  if (channel.statistics.subscriberCount < MIN_SUBS) flags.push('unestablished channel');
+  if (channel.snippet.publishedAt > CHANNEL_AGE_CUTOFF) flags.push('new channel');
+  if (video.statistics.viewCount / channelAvgViews < 0.1) flags.push('underperforming outlier');
+  // like ratio only if likeCount present
+  return { score: computeScore(flags), flags };
+}
+```
+
+Three tiers based on score:
+- **Auto-accept** (established channel, good engagement ratio, right duration, embeddable) → goes straight into the reviewed-diff PR
+- **Auto-reject** (not embeddable, wrong duration, brand-new/tiny channel) → filtered before you even see it
+- **Manual review queue** (borderline scores) → this is where a human actually looks, which shrinks your review workload from "every result" to "the ambiguous 20%"
+
+That middle tier is the real win: automated rules don't replace the human review from the earlier design, they **shrink it to a tractable size**, especially for the youngest age bands where you probably still want eyes on everything regardless of score.
+
+## Backstop regardless of scoring
+
+Keep a **channel allowlist/blocklist** as a hard override layer on top of any scoring — it's cheap to maintain, catches known-good sources (Khan Academy, SciShow Kids) and known-bad ones instantly, and gives you an escape hatch when a channel's stats look fine but you (or a parent complaint) know something's off.
+
+Want me to draft the actual scoring config (per-age-group thresholds) and the refresh-script logic that applies this tiering to your `discovery/*.json` generation step?
+
+
+///////////////////////////
+FUNCTION rankSearchResults(rawResults[], ageGroup, subject):
+
+  // ── STAGE 0: batch-fetch metadata ──────────────────────────
+  videoIds   = rawResults.map(r => r.videoId)
+  videos     = videos.list(part: snippet,statistics,contentDetails,status,topicDetails, ids: videoIds)  // batches of 50, 1 unit each
+  channelIds = unique(videos.map(v => v.snippet.channelId))
+  channels   = channels.list(part: snippet,statistics, ids: channelIds)  // batch, cache aggressively (channel data changes slowly)
+
+  scored = []
+
+  FOR video IN videos:
+    channel = channels[video.snippet.channelId]
+
+    // ── STAGE 1: HARD FILTERS (reject outright, no score needed) ──
+    IF NOT video.status.embeddable:
+        CONTINUE  // never reaches UI regardless of score
+
+    IF video.status.privacyStatus != "public":
+        CONTINUE
+
+    durationSec = parseISO8601Duration(video.contentDetails.duration)
+    IF durationSec > MAX_DURATION[ageGroup] OR durationSec < MIN_DURATION:
+        CONTINUE
+
+    IF channel.id IN blocklist:
+        CONTINUE
+
+    IF channel.id IN allowlist:
+        tier = AUTO_ACCEPT
+        score = 1.0  // allowlist short-circuits scoring entirely
+        scored.push({video, tier, score, flags: ["allowlisted"]})
+        CONTINUE
+
+    // ── STAGE 2: NORMALIZED SIGNAL SCORING (each 0.0–1.0) ──────
+
+    // 2a. View count — relative to channel's own baseline, not absolute
+    channelAvgViews = channel.statistics.viewCount / max(channel.statistics.videoCount, 1)
+    viewRatio        = video.statistics.viewCount / max(channelAvgViews, 1)
+    viewScore        = clamp(log10(viewRatio + 1) / log10(10), 0, 1)
+    // log-scaled: a video doing 10x its channel's average tops out the score;
+    // prevents one viral outlier channel from dominating raw-count comparisons
+
+    // 2b. Like ratio — only if likeCount is public; treat hidden as neutral, not zero
+    IF video.statistics.likeCount IS present:
+        likeRatio  = video.statistics.likeCount / max(video.statistics.viewCount, 1)
+        likeScore  = clamp(likeRatio / EXPECTED_LIKE_RATIO_CEILING, 0, 1)  // ceiling ~0.04 (4%) is already excellent
+    ELSE:
+        likeScore  = NEUTRAL_SCORE (0.5)   // don't punish creators who hide likes
+        flags.push("likes hidden")
+
+    // 2c. Comment count — capped contribution, NOT a quality signal on its own
+    commentRatio  = video.statistics.commentCount / max(video.statistics.viewCount, 1)
+    commentScore  = clamp(commentRatio / EXPECTED_COMMENT_RATIO_CEILING, 0, 1)
+    // deliberately low weight in final formula — high comments ≈ engagement OR controversy,
+    // can't distinguish algorithmically; never let this field alone push a video up
+
+    // 2d. Captions — small binary bonus, proxy for production effort + accessibility
+    captionScore  = video.contentDetails.caption == "true" ? 1.0 : 0.3
+
+    // 2e. madeForKids — context-dependent, not simply "good"
+    IF ageGroup IN ["5-7", "8-12"]:
+        madeForKidsScore = video.status.madeForKids ? 1.0 : 0.5
+        // positive signal for young kids tier — but NOT a hard filter, since plenty of
+        // legitimate educational content (Khan Academy etc.) isn't flagged madeForKids
+    ELSE:
+        madeForKidsScore = NEUTRAL_SCORE  // irrelevant for teens/adults
+
+    // 2f. Channel trust — the strongest signal, weight accordingly
+    channelAgeYears  = yearsSince(channel.snippet.publishedAt)
+    channelAgeScore  = clamp(channelAgeYears / CHANNEL_AGE_CEILING_YEARS, 0, 1)   // ceiling ~5yrs
+    subscriberScore  = clamp(log10(channel.statistics.subscriberCount + 1) / log10(SUB_CEILING), 0, 1)  // ceiling ~1M
+    videoCountScore  = clamp(channel.statistics.videoCount / VIDEO_COUNT_CEILING, 0, 1)  // ceiling ~200, established output
+    channelTrustScore = weightedAvg(
+        channelAgeScore   * 0.4,
+        subscriberScore   * 0.4,
+        videoCountScore   * 0.2
+    )
+
+    // 2g. Topic relevance — cross-check against intended subject, catch mismatched results
+    topicMatchScore = computeTopicOverlap(
+        video.snippet.tags,
+        video.topicDetails.topicCategories,
+        video.snippet.title,
+        video.snippet.description,
+        targetSubject: subject
+    )
+    // e.g. Jaccard similarity between video's topic/tag set and subject's keyword set;
+    // low overlap likely means the search query matched loosely (title/desc match only)
+
+    // ── STAGE 3: COMPOSITE SCORE ────────────────────────────────
+    weights = getWeightProfile(ageGroup)
+    // younger age groups weight channelTrust + topicMatch much higher, engagement lower
+    // e.g. 5-7:  { channelTrust: 0.35, topicMatch: 0.25, madeForKids: 0.15, view: 0.10, like: 0.10, caption: 0.05 }
+    //      teen: { channelTrust: 0.20, topicMatch: 0.25, madeForKids: 0.00, view: 0.25, like: 0.20, caption: 0.10 }
+
+    compositeScore = weightedAvg(
+        channelTrustScore  * weights.channelTrust,
+        topicMatchScore    * weights.topicMatch,
+        madeForKidsScore   * weights.madeForKids,
+        viewScore          * weights.view,
+        likeScore          * weights.like,
+        commentScore        * weights.comment,   // small weight, e.g. 0.05 max
+        captionScore        * weights.caption
+    )
+
+    // ── STAGE 4: TIER ASSIGNMENT ────────────────────────────────
+    IF compositeScore >= AUTO_ACCEPT_THRESHOLD AND channelTrustScore >= MIN_CHANNEL_TRUST:
+        tier = AUTO_ACCEPT
+    ELSE IF compositeScore < AUTO_REJECT_THRESHOLD OR channelAgeYears < MIN_CHANNEL_AGE:
+        tier = AUTO_REJECT
+        CONTINUE   // never reaches UI or review queue
+    ELSE:
+        tier = MANUAL_REVIEW
+
+    scored.push({video, tier, score: compositeScore, flags})
+
+  // ── STAGE 5: FINAL SORT ─────────────────────────────────────
+  // tier takes priority over raw score — a borderline AUTO_ACCEPT always outranks
+  // a high-scoring MANUAL_REVIEW item that hasn't been human-approved yet
+  RETURN scored
+    .filter(item => ageGroup IN [kids] ? item.tier == AUTO_ACCEPT : item.tier != AUTO_REJECT)
+    .sortBy(item => [tierRank(item.tier), -item.score])

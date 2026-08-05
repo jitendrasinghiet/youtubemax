@@ -1,0 +1,18 @@
+{
+  "name": "YouTubeMax",
+  "short_name": "YTMax",
+  "description": "YouTube video discovery with popup viewer, chapters, transcript, and summaries.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

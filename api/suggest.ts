@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { searchYouTubeVideos } from '../server/search.js'
+import { fetchYouTubeSuggestions } from '../server/suggest.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -9,18 +9,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const query = typeof req.query.q === 'string' ? req.query.q.trim() : ''
   if (!query) {
-    return res.status(400).json({ error: 'Search query is required' })
+    return res.status(200).json({ suggestions: [] })
   }
 
   const maxResults =
-    typeof req.query.maxResults === 'string' ? Number(req.query.maxResults) : 25
+    typeof req.query.maxResults === 'string' ? Number(req.query.maxResults) : 8
 
   try {
-    const { results, searchUrl, warning } = await searchYouTubeVideos(query, maxResults)
+    const suggestions = await fetchYouTubeSuggestions(query, maxResults)
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
-    return res.status(200).json({ results, searchUrl, warning })
+    return res.status(200).json({ suggestions })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Search failed'
+    const message = err instanceof Error ? err.message : 'Suggestion lookup failed'
     return res.status(500).json({ error: message })
   }
 }

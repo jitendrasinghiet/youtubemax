@@ -1,6 +1,76 @@
 import type { SearchResultItem } from '../types'
 
-export type SearchSortType = 'relevance' | 'publishDate' | 'viewCount' | 'duration'
+export type SearchSortType =
+  | 'recommended'
+  | 'relevance'
+  | 'publishDate'
+  | 'viewCount'
+  | 'duration'
+  | 'channelTrust'
+  | 'safety'
+
+function clamp(value: number, min = 0, max = 1): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function parseSearchTerms(query: string | undefined): string[] {
+  if (!query) return []
+
+  return query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+function computeTermMatchScore(result: SearchResultItem, query: string | undefined): number {
+  const terms = parseSearchTerms(query)
+  if (terms.length === 0) return 0.5
+
+  const haystack = `${result.title} ${result.description} ${result.channel}`.toLowerCase()
+  let matches = 0
+
+  for (const term of terms) {
+    if (haystack.includes(term)) matches += 1
+  }
+
+  const baseScore = matches / terms.length
+  const exactPhraseBonus = haystack.includes(query!.trim().toLowerCase()) ? 0.15 : 0
+  return clamp(baseScore + exactPhraseBonus)
+}
+
+function computeRecencyScore(daysAgo: number, maxDaysAgo: number): number {
+  if (!Number.isFinite(daysAgo)) return 0
+  if (maxDaysAgo <= 0) return 1
+
+  const normalized = Math.log10(daysAgo + 1) / Math.log10(maxDaysAgo + 1)
+  return clamp(1 - normalized)
+}
+
+function computePopularityScore(viewCount: number, maxViewCount: number): number {
+  if (viewCount <= 0 || maxViewCount <= 0) return 0
+
+  return clamp(Math.log10(viewCount + 1) / Math.log10(maxViewCount + 1))
+}
+
+function computeRecommendedScore(
+  result: SearchResultItem,
+  query: string | undefined,
+  maxViewCount: number,
+  maxDaysAgo: number,
+): number {
+  const termScore = computeTermMatchScore(result, query)
+  const popularityScore = computePopularityScore(
+    parseViewCountToNumber(result.viewCount),
+    maxViewCount,
+  )
+  const recencyScore = computeRecencyScore(
+    parseRelativeDateToDays(result.publishedAt),
+    maxDaysAgo,
+  )
+
+  return termScore * 0.55 + popularityScore * 0.3 + recencyScore * 0.15
+}
 
 /** Parse a "H:MM:SS" / "M:SS" duration string into total seconds. */
 export function parseDurationToSeconds(durationStr: string | undefined): number {
@@ -30,6 +100,10 @@ export function parseViewCountToNumber(viewCountStr: string | undefined): number
 /** Parse a relative date ("3 days ago") into an approximate number of days ago. */
 export function parseRelativeDateToDays(dateStr: string | undefined): number {
   if (!dateStr) return Infinity
+  const normalized = dateStr.trim().toLowerCase()
+  if (!normalized) return Infinity
+  if (normalized === 'just now' || normalized === 'today') return 0
+  if (normalized === 'yesterday') return 1
   const match = dateStr.match(/(\d+)\s*(second|minute|hour|day|week|month|year)/i)
   if (!match) return Infinity
   const n = parseInt(match[1], 10)
@@ -51,8 +125,36 @@ export function parseRelativeDateToDays(dateStr: string | undefined): number {
 export function sortSearchResults(
   results: SearchResultItem[],
   sortType: SearchSortType,
+  query?: string,
 ): SearchResultItem[] {
   if (sortType === 'relevance') return results
+
+  if (sortType === 'recommended') {
+    const maxViewCount = results.reduce(
+      (max, result) => Math.max(max, parseViewCountToNumber(result.viewCount)),
+      0,
+    )
+    const maxDaysAgo = results.reduce((max, result) => {
+      const daysAgo = parseRelativeDateToDays(result.publishedAt)
+      return Number.isFinite(daysAgo) ? Math.max(max, daysAgo) : max
+    }, 0)
+
+    return [...results]
+      .map((result, index) => ({
+        result,
+        index,
+        score: computeRecommendedScore(result, query, maxViewCount, maxDaysAgo),
+        viewCount: parseViewCountToNumber(result.viewCount),
+        daysAgo: parseRelativeDateToDays(result.publishedAt),
+      }))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score
+        if (b.viewCount !== a.viewCount) return b.viewCount - a.viewCount
+        if (a.daysAgo !== b.daysAgo) return a.daysAgo - b.daysAgo
+        return a.index - b.index
+      })
+      .map(({ result }) => result)
+  }
 
   const sorted = [...results]
   if (sortType === 'viewCount') {
@@ -61,6 +163,10 @@ export function sortSearchResults(
     sorted.sort((a, b) => parseDurationToSeconds(b.duration) - parseDurationToSeconds(a.duration))
   } else if (sortType === 'publishDate') {
     sorted.sort((a, b) => parseRelativeDateToDays(a.publishedAt) - parseRelativeDateToDays(b.publishedAt))
+  } else if (sortType === 'channelTrust') {
+    sorted.sort((a, b) => (b.channelTrustScore ?? -1) - (a.channelTrustScore ?? -1))
+  } else if (sortType === 'safety') {
+    sorted.sort((a, b) => (b.safetyScore ?? -1) - (a.safetyScore ?? -1))
   }
   return sorted
 }

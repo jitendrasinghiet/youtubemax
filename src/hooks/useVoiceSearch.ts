@@ -55,7 +55,7 @@ export function useVoiceSearch(onFinalTranscript: (transcript: string) => void) 
   const toggle = useCallback(() => {
     const Ctor = getSpeechRecognitionCtor()
     if (!Ctor) {
-      alert('Voice search not supported in your browser')
+      alert('Not recognised, use read instead')
       return
     }
 

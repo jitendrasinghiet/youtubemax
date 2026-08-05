@@ -3,7 +3,10 @@ import type { SearchSortType } from '../lib/searchSort'
 import type { SearchResultItem } from '../types'
 
 const SORT_OPTIONS: { type: SearchSortType; label: string }[] = [
+  { type: 'recommended', label: 'Recommended' },
   { type: 'relevance', label: 'Relevance' },
+  { type: 'channelTrust', label: 'Trusted channels' },
+  { type: 'safety', label: 'Safer picks' },
   { type: 'publishDate', label: 'Newest' },
   { type: 'viewCount', label: 'Most viewed' },
   { type: 'duration', label: 'Longest' },

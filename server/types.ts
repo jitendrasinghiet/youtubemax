@@ -15,6 +15,22 @@ export interface SearchResultItem {
   description: string
   viewCount?: string
   duration?: string
+  channelId?: string
+  durationSec?: number
+  likeCount?: string
+  commentCount?: string
+  captioned?: boolean
+  embeddable?: boolean
+  madeForKids?: boolean
+  privacyStatus?: string
+  tags?: string[]
+  topicCategories?: string[]
+  channelPublishedAt?: string
+  channelSubscriberCount?: string
+  channelVideoCount?: string
+  channelTotalViewCount?: string
+  channelTrustScore?: number
+  safetyScore?: number
 }
 
 export interface TranscriptSegment {

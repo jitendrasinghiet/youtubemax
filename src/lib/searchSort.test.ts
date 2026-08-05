@@ -47,9 +47,14 @@ describe('parseRelativeDateToDays', () => {
   it('parses sub-day units as fractions', () => {
     expect(parseRelativeDateToDays('12 hours ago')).toBeCloseTo(0.5)
   })
+  it('parses immediate relative dates', () => {
+    expect(parseRelativeDateToDays('just now')).toBe(0)
+    expect(parseRelativeDateToDays('today')).toBe(0)
+    expect(parseRelativeDateToDays('yesterday')).toBe(1)
+  })
   it('returns Infinity when unparseable', () => {
     expect(parseRelativeDateToDays(undefined)).toBe(Infinity)
-    expect(parseRelativeDateToDays('just now')).toBe(Infinity)
+    expect(parseRelativeDateToDays('sometime recently')).toBe(Infinity)
   })
 })
 
@@ -73,6 +78,50 @@ describe('sortSearchResults', () => {
   it('preserves order for relevance', () => {
     expect(sortSearchResults(results, 'relevance')).toBe(results)
   })
+  it('sorts by recommended score using query match, popularity, and recency', () => {
+    const recommendedResults = [
+      make({
+        videoId: 'd',
+        title: 'Solar system for kids',
+        description: 'Learn planets and space basics',
+        viewCount: '250K',
+        publishedAt: '2 days ago',
+      }),
+      make({
+        videoId: 'e',
+        title: 'Space documentary',
+        description: 'Solar system explained for beginners',
+        viewCount: '5M',
+        publishedAt: '3 years ago',
+      }),
+      make({
+        videoId: 'f',
+        title: 'Animals for kids',
+        description: 'Wildlife facts',
+        viewCount: '8M',
+        publishedAt: '1 day ago',
+      }),
+    ]
+
+    expect(sortSearchResults(recommendedResults, 'recommended', 'solar system kids').map((r) => r.videoId)).toEqual([
+      'd',
+      'e',
+      'f',
+    ])
+  })
+  it('uses popularity and recency when no query is provided for recommended sort', () => {
+    const fallbackResults = [
+      make({ videoId: 'g', viewCount: '300K', publishedAt: '2 days ago' }),
+      make({ videoId: 'h', viewCount: '5M', publishedAt: '5 years ago' }),
+      make({ videoId: 'i', viewCount: '1M', publishedAt: '1 day ago' }),
+    ]
+
+    expect(sortSearchResults(fallbackResults, 'recommended').map((r) => r.videoId)).toEqual([
+      'i',
+      'g',
+      'h',
+    ])
+  })
   it('sorts by view count descending', () => {
     expect(sortSearchResults(results, 'viewCount').map((r) => r.videoId)).toEqual(['b', 'a', 'c'])
   })
@@ -82,9 +131,35 @@ describe('sortSearchResults', () => {
   it('sorts by publish date newest first', () => {
     expect(sortSearchResults(results, 'publishDate').map((r) => r.videoId)).toEqual(['c', 'a', 'b'])
   })
+  it('sorts by channel trust descending when metadata is available', () => {
+    const trustedResults = [
+      make({ videoId: 'trust-low', channelTrustScore: 0.2 }),
+      make({ videoId: 'trust-high', channelTrustScore: 0.9 }),
+      make({ videoId: 'trust-mid', channelTrustScore: 0.6 }),
+    ]
+
+    expect(sortSearchResults(trustedResults, 'channelTrust').map((r) => r.videoId)).toEqual([
+      'trust-high',
+      'trust-mid',
+      'trust-low',
+    ])
+  })
+  it('sorts by safety descending when metadata is available', () => {
+    const safeResults = [
+      make({ videoId: 'safe-low', safetyScore: 0.1 }),
+      make({ videoId: 'safe-high', safetyScore: 0.95 }),
+      make({ videoId: 'safe-mid', safetyScore: 0.55 }),
+    ]
+
+    expect(sortSearchResults(safeResults, 'safety').map((r) => r.videoId)).toEqual([
+      'safe-high',
+      'safe-mid',
+      'safe-low',
+    ])
+  })
   it('does not mutate the input array', () => {
     const original = [...results]
-    sortSearchResults(results, 'viewCount')
+    sortSearchResults(results, 'recommended', 'test query')
     expect(results).toEqual(original)
   })
 })

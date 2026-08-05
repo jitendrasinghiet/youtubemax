@@ -1,4 +1,9 @@
 import { INNERTUBE_CLIENT_VERSION, MAX_QUERY_LENGTH, PRIMARY_USER_AGENT } from './constants.js'
+import {
+  enrichSearchResults,
+  type YouTubeChannelItem,
+  type YouTubeVideoItem,
+} from './search-metadata.js'
 import type { SearchResultItem } from './types.js'
 
 export function buildYouTubeSearchUrl(query: string): string {
@@ -27,6 +32,26 @@ function extractThumbnail(renderer: Record<string, unknown>, videoId: string): s
   return best.url ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
 }
 
+function extractChannelId(renderer: Record<string, unknown>): string | undefined {
+  for (const key of ['ownerText', 'shortBylineText', 'longBylineText']) {
+    const field = renderer[key]
+    if (!field || typeof field !== 'object') continue
+
+    const runs = (field as { runs?: Array<Record<string, unknown>> }).runs
+    if (!Array.isArray(runs)) continue
+
+    for (const run of runs) {
+      const browseId = (run.navigationEndpoint as { browseEndpoint?: { browseId?: string } } | undefined)
+        ?.browseEndpoint?.browseId
+      if (typeof browseId === 'string' && browseId.startsWith('UC')) {
+        return browseId
+      }
+    }
+  }
+
+  return undefined
+}
+
 function rendererToResult(renderer: Record<string, unknown>): SearchResultItem | null {
   const videoId = typeof renderer.videoId === 'string' ? renderer.videoId : null
   if (!videoId || videoId.length !== 11) return null
@@ -43,7 +68,76 @@ function rendererToResult(renderer: Record<string, unknown>): SearchResultItem |
     description: extractText(renderer.descriptionSnippet),
     viewCount: extractText(renderer.viewCountText),
     duration: extractText(renderer.lengthText),
+    channelId: extractChannelId(renderer),
   }
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size))
+  }
+  return chunks
+}
+
+async function fetchYouTubeDataApiItems<T>(
+  endpoint: 'videos' | 'channels',
+  part: string,
+  ids: string[],
+  apiKey: string,
+  fetchFn: typeof fetch,
+): Promise<T[]> {
+  if (ids.length === 0) return []
+
+  const items: T[] = []
+  for (const batch of chunk(ids, 50)) {
+    const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`)
+    url.searchParams.set('part', part)
+    url.searchParams.set('id', batch.join(','))
+    url.searchParams.set('key', apiKey)
+
+    const res = await fetchFn(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+
+    if (!res.ok) {
+      throw new Error(`YouTube Data API ${endpoint} request failed (${res.status})`)
+    }
+
+    const data = (await res.json()) as { items?: T[] }
+    if (Array.isArray(data.items)) items.push(...data.items)
+  }
+
+  return items
+}
+
+async function enrichResultsWithYouTubeDataApi(
+  results: SearchResultItem[],
+  fetchFn: typeof fetch,
+): Promise<SearchResultItem[]> {
+  const apiKey = process.env.YOUTUBE_DATA_API_KEY?.trim()
+  if (!apiKey || results.length === 0) return results
+
+  const videos = await fetchYouTubeDataApiItems<YouTubeVideoItem>(
+    'videos',
+    'snippet,statistics,contentDetails,status,topicDetails',
+    [...new Set(results.map((result) => result.videoId))],
+    apiKey,
+    fetchFn,
+  )
+
+  const channelIds = [...new Set(videos.map((video) => video.snippet?.channelId).filter(Boolean))] as string[]
+  const channels = await fetchYouTubeDataApiItems<YouTubeChannelItem>(
+    'channels',
+    'snippet,statistics',
+    channelIds,
+    apiKey,
+    fetchFn,
+  )
+
+  return enrichSearchResults(results, videos, channels)
 }
 
 function collectFromInitialData(data: unknown, maxResults: number): SearchResultItem[] {
@@ -134,6 +228,49 @@ async function fetchWithHeaders(
   })
 }
 
+async function isEmbeddableVideo(videoId: string, fetchFn: typeof fetch): Promise<boolean> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 4500)
+
+  try {
+    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+    const res = await fetchWithHeaders(fetchFn, url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    })
+
+    if (res.ok) return true
+
+    // These statuses usually indicate unavailable/unembeddable content.
+    if ([401, 403, 404, 410].includes(res.status)) return false
+
+    // Fail open on transient statuses so temporary network issues do not hide results.
+    return true
+  } catch {
+    // Fail open on network/timeout errors.
+    return true
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+async function filterEmbeddableResults(
+  results: SearchResultItem[],
+  fetchFn: typeof fetch,
+): Promise<{ filtered: SearchResultItem[]; removed: number }> {
+  if (results.length === 0) return { filtered: [], removed: 0 }
+
+  const checks = await Promise.all(
+    results.map(async (item) => ({
+      item,
+      embeddable: await isEmbeddableVideo(item.videoId, fetchFn),
+    })),
+  )
+
+  const filtered = checks.filter((entry) => entry.embeddable).map((entry) => entry.item)
+  return { filtered, removed: results.length - filtered.length }
+}
+
 async function searchViaResultsUrl(
   query: string,
   maxResults: number,
@@ -196,7 +333,7 @@ async function searchViaInnertube(
 
 export async function searchYouTubeVideos(
   query: string,
-  maxResults = 12,
+  maxResults = 25,
 ): Promise<{ results: SearchResultItem[]; searchUrl: string; warning?: string }> {
   const trimmed = query.trim().slice(0, MAX_QUERY_LENGTH)
   const searchUrl = buildYouTubeSearchUrl(trimmed)
@@ -218,7 +355,54 @@ export async function searchYouTubeVideos(
     try {
       const results = await attempt.run()
       if (results.length > 0) {
-        return { results, searchUrl }
+        const warnings: string[] = []
+
+        const { filtered: embeddableResults, removed } = await filterEmbeddableResults(
+          results,
+          fetchFn,
+        )
+
+        if (removed > 0) {
+          warnings.push(`Filtered ${removed} non-embeddable video${removed > 1 ? 's' : ''}.`)
+        }
+
+        if (embeddableResults.length === 0) {
+          return {
+            results: [],
+            searchUrl,
+            warning:
+              warnings[0] ??
+              'No embeddable results available for this query. Try another search term.',
+          }
+        }
+
+        try {
+          const enrichedResults = await enrichResultsWithYouTubeDataApi(embeddableResults, fetchFn)
+          const finalResults = enrichedResults.filter((item) => item.embeddable !== false)
+
+          if (finalResults.length !== enrichedResults.length) {
+            const filteredByMetadata = enrichedResults.length - finalResults.length
+            warnings.push(
+              `Filtered ${filteredByMetadata} video${filteredByMetadata > 1 ? 's' : ''} blocked for external playback.`,
+            )
+          }
+
+          return {
+            results: finalResults,
+            searchUrl,
+            warning: warnings.length > 0 ? warnings.join(' ') : undefined,
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'unknown error'
+          warnings.push(
+            `Discovery metadata unavailable; using base YouTube results. ${message}`,
+          )
+          return {
+            results: embeddableResults,
+            searchUrl,
+            warning: warnings.join(' '),
+          }
+        }
       }
     } catch {
       // Try next method
