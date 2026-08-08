@@ -119,7 +119,13 @@ function App() {
   const [showFilteredChapters, setShowFilteredChapters] = useState(false)
   const [showSummary, setShowSummary] = useState(true)
   const [viewerOpen, setViewerOpen] = useState(false)
-  const [viewerPosition, setViewerPosition] = useState({ x: 32, y: 88 })
+  const [viewerPosition, setViewerPosition] = useState(() => {
+    if (typeof window === 'undefined') return { x: VIEWER_MARGIN, y: VIEWER_MARGIN }
+    return {
+      x: window.innerWidth - MID_VIEWER_WIDTH - VIEWER_MARGIN,
+      y: window.innerHeight - MID_VIEWER_HEIGHT - VIEWER_MARGIN,
+    }
+  })
   const [viewerSize, setViewerSize] = useState({ width: MID_VIEWER_WIDTH, height: MID_VIEWER_HEIGHT })
   const [viewerSizePreset, setViewerSizePreset] = useState<ViewerSizePreset>('M')
   const [captionsEnabled, setCaptionsEnabled] = useState(
@@ -296,14 +302,14 @@ function App() {
   const handleSelectSearchResult = useCallback(
     (videoId: string) => {
       const size = clampViewerSize(viewerSize)
-      const centeredTopPosition = clampViewerPosition(
+      const bottomRightPosition = clampViewerPosition(
         {
-          x: (window.innerWidth - size.width) / 2,
-          y: (window.innerHeight - size.height) / 2,
+          x: window.innerWidth - size.width - VIEWER_MARGIN,
+          y: window.innerHeight - size.height - VIEWER_MARGIN,
         },
         size,
       )
-      setViewerPosition(centeredTopPosition)
+      setViewerPosition(bottomRightPosition)
       runAnalysis(videoId)
     },
     [runAnalysis, viewerSize],

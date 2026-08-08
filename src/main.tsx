@@ -15,4 +15,8 @@ if ('serviceWorker' in navigator) {
       // PWA support is optional; ignore registration failures.
     })
   })
+  // Reload when a new SW version takes control so the new JS bundle loads.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload()
+  })
 }
