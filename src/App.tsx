@@ -216,7 +216,7 @@ function App() {
     setSearchError(null)
     setSearchSoftWarning(null)
     setSearchResults([])
-    setSearchSortType('recommended')
+    setSearchSortType('relevance')
 
     try {
       const { results, warning } = await searchVideos(input)
