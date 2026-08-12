@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChapterList } from './components/ChapterList'
 import { DiscoverySearchBar } from './components/DiscoverySearchBar'
+import { FilterMenu } from './components/FilterMenu'
 import { KeywordMasterList } from './components/KeywordMasterList'
 import { SearchBar } from './components/SearchBar'
 import { SearchResultsGrid } from './components/SearchResultsGrid'
+import { SelectedFiltersBar } from './components/SelectedFiltersBar'
 import { SummaryCard } from './components/SummaryCard'
 import { TranscriptPanel } from './components/TranscriptPanel'
 import { VideoPlayer } from './components/VideoPlayer'
@@ -19,6 +21,16 @@ import {
   removeSearchTerm,
   searchVideos,
 } from './lib/api'
+import type { FilterDimensionKey } from './lib/filterTaxonomy'
+import {
+  buildEffectiveQuery,
+  loadStoredFilters,
+  makeSelectedFilter,
+  persistFilters,
+  removeFilter,
+  toggleFilter,
+  type SelectedFilter,
+} from './lib/searchFilters'
 import { sortSearchResults, type SearchSortType } from './lib/searchSort'
 import type { AnalyzeResult, SearchResultItem } from './types'
 
@@ -153,6 +165,8 @@ function App() {
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([])
   const [searchSortType, setSearchSortType] = useState<SearchSortType>('recommended')
   const [defaultsLoaded, setDefaultsLoaded] = useState(false)
+  const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>(() => loadStoredFilters())
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const {
     keywords: masterKeywords,
@@ -219,7 +233,8 @@ function App() {
     setSearchSortType('relevance')
 
     try {
-      const { results, warning } = await searchVideos(input)
+      const effectiveQuery = buildEffectiveQuery(input, selectedFilters)
+      const { results, warning } = await searchVideos(effectiveQuery)
       setSearchResults(results)
       if (warning) setSearchSoftWarning(warning)
     } catch (err) {
@@ -227,6 +242,35 @@ function App() {
     } finally {
       setSearchLoading(false)
     }
+  }, [selectedFilters])
+
+  // Persist selected filters so they survive a reload.
+  useEffect(() => {
+    persistFilters(selectedFilters)
+  }, [selectedFilters])
+
+  // Filters are implicit: changing them silently re-runs whatever search is
+  // currently active (typed query, or the default feed) so results always
+  // reflect the applied filters until removed or cleared.
+  useEffect(() => {
+    if (!defaultsLoaded) return
+    handleVideoSearch(searchQuery || 'trending')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilters])
+
+  const handleToggleFilter = useCallback(
+    (dimension: FilterDimensionKey, label: string, icon: string, group?: string) => {
+      setSelectedFilters((prev) => toggleFilter(prev, makeSelectedFilter(dimension, label, icon, group)))
+    },
+    [],
+  )
+
+  const handleRemoveFilter = useCallback((filter: SelectedFilter) => {
+    setSelectedFilters((prev) => removeFilter(prev, filter))
+  }, [])
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedFilters([])
   }, [])
 
   const addSearchHistory = useCallback((query: string) => {
@@ -959,6 +1003,19 @@ function App() {
         </header>
 
         <div className="flex flex-col gap-1">
+          {/* Selected filters — implicitly applied to every search until removed/cleared */}
+          <SelectedFiltersBar
+            filters={selectedFilters}
+            onRemove={handleRemoveFilter}
+            onClearAll={handleClearFilters}
+            filtersOpen={filtersOpen}
+            onToggleFilters={() => setFiltersOpen((v) => !v)}
+          />
+
+          {filtersOpen && (
+            <FilterMenu selected={selectedFilters} onToggle={handleToggleFilter} />
+          )}
+
           {/* Discovery Search Bar (outside tabs) */}
           <DiscoverySearchBar
             query={searchQuery}
