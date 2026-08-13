@@ -36,6 +36,18 @@ export interface GroupedDimension {
 
 export type FilterDimension = FlatDimension | GroupedDimension
 
+// Class 1 – Class 12, generated rather than hand-typed to avoid drift.
+const GRADE_ITEMS: FilterItem[] = [
+  { label: 'Nursery', icon: 'N' },
+  { label: 'JrKG', icon: 'Jr' },
+  { label: 'SrKG', icon: 'Sr' },
+  ...Array.from({ length: 12 }, (_, i) => ({
+    label: `Class ${i + 1}`,
+    value: `Class ${i + 1}`,
+    icon: String(i + 1),
+  })),
+]
+
 export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
   language: {
     type: 'flat',
@@ -44,7 +56,6 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
     items: [
       { label: 'Hindi', icon: 'हिं' },
       { label: 'English', icon: 'EN' },
-      { label: 'Hinglish', icon: 'Hg' },
       { label: 'Tamil', icon: 'த' },
       { label: 'Telugu', icon: 'తె' },
       { label: 'Marathi', icon: 'म' },
@@ -52,6 +63,12 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       { label: 'Punjabi', icon: 'ਪੰ' },
       { label: 'Kannada', icon: 'ಕ' },
       { label: 'Malayalam', icon: 'മ' },
+      { label: 'Urdu', icon: 'اردو' },
+      { label: 'Odia', icon: 'ଓ' },
+      { label: 'Assamese', icon: 'অ' },
+      { label: 'Haryanvi', icon: 'हरि' },
+      { label: 'Bhojpuri', icon: 'भोज' },
+      { label: 'Sanskrit', icon: 'सं' },
     ],
   },
 
@@ -60,6 +77,9 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
     label: 'Category',
     icon: '🎬',
     groups: {
+      // Entertainment absorbed the old standalone Kids sub-category (all 10
+      // items, two relabelled) — see instructions: "move all items to
+      // Entertainment, delete sub-category Kids."
       entertainment: {
         label: 'Entertainment',
         icon: '🎬',
@@ -76,6 +96,17 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
           { label: 'Game show', icon: '🎯' },
           { label: 'Prank', icon: '😜' },
           { label: 'Vlog', icon: '📱' },
+          // — formerly the Kids sub-category —
+          { label: 'Cartoon', icon: '📺' },
+          { label: 'Animation', icon: '🎨' },
+          { label: 'Rhyme', icon: '🎶' },
+          { label: 'Poem', icon: '📜' },
+          { label: 'Kids song', icon: '🎵' },
+          { label: 'Bedtime story', icon: '🌙' },
+          { label: 'Fairy tale', icon: '🧚' },
+          { label: 'Moral story', icon: '📖' },
+          { label: 'Educational', icon: '🎓' },
+          { label: 'Toy / toy play', value: 'Toy', icon: '🧸' },
         ],
       },
       music: {
@@ -95,27 +126,12 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
           { label: 'Cover song', icon: '🔁' },
         ],
       },
-      kids: {
-        label: 'Kids',
-        icon: '🧸',
-        items: [
-          { label: 'Cartoon', icon: '📺' },
-          { label: 'Animation', icon: '🎨' },
-          { label: 'Nursery rhyme', icon: '🎶' },
-          { label: 'Poem', icon: '📜' },
-          { label: 'Kids song', icon: '🎵' },
-          { label: 'Bedtime story', icon: '🌙' },
-          { label: 'Fairy tale', icon: '🧚' },
-          { label: 'Moral story', icon: '📖' },
-          { label: 'Educational cartoon', icon: '🎓' },
-          { label: 'Toy / toy play', value: 'Toy', icon: '🧸' },
-        ],
-      },
+      // Education reworked: dropped School education / Language learning /
+      // Technology, added science subjects and a full grade-level list.
       education: {
         label: 'Education',
         icon: '🎓',
         items: [
-          { label: 'School education', icon: '🏫' },
           { label: 'Exam preparation', icon: '📝' },
           { label: 'Tutorial', icon: '🎥' },
           { label: 'How-to', icon: '🔧' },
@@ -123,30 +139,20 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
           { label: 'Course', icon: '📚' },
           { label: 'Science', icon: '🔬' },
           { label: 'Mathematics', icon: '➗' },
-          { label: 'Language learning', icon: '🗣️' },
+          { label: 'Physics', icon: '⚛️' },
+          { label: 'Chemistry', icon: '🧪' },
+          { label: 'Biology', icon: '🧬' },
+          { label: 'Zoology', icon: '🦓' },
+          { label: 'Botany', icon: '🌿' },
           { label: 'Coding', icon: '💻' },
-          { label: 'Technology', icon: '💻' },
           { label: 'History', icon: '🏛️' },
           { label: 'Geography', icon: '🌍' },
           { label: 'Competitive exams', icon: '🏅' },
+          ...GRADE_ITEMS,
         ],
       },
-      devotion: {
-        label: 'Devotion & Spirituality',
-        icon: '🕉️',
-        items: [
-          { label: 'Bhakti', icon: '🙏' },
-          { label: 'Bhajan', icon: '🎶' },
-          { label: 'Aarti', icon: '🪔' },
-          { label: 'Mantra', icon: '📿' },
-          { label: 'Katha', icon: '📖' },
-          { label: 'Pravachan', icon: '🎙️' },
-          { label: 'Meditation', icon: '🧘' },
-          { label: 'Yoga', icon: '🧘‍♀️' },
-          { label: 'Religious festival', icon: '🎊' },
-          { label: 'Temple / pilgrimage', value: 'Temple', icon: '🛕' },
-        ],
-      },
+      // Lifestyle absorbed Bhakti / Bhajan / Aarti / Yoga from the old
+      // Devotion & Spirituality sub-category, which is now deleted.
       lifestyle: {
         label: 'Lifestyle',
         icon: '💆',
@@ -162,6 +168,11 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
           { label: 'Parenting', icon: '🍼' },
           { label: 'Home & DIY', icon: '🔨' },
           { label: 'Pets', icon: '🐾' },
+          // — moved from the deleted Devotion & Spirituality sub-category —
+          { label: 'Bhakti', icon: '🙏' },
+          { label: 'Bhajan', icon: '🎶' },
+          { label: 'Aarti', icon: '🪔' },
+          { label: 'Yoga', icon: '🧘‍♀️' },
         ],
       },
       relationships: {
@@ -235,27 +246,40 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
     items: [
       { label: 'Kids', icon: '🧒' },
       { label: 'Teen', icon: '🧑‍🎓' },
-      { label: 'Adult', icon: '🧑' },
+      { label: 'Male', icon: '👨' },
+      { label: 'Female', icon: '👩' },
       { label: 'Family', icon: '👨‍👩‍👧' },
-      { label: 'Senior', icon: '👴' },
+      { label: 'Old Retro', value: 'Retro', icon: '📻' },
     ],
   },
 
+  // Mix of the biggest Indian TV networks and the biggest Indian YouTube
+  // channels, spanning news, general entertainment, kids, music, and
+  // creators — sourced from current subscriber/TRP rankings (Aug 2026).
   channel: {
     type: 'flat',
     label: 'Channel',
     icon: '📺',
     items: [
       { label: 'Doordarshan', icon: 'DD' },
-      { label: 'T-Series', icon: 'T' },
-      { label: 'Zee TV', icon: 'Z' },
       { label: 'StarPlus', icon: 'SP' },
+      { label: 'Zee TV', icon: 'Z' },
+      { label: 'Colors TV', icon: 'CO' },
+      { label: 'Sony TV', icon: 'STV' },
       { label: 'Sony SAB', icon: 'SAB' },
+      { label: 'Sun TV', icon: 'SUN' },
+      { label: 'Aaj Tak', icon: 'AT' },
+      { label: 'ABP News', icon: 'ABP' },
+      { label: 'Republic TV', icon: 'RT' },
+      { label: 'T-Series', icon: 'T' },
       { label: 'SET India', icon: 'SET' },
       { label: 'Zee Music Company', icon: 'ZM' },
-      { label: 'ChuChu TV', icon: 'CC' },
+      { label: 'Goldmines', icon: 'GM' },
       { label: 'Cocomelon', icon: 'Coco' },
-      { label: 'TED-Ed', icon: 'TED' },
+      { label: 'ChuChu TV', icon: 'CC' },
+      { label: 'Technical Guruji', icon: 'TeG' },
+      { label: 'CarryMinati', icon: 'CM' },
+      { label: 'Total Gaming', icon: 'ToG' },
     ],
   },
 }

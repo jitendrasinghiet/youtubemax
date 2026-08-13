@@ -83,7 +83,7 @@ export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
       )}
 
       {/* Item grid */}
-      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-6">
+      <div className="grid grid-cols-4 gap-1 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
         {items.map((item) => {
           const active = isFilterSelected(selected, activeDim, item.label)
           return (
@@ -98,16 +98,16 @@ export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
                   dim.type === 'grouped' ? activeGroup : undefined,
                 )
               }
-              className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-center transition ${
+              className={`flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center transition ${
                 active
                   ? 'border-red-500/60 bg-red-500/15 text-white'
                   : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
               }`}
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-sm">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/10 text-[10px] leading-none">
                 {item.icon}
               </span>
-              <span className="text-[11px] leading-tight">{item.label}</span>
+              <span className="line-clamp-2 text-[10px] leading-tight">{item.label}</span>
             </button>
           )
         })}

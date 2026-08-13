@@ -233,7 +233,9 @@ function App() {
     setSearchSortType('relevance')
 
     try {
-      const effectiveQuery = buildEffectiveQuery(input, selectedFilters)
+      // Filters are folded in implicitly; if there's neither typed text nor
+      // any filter selected, fall back to a default browse query.
+      const effectiveQuery = buildEffectiveQuery(input, selectedFilters) || 'trending'
       const { results, warning } = await searchVideos(effectiveQuery)
       setSearchResults(results)
       if (warning) setSearchSoftWarning(warning)
@@ -244,19 +246,16 @@ function App() {
     }
   }, [selectedFilters])
 
-  // Persist selected filters so they survive a reload.
+  // Persist selected filters (in selection order) so they survive a reload.
   useEffect(() => {
     persistFilters(selectedFilters)
   }, [selectedFilters])
 
-  // Filters are implicit: changing them silently re-runs whatever search is
-  // currently active (typed query, or the default feed) so results always
-  // reflect the applied filters until removed or cleared.
-  useEffect(() => {
-    if (!defaultsLoaded) return
-    handleVideoSearch(searchQuery || 'trending')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFilters])
+  // Filters are implicit — they're folded into the next search a user
+  // actually runs (typed submit, suggestion/history pick, or the Search
+  // button) — but toggling a filter chip does NOT fire a network call on its
+  // own. That keeps search requests tied to explicit user actions instead of
+  // firing on every checkbox click.
 
   const handleToggleFilter = useCallback(
     (dimension: FilterDimensionKey, label: string, icon: string, group?: string) => {
