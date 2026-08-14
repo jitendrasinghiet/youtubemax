@@ -1,4 +1,4 @@
-import { FILTER_TAXONOMY, filterItemValue, type FilterDimensionKey } from './filterTaxonomy'
+import { FILTER_TAXONOMY, filterItemValue, type FilterDimensionKey, type FilterItem } from './filterTaxonomy'
 
 export interface SelectedFilter {
   dimension: FilterDimensionKey
@@ -96,4 +96,123 @@ export function makeSelectedFilter(
     icon,
     value: item ? filterItemValue(item) : label,
   }
+}
+
+/**
+ * Evergreen items are hidden (not just disabled) once they conflict with a
+ * filter already selected in another dimension. "Agnostic" (no tag for that
+ * dimension) always passes; a populated tag list must overlap the current
+ * selection to remain eligible. Evergreen's own group is excluded from the
+ * category check so combos never hide each other.
+ */
+export function isEvergreenEligible(item: FilterItem, selected: SelectedFilter[]): boolean {
+  const implied = item.impliedFilters
+
+  const selLanguage = selected.filter((f) => f.dimension === 'language')
+  if (selLanguage.length > 0) {
+    const tags = implied?.language ?? []
+    if (tags.length > 0 && !tags.some((t) => selLanguage.some((s) => s.label === t))) return false
+  }
+
+  const selAudience = selected.filter((f) => f.dimension === 'audience')
+  if (selAudience.length > 0) {
+    const tags = implied?.audience ?? []
+    if (tags.length > 0 && !tags.some((t) => selAudience.some((s) => s.label === t))) return false
+  }
+
+  const selChannel = selected.filter((f) => f.dimension === 'channel')
+  if (selChannel.length > 0) {
+    const tags = implied?.channel ?? []
+    if (tags.length > 0 && !tags.some((t) => selChannel.some((s) => s.label === t))) return false
+  }
+
+  const selCategory = selected.filter((f) => f.dimension === 'category' && f.group !== 'evergreen')
+  if (selCategory.length > 0) {
+    const tags = implied?.category ?? []
+    if (
+      tags.length > 0 &&
+      !tags.some((t) => selCategory.some((s) => s.label === t.label && s.group === t.group))
+    )
+      return false
+  }
+
+  return true
+}
+
+function lookupFlatItem(dimension: 'language' | 'audience' | 'channel', label: string): FilterItem | undefined {
+  const dim = FILTER_TAXONOMY[dimension]
+  return dim.type === 'flat' ? dim.items.find((i) => i.label === label) : undefined
+}
+
+function lookupCategoryItem(group: string, label: string): FilterItem | undefined {
+  const cat = FILTER_TAXONOMY.category
+  return cat.type === 'grouped' ? cat.groups[group]?.items.find((i) => i.label === label) : undefined
+}
+
+/**
+ * Selecting an Evergreen item adds its own chip, then — for each dimension
+ * the user hasn't touched yet — adds ALL of that item's implied tags as
+ * independent, individually removable chips (fill-all, not fill-first).
+ * Toggling the combo back off only removes the combo's own chip; auto-filled
+ * chips are left in place (no cascade-delete), and vice versa.
+ */
+export function applyEvergreenSelection(current: SelectedFilter[], item: FilterItem): SelectedFilter[] {
+  const alreadySelected = current.some(
+    (f) => f.dimension === 'category' && f.group === 'evergreen' && f.label === item.label,
+  )
+  if (alreadySelected) {
+    return current.filter((f) => !(f.dimension === 'category' && f.group === 'evergreen' && f.label === item.label))
+  }
+
+  const next: SelectedFilter[] = [
+    ...current,
+    {
+      dimension: 'category',
+      group: 'evergreen',
+      label: item.label,
+      icon: item.icon,
+      value: filterItemValue(item),
+    },
+  ]
+
+  const implied = item.impliedFilters
+  if (!implied) return next
+
+  if (implied.language && !next.some((f) => f.dimension === 'language')) {
+    for (const label of implied.language) {
+      const src = lookupFlatItem('language', label)
+      if (src) next.push({ dimension: 'language', label: src.label, icon: src.icon, value: filterItemValue(src) })
+    }
+  }
+
+  if (implied.audience && !next.some((f) => f.dimension === 'audience')) {
+    for (const label of implied.audience) {
+      const src = lookupFlatItem('audience', label)
+      if (src) next.push({ dimension: 'audience', label: src.label, icon: src.icon, value: filterItemValue(src) })
+    }
+  }
+
+  if (implied.channel && !next.some((f) => f.dimension === 'channel')) {
+    for (const label of implied.channel) {
+      const src = lookupFlatItem('channel', label)
+      if (src) next.push({ dimension: 'channel', label: src.label, icon: src.icon, value: filterItemValue(src) })
+    }
+  }
+
+  if (implied.category && !next.some((f) => f.dimension === 'category' && f.group !== 'evergreen')) {
+    for (const ref of implied.category) {
+      const src = lookupCategoryItem(ref.group, ref.label)
+      if (src) {
+        next.push({
+          dimension: 'category',
+          group: ref.group,
+          label: src.label,
+          icon: src.icon,
+          value: filterItemValue(src),
+        })
+      }
+    }
+  }
+
+  return next
 }

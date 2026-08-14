@@ -12,6 +12,19 @@ export interface FilterItem {
   value?: string
   /** Emoji or short text glyph rendered as the badge. */
   icon: string
+  /**
+   * Evergreen-only: cross-dimension tags used for (a) hiding this item when
+   * it conflicts with filters already selected elsewhere, and (b) auto-
+   * filling those dimensions when the user selects this item and hasn't
+   * chosen anything there yet. `category` refs point at {group, label}
+   * pairs in other category groups (never at Evergreen itself).
+   */
+  impliedFilters?: {
+    language?: string[]
+    category?: { group: string; label: string }[]
+    audience?: string[]
+    channel?: string[]
+  }
 }
 
 export interface FilterGroup {
@@ -77,6 +90,294 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
     label: 'Category',
     icon: '🎬',
     groups: {
+      // One-tap popular-query shortcuts. Sourced from Google's India Year
+      // in Search 2025 and YouTube's 2025 India trends reports, evergreen
+      // items only (time-sensitive ones like IPL/Gemini/Saiyaara were
+      // deliberately excluded — see docs/FILTER_ROADMAP.md item 8). Each
+      // item's `impliedFilters` drives contextual show/hide + auto-fill;
+      // see isEvergreenEligible / applyEvergreenSelection in searchFilters.ts.
+      evergreen: {
+        label: 'Evergreen',
+        icon: '🌲',
+        items: [
+          {
+            label: 'Hanuman Chalisa',
+            value: 'Hanuman Chalisa',
+            icon: '📿',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'lifestyle', label: 'Bhakti' }],
+              audience: ['Old Retro', 'Family'],
+            },
+          },
+          {
+            label: 'Aarti Sangrah',
+            value: 'aarti sangrah',
+            icon: '🪔',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'lifestyle', label: 'Aarti' }],
+              audience: ['Old Retro', 'Family'],
+            },
+          },
+          {
+            label: 'Bhagavad Gita Explained',
+            value: 'Bhagavad Gita explained',
+            icon: '📖',
+            impliedFilters: {
+              language: ['Hindi', 'English'],
+              category: [{ group: 'lifestyle', label: 'Bhakti' }],
+              audience: ['Old Retro'],
+            },
+          },
+          {
+            label: 'Ramayan Full Episodes',
+            value: 'Ramayan full episodes',
+            icon: '🛕',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'entertainment', label: 'TV serial' }],
+              audience: ['Family', 'Old Retro'],
+              channel: ['Doordarshan'],
+            },
+          },
+          {
+            label: 'Mahabharat Full Episodes',
+            value: 'Mahabharat full episodes',
+            icon: '⚔️',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'entertainment', label: 'TV serial' }],
+              audience: ['Family', 'Old Retro'],
+              channel: ['Doordarshan'],
+            },
+          },
+          {
+            label: 'Morning Bhajans',
+            value: 'morning bhajan Hindi',
+            icon: '🌅',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'lifestyle', label: 'Bhajan' }],
+              audience: ['Old Retro', 'Family'],
+            },
+          },
+          {
+            label: 'Bollywood-style Latest Songs',
+            value: 'Bollywood latest songs',
+            icon: '🎬',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'music', label: 'Song' }],
+              channel: ['T-Series'],
+            },
+          },
+          {
+            label: 'Old Hindi Songs (90s)',
+            value: 'old Hindi songs 90s',
+            icon: '📻',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'music', label: 'Song' }],
+              audience: ['Old Retro'],
+            },
+          },
+          {
+            label: 'Punjabi Songs',
+            value: 'Punjabi songs latest',
+            icon: '🎶',
+            impliedFilters: {
+              language: ['Punjabi'],
+              category: [{ group: 'music', label: 'Song' }],
+            },
+          },
+          {
+            label: 'Romantic Hindi Songs',
+            value: 'romantic Hindi songs',
+            icon: '💕',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [
+                { group: 'music', label: 'Song' },
+                { group: 'relationships', label: 'Romance' },
+              ],
+              audience: ['Teen'],
+            },
+          },
+          {
+            label: 'Lofi / Study Music',
+            value: 'lofi study music',
+            icon: '🎧',
+            impliedFilters: {
+              audience: ['Teen'],
+            },
+          },
+          {
+            label: 'Nursery Rhymes',
+            value: 'nursery rhymes English',
+            icon: '🎵',
+            impliedFilters: {
+              language: ['English'],
+              category: [{ group: 'entertainment', label: 'Rhyme' }],
+              audience: ['Kids'],
+              channel: ['ChuChu TV', 'Cocomelon'],
+            },
+          },
+          {
+            label: 'ABC Song for Kids',
+            value: 'ABC song for kids',
+            icon: '🔤',
+            impliedFilters: {
+              language: ['English'],
+              category: [{ group: 'entertainment', label: 'Rhyme' }],
+              audience: ['Kids'],
+              channel: ['ChuChu TV', 'Cocomelon'],
+            },
+          },
+          {
+            label: 'Class 10 Maths',
+            value: 'Class 10 maths',
+            icon: '➗',
+            impliedFilters: {
+              language: ['English', 'Hindi'],
+              category: [
+                { group: 'education', label: 'Mathematics' },
+                { group: 'education', label: 'Class 10' },
+              ],
+              audience: ['Teen'],
+            },
+          },
+          {
+            label: 'NCERT Science',
+            value: 'NCERT science tutorial',
+            icon: '🔬',
+            impliedFilters: {
+              language: ['English', 'Hindi'],
+              category: [{ group: 'education', label: 'Science' }],
+              audience: ['Teen'],
+            },
+          },
+          {
+            label: 'Spoken English Practice',
+            value: 'spoken English practice',
+            icon: '🗣️',
+            impliedFilters: {
+              language: ['English'],
+              audience: ['Teen'],
+            },
+          },
+          {
+            label: 'BGMI Gameplay',
+            value: 'BGMI gameplay',
+            icon: '🎮',
+            impliedFilters: {
+              category: [{ group: 'technology', label: 'Gaming' }],
+              audience: ['Teen', 'Male'],
+            },
+          },
+          {
+            label: 'Free Fire Highlights',
+            value: 'Free Fire highlights',
+            icon: '🔥',
+            impliedFilters: {
+              category: [{ group: 'technology', label: 'Gaming' }],
+              audience: ['Teen', 'Male'],
+              channel: ['Total Gaming'],
+            },
+          },
+          {
+            label: 'Minecraft Survival',
+            value: 'Minecraft survival',
+            icon: '⛏️',
+            impliedFilters: {
+              category: [{ group: 'technology', label: 'Gaming' }],
+              audience: ['Kids', 'Teen'],
+            },
+          },
+          {
+            label: 'Total Gaming Live',
+            value: 'Total Gaming live',
+            icon: '🔴',
+            impliedFilters: {
+              category: [{ group: 'technology', label: 'Gaming' }],
+              audience: ['Teen', 'Male'],
+              channel: ['Total Gaming'],
+            },
+          },
+          {
+            label: 'Income Tax Filing',
+            value: 'income tax filing how to',
+            icon: '🧾',
+            impliedFilters: {
+              language: ['English', 'Hindi'],
+              category: [{ group: 'news', label: 'Business' }],
+            },
+          },
+          {
+            label: 'SIP Explained',
+            value: 'SIP mutual fund explained',
+            icon: '💰',
+            impliedFilters: {
+              language: ['English', 'Hindi'],
+              category: [{ group: 'news', label: 'Finance' }],
+            },
+          },
+          {
+            label: 'Smartphone Review',
+            value: 'latest smartphone review',
+            icon: '📱',
+            impliedFilters: {
+              category: [
+                { group: 'technology', label: 'Smartphone' },
+                { group: 'technology', label: 'Reviews' },
+              ],
+              channel: ['Technical Guruji'],
+            },
+          },
+          {
+            label: 'Home Workout',
+            value: 'home workout beginner',
+            icon: '🏋️',
+            impliedFilters: {
+              category: [{ group: 'lifestyle', label: 'Fitness' }],
+              audience: ['Male', 'Female'],
+            },
+          },
+          {
+            label: 'Quick Indian Recipes',
+            value: 'quick Indian recipes',
+            icon: '🍲',
+            impliedFilters: {
+              category: [
+                { group: 'lifestyle', label: 'Cooking' },
+                { group: 'lifestyle', label: 'Recipe' },
+              ],
+              audience: ['Female'],
+            },
+          },
+          {
+            label: 'CarryMinati Comedy',
+            value: 'CarryMinati comedy',
+            icon: '😂',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'entertainment', label: 'Comedy' }],
+              audience: ['Teen'],
+              channel: ['CarryMinati'],
+            },
+          },
+          {
+            label: 'Technical Guruji Review',
+            value: 'Technical Guruji review',
+            icon: '⭐',
+            impliedFilters: {
+              language: ['Hindi'],
+              category: [{ group: 'technology', label: 'Reviews' }],
+              channel: ['Technical Guruji'],
+            },
+          },
+        ],
+      },
       // Entertainment absorbed the old standalone Kids sub-category (all 10
       // items, two relabelled) — see instructions: "move all items to
       // Entertainment, delete sub-category Kids."

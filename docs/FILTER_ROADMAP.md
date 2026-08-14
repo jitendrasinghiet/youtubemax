@@ -1,0 +1,242 @@
+# Filter/Discovery Roadmap — Delta Requirements
+
+Last updated: 2026-08-13
+
+## Purpose
+
+This document tracks the gap between the current filter/search implementation
+(`src/lib/filterTaxonomy.ts`, `src/lib/searchFilters.ts`,
+`src/components/FilterMenu.tsx`, `src/components/SelectedFiltersBar.tsx`) and
+two design references that were reviewed but are **not** wholesale specs to
+implement — they were mined for concrete, scoped deltas. See "Source
+material" below.
+
+Each item states: what's missing, why it matters, effort, and status.
+Status values: `DONE`, `IN PROGRESS`, `PLANNED`, `DEFERRED`, `NEEDS DECISION`.
+
+## Source material
+
+1. A full "YouTubeMax" product/BYOK/architecture spec (codename-only,
+   `[PRODUCT_BRAND]` pending) — supplied for context, not an implementation
+   order. Covers managed vs. local-BYOK API modes, quota management,
+   free/trial/paid entitlement, and a 14-priority engineering roadmap.
+2. A topic/intent taxonomy proposal (Audience → Category → Topic → Intent →
+   Format → Language funnel, global Intent Library, dynamic
+   "Trending Now" layer, pre-built popular query combos).
+
+Neither source's structure was adopted wholesale. The taxonomy already in
+this repo (Language / Category-grouped / Audience / Channel, flat search
+queries with no server-side normalization) is the baseline; items below are
+the specific deltas worth pulling out of those two documents.
+
+---
+
+## Action items, in priority order
+
+### 1. Evergreen combo group with contextual eligibility + auto-fill — `DONE`
+
+**Gap:** No one-tap shortcuts existed for genuinely popular, evergreen
+(non-time-sensitive) searches. Building them as plain hardcoded query
+strings would have bypassed the taxonomy entirely and not responded to
+filters already selected.
+
+**What shipped:** A new `evergreen` group inside the `category` dimension
+(rendered first in the group rail). Each item carries an optional
+`impliedFilters` map (language / category-item / audience / channel tags)
+in addition to its own literal search `value`. Two behaviors:
+
+- **Downstream filtering:** with any filter already selected in a
+  dimension, an Evergreen item is hidden unless it's tag-agnostic in that
+  dimension or its tags overlap the current selection. Implemented in
+  `isEvergreenEligible()` in `searchFilters.ts`.
+- **Upstream auto-fill:** selecting an Evergreen item adds its own chip
+  *and*, for any dimension the user hasn't touched yet, all of that item's
+  implied tags as normal, independently removable chips. Implemented in
+  `applyEvergreenSelection()`. No cascade-delete — removing an auto-filled
+  chip afterward does not remove the Evergreen combo chip, and vice versa.
+- Audience acts as a **hard** eligibility filter inside Evergreen
+  specifically (deliberate asymmetry — see decision log below). Everywhere
+  else in the app, Audience remains informational only (it's folded into
+  the query text like any other filter, not used to hide taxonomy items).
+
+27 combos seeded, sourced from Google's *India Year in Search 2025* and
+YouTube's *2025 India trends* reports, evergreen-only (time-sensitive ones
+like IPL/Gemini/Saiyaara were deliberately excluded — see item 8).
+
+**Decision log (confirmed):**
+- Fill-all, not fill-first, when an item has multiple tags in one empty
+  dimension (e.g. Ramayan → Audience: Family *and* Old Retro both get
+  added).
+- No cascade-delete between a combo chip and the chips it auto-filled.
+- Music was **not** merged into Entertainment. This was proposed once, a
+  concern was raised (Music/Entertainment are different user intents —
+  watch vs. listen — and both reference docs kept them separate), and the
+  follow-up instruction only reconfirmed the Evergreen-group ask without
+  re-raising the merge. Treated as not-approved. **Flag this explicitly if
+  the merge was actually still wanted** — it was left as an open question,
+  not a "no."
+
+---
+
+### 2. Audience-first dimension order — `DONE`
+
+**Gap:** The dimension rail was `Language → Category → Audience → Channel`,
+four equal-weight tabs. Every funnel-style reference (both source docs)
+leads with "who," not "what."
+
+**What shipped:** Reordered to `Audience → Category → Language → Channel` in
+`FilterMenu.tsx`. Zero data-model changes — this is presentation order
+only. Category still opens by default (most-used tab); only the tab
+*order* changed, not which tab is active on open.
+
+---
+
+### 3. Global Intent vocabulary as a 5th filter dimension — `PLANNED`
+
+**Gap:** Neither doc's "Intent" concept (Latest, Trending, Learn, How-to,
+Best, Live, Explained, …) exists anywhere in the current taxonomy. Intent
+words currently only appear indirectly, baked into a few Evergreen combo
+query strings (e.g. "explained," "how to").
+
+**Why it matters:** Both reference docs call this out as a major
+discovery differentiator, and it's the natural next filter dimension —
+same flat-list pattern as Language/Audience, no restructuring required.
+
+**Effort:** Medium. ~12–15 item flat dimension, same shape as `audience`.
+Main design question: does Intent get folded into `buildEffectiveQuery`
+like every other dimension (simple), or does it change *which* Evergreen
+combos are eligible too (more powerful, more scope)? Recommend starting
+with the simple version.
+
+---
+
+### 4. Cap visible items per step (progressive disclosure) — `PLANNED`
+
+**Gap:** Groups like Education (31 items) and the new Entertainment
+(22 items) render their full list at once. Both reference docs argue for
+"8–20 relevant choices per step," not everything.
+
+**Effort:** Medium. Needs a per-group "top N" curation pass (which items
+are default-visible vs. behind a "show all" toggle) — a content decision
+as much as a code change. Group rail + item grid already narrow the view
+somewhat (this is a secondary, not urgent, refinement).
+
+---
+
+### 5. Audience: hard filter vs. soft ranking signal (outside Evergreen) — `NEEDS DECISION`
+
+**Gap:** Both reference docs argue Audience/gender should be a soft
+ranking/personalization signal generally ("someone selecting 'female'
+should still see cricket"), not a hard filter. Today, outside of
+Evergreen, Audience behaves exactly like every other dimension — its
+value is literally appended to the search query text, which is a *soft*
+behavior already (it doesn't hide anything, just biases the keyword
+string). Evergreen is the one place Audience now hard-filters (item 1).
+
+**Status:** No further change made. Current behavior (soft, text-append,
+everywhere except Evergreen) is consistent with the docs' recommendation.
+Documenting this as intentionally resolved, not left open — but flagging
+in case "soft" should mean something more sophisticated than string
+concatenation (e.g. actual result re-ranking), which would require
+backend changes this repo doesn't have.
+
+---
+
+### 6. Format as a filter dimension — `NOT PLANNED` (explicit conflict)
+
+**Gap:** The topic/intent proposal reintroduces Format (Shorts, Live,
+Playlist, …) as a core funnel stage. This directly conflicts with an
+earlier, explicit product decision in this same project to **remove**
+Format ("YouTube search doesn't expose shorts/live/playlists as a real
+filter").
+
+**Resolution:** Not silently re-added. If Format is wanted back, it needs
+an explicit new instruction that acknowledges overriding the earlier
+removal — this doc will not resolve the conflict on its own.
+
+---
+
+### 7. Topic → Subtopic tree under each Category group — `DEFERRED`
+
+**Gap:** The topic/intent doc's real structural ambition is a Topic/
+Subtopic layer under each Category (e.g. Music → Bollywood → Romantic
+Songs), replacing today's flat per-group item lists.
+
+**Why deferred:** Large data-modeling project — every one of the ~150+
+current leaf items would move down a level and need real subtopics
+authored. Only worth starting once items 1–4 have proven the
+lower-effort funnel/shortcut changes are actually used.
+
+---
+
+### 8. "Trending Now" dynamic panel (time-sensitive shortcuts) — `DEFERRED`
+
+**Gap:** The 12 time-sensitive combos identified during research (IPL
+Highlights, Gemini AI, Saiyaara Songs, Maha Kumbh, Asia Cup, etc.) were
+deliberately **excluded** from the Evergreen group (item 1) because they
+go stale. They need their own refreshed data source, not a hardcoded
+array that silently rots.
+
+**Why deferred:** No refresh mechanism exists in this repo (no CMS, no
+scheduled job, no admin panel). This is explicitly a lower-priority
+"Advanced Discovery" item in the architecture spec (source doc 1,
+Priority 13), not a taxonomy item — don't build until there's a real
+answer for *where the current list comes from* (manual curation cadence?
+API-driven? admin-editable?).
+
+---
+
+### 9. Dynamic entity layer (e.g. current IPL teams, live AI tool names) — `DEFERRED`
+
+**Gap:** A layer beneath Intent that would auto-refresh specific entities
+(this season's IPL teams, this month's trending AI tools) without
+touching the evergreen taxonomy above it.
+
+**Why deferred:** Same blocker as item 8, one level more complex (needs
+per-entity refresh, not just a swappable list). Correctly the
+architecture doc's lowest-priority discovery item (source doc 1,
+section 45, explicitly listed under "Defer"). Nothing to build until
+items 3, 4, and 8 exist.
+
+---
+
+## Explicitly out of scope right now (from source doc 1)
+
+Carried over from the architecture-context review, unchanged — these are
+BYOK/managed-API/quota/billing concerns, not filter-taxonomy concerns, and
+none of this session's work touched them:
+
+- Local BYOK mode (user-supplied YouTube API key, client-only, no backend
+  transmission)
+- Managed API quota manager / rate limiter
+- Query deduplication (`query_id` normalization + eligible-recent-result
+  check before calling `/api/search`) — flagged previously as a real gap
+  versus source doc 1 section 17; still unaddressed. Note this is a
+  **different** "reduce API calls" mechanism than the filter-toggle
+  no-auto-search change already shipped earlier in this project — that
+  fix stops *filter changes* from firing searches; true dedup would also
+  stop *repeated identical searches* (e.g. two users, or one user
+  re-running the same query) from double-hitting the API.
+- Free/trial/paid entitlement system
+- Admin dashboard, taxonomy versioning, feature flags
+
+These remain accurately scoped as future architecture work per the
+existing `50. REQUIRED AGENT BEHAVIOR` review checklist in source doc 1 —
+each would need its own BUILD/DEFER/REVIEW pass before implementation.
+
+---
+
+## Summary table
+
+| # | Item | Effort | Status |
+|---|---|---|---|
+| 1 | Evergreen combos + contextual eligibility/auto-fill | Medium | **DONE** |
+| 2 | Audience-first dimension order | Trivial | **DONE** |
+| 3 | Global Intent dimension | Medium | Planned |
+| 4 | Cap visible items per step | Medium | Planned |
+| 5 | Audience hard vs. soft filter | — | Resolved (soft, as-is) |
+| 6 | Format dimension | — | Not planned (conflicts with prior removal) |
+| 7 | Topic/Subtopic tree | Large | Deferred |
+| 8 | Trending Now dynamic panel | Large | Deferred |
+| 9 | Dynamic entity layer | Large | Deferred |
+| — | BYOK / quota / query dedup / entitlements | Large | Out of scope this session |

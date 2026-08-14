@@ -3,24 +3,33 @@ import {
   FILTER_TAXONOMY,
   dimensionItemCount,
   type FilterDimensionKey,
+  type FilterItem,
 } from '../lib/filterTaxonomy'
-import { isFilterSelected, type SelectedFilter } from '../lib/searchFilters'
+import { isEvergreenEligible, isFilterSelected, type SelectedFilter } from '../lib/searchFilters'
 
 interface FilterMenuProps {
   selected: SelectedFilter[]
   onToggle: (dimension: FilterDimensionKey, label: string, icon: string, group?: string) => void
+  onSelectEvergreen: (item: FilterItem) => void
 }
 
-const DIMENSION_ORDER: FilterDimensionKey[] = ['language', 'category', 'audience', 'channel']
+// Audience leads the rail — "who" before "what," matching the funnel model
+// (docs/FILTER_ROADMAP.md item 2). Category still opens by default below;
+// this only changes tab order, not which tab is active on open.
+const DIMENSION_ORDER: FilterDimensionKey[] = ['audience', 'category', 'language', 'channel']
 
-export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
+export function FilterMenu({ selected, onToggle, onSelectEvergreen }: FilterMenuProps) {
   const [activeDim, setActiveDim] = useState<FilterDimensionKey>('category')
-  const [activeGroup, setActiveGroup] = useState<string>('entertainment')
+  // Evergreen renders first in the Category group rail (see filterTaxonomy.ts)
+  // so it's the first thing shown when someone opens Category — the whole
+  // point of one-tap combos is being seen before the manual browse groups.
+  const [activeGroup, setActiveGroup] = useState<string>('evergreen')
 
   const dim = FILTER_TAXONOMY[activeDim]
+  const isEvergreen = dim.type === 'grouped' && activeGroup === 'evergreen'
 
-  const items =
-    dim.type === 'grouped' ? dim.groups[activeGroup]?.items ?? [] : dim.items
+  const rawItems = dim.type === 'grouped' ? dim.groups[activeGroup]?.items ?? [] : dim.items
+  const items = isEvergreen ? rawItems.filter((item) => isEvergreenEligible(item, selected)) : rawItems
 
   return (
     <section className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
@@ -60,6 +69,11 @@ export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
         <div className="mb-3 flex gap-1.5 overflow-x-auto border-b border-white/10 pb-2">
           {Object.entries(dim.groups).map(([gKey, g]) => {
             const isActive = gKey === activeGroup
+            const isEvergreenTab = gKey === 'evergreen'
+            const count =
+              isEvergreenTab && selected.length > 0
+                ? g.items.filter((item) => isEvergreenEligible(item, selected)).length
+                : g.items.length
             return (
               <button
                 key={gKey}
@@ -67,7 +81,9 @@ export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
                 onClick={() => setActiveGroup(gKey)}
                 className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
                   isActive
-                    ? 'border-amber-500/50 bg-amber-500/10 text-amber-100'
+                    ? isEvergreenTab
+                      ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100'
+                      : 'border-amber-500/50 bg-amber-500/10 text-amber-100'
                     : 'border-white/10 bg-black/20 text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -75,10 +91,16 @@ export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
                   {g.icon}
                 </span>
                 {g.label}
-                <span className="text-[10px] text-zinc-600">{g.items.length}</span>
+                <span className="text-[10px] text-zinc-600">{count}</span>
               </button>
             )
           })}
+        </div>
+      )}
+
+      {isEvergreen && items.length === 0 && (
+        <div className="rounded-md border border-dashed border-white/10 bg-black/20 px-3 py-4 text-center text-[11px] text-zinc-500">
+          No evergreen combos match your current filters — remove one to see more.
         </div>
       )}
 
@@ -90,17 +112,19 @@ export function FilterMenu({ selected, onToggle }: FilterMenuProps) {
             <button
               key={item.label}
               type="button"
-              onClick={() =>
-                onToggle(
-                  activeDim,
-                  item.label,
-                  item.icon,
-                  dim.type === 'grouped' ? activeGroup : undefined,
-                )
-              }
+              onClick={() => {
+                if (isEvergreen) {
+                  onSelectEvergreen(item)
+                } else {
+                  onToggle(activeDim, item.label, item.icon, dim.type === 'grouped' ? activeGroup : undefined)
+                }
+              }}
+              title={isEvergreen ? item.value ?? item.label : undefined}
               className={`flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center transition ${
                 active
-                  ? 'border-red-500/60 bg-red-500/15 text-white'
+                  ? isEvergreen
+                    ? 'border-emerald-500/60 bg-emerald-500/15 text-white'
+                    : 'border-red-500/60 bg-red-500/15 text-white'
                   : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
               }`}
             >

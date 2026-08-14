@@ -21,8 +21,9 @@ import {
   removeSearchTerm,
   searchVideos,
 } from './lib/api'
-import type { FilterDimensionKey } from './lib/filterTaxonomy'
+import type { FilterDimensionKey, FilterItem } from './lib/filterTaxonomy'
 import {
+  applyEvergreenSelection,
   buildEffectiveQuery,
   loadStoredFilters,
   makeSelectedFilter,
@@ -263,6 +264,14 @@ function App() {
     },
     [],
   )
+
+  // Evergreen combos add their own chip plus, for any dimension the user
+  // hasn't touched yet, all of that combo's implied filter tags — see
+  // applyEvergreenSelection in lib/searchFilters.ts and
+  // docs/FILTER_ROADMAP.md item 1.
+  const handleSelectEvergreen = useCallback((item: FilterItem) => {
+    setSelectedFilters((prev) => applyEvergreenSelection(prev, item))
+  }, [])
 
   const handleRemoveFilter = useCallback((filter: SelectedFilter) => {
     setSelectedFilters((prev) => removeFilter(prev, filter))
@@ -1012,7 +1021,7 @@ function App() {
           />
 
           {filtersOpen && (
-            <FilterMenu selected={selectedFilters} onToggle={handleToggleFilter} />
+            <FilterMenu selected={selectedFilters} onToggle={handleToggleFilter} onSelectEvergreen={handleSelectEvergreen} />
           )}
 
           {/* Discovery Search Bar (outside tabs) */}

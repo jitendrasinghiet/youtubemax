@@ -1,6 +1,28 @@
 # Documentation Sync Summary
 
-Last updated: 2026-08-05
+Last updated: 2026-08-13
+
+## Latest pass (2026-08-13)
+
+Added `docs/FILTER_ROADMAP.md`, tracking the delta between the filter/
+discovery system and two external design references reviewed in this
+session. Implemented the top two action items from it:
+
+1. Evergreen combo group (`src/lib/filterTaxonomy.ts`,
+   `src/lib/searchFilters.ts`, `src/components/FilterMenu.tsx`) — 27
+   one-tap popular-query shortcuts with contextual eligibility (hidden
+   when they conflict with filters already selected) and auto-fill
+   (selecting a combo fills any untouched dimension with its implied
+   tags; no cascade-delete on removal).
+2. Audience-first dimension rail order in `FilterMenu.tsx`.
+
+See `docs/FILTER_ROADMAP.md` for the full prioritized backlog, including
+what was deliberately deferred (Intent dimension, per-step item capping,
+Topic/Subtopic tree, Trending Now dynamic panel, dynamic entity layer) and
+what's explicitly out of scope for now (BYOK, quota manager, query
+deduplication, entitlements).
+
+## Previous pass (2026-08-05)
 
 ## Scope
 
