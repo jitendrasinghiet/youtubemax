@@ -110,16 +110,65 @@ with the simple version.
 
 ---
 
-### 4. Cap visible items per step (progressive disclosure) — `PLANNED`
+### 4. Cap visible items per step (progressive disclosure) — `DONE` (superseded by single-view accordion)
 
-**Gap:** Groups like Education (31 items) and the new Entertainment
-(22 items) render their full list at once. Both reference docs argue for
-"8–20 relevant choices per step," not everything.
+**Original gap:** Groups like Education (31 items) and Entertainment (22
+items) rendered their full item grid at once.
 
-**Effort:** Medium. Needs a per-group "top N" curation pass (which items
-are default-visible vs. behind a "show all" toggle) — a content decision
-as much as a code change. Group rail + item grid already narrow the view
-somewhat (this is a secondary, not urgent, refinement).
+**What actually shipped instead:** Rather than curating a "top N with
+show-all," Category was restructured entirely — every group (including
+Evergreen) now renders as an expand/collapse accordion section in one
+scrollable view (`FilterMenu.tsx`), replacing the old switchable-tabs
+group rail. Within each expanded section, items are split into small
+editorial clusters (`FilterGroup.clusters` in `filterTaxonomy.ts`) so a
+15–23 item group reads as 2–4 labeled cards instead of one flat grid.
+Cluster coverage (every item in exactly one cluster) is checked by
+`validateClusterCoverage()`. This addresses the "8–20 choices per step"
+concern from the source docs without needing a popularity/relevance data
+source — see the ranking note below.
+
+**Ranking/relevance note:** A numeric popularity score was explicitly
+**not** built. Assigning real popularity numbers to 150+ items would need
+either sourced data (same rigor as the 27 Evergreen combos, which were
+grounded in actual trend reports) or an honestly-labeled editorial
+opinion — neither was worth doing for a first pass. Clustering by plain
+semantic similarity was judged the right minimal version: it improves
+scanability without asserting a measurement that doesn't exist. Revisit
+with real usage data if/when available.
+
+### 4b. Full-taxonomy contextual eligibility (all groups, not just Evergreen) — `DEFERRED`
+
+Evergreen's `isEvergreenEligible`/`impliedFilters` mechanism could
+generalize to every group (Sports/Music/Education/etc. items hiding when
+they conflict with selected filters), but that requires authoring
+cross-dimension tags for ~150 items across 9 groups, not new logic — the
+engine already exists. Explicitly not started; revisit after the
+single-view accordion (item 4) has been used enough to know if it's
+actually needed.
+
+### 4c. Era and Grade sliders — `DONE`
+
+Two new slider-type controls, single-select per group (`toggleSliderFilter`
+in `searchFilters.ts` — picking a new value replaces the previous one in
+that group rather than adding alongside it):
+- **Era**: new standalone Category group, 1940s→2020s in decade steps
+  (`FilterGroup.sliderItems`, no plain `items`). Explicitly **excluded**
+  from Evergreen's contextual eligibility in both directions — an Era
+  selection never hides/shows an Evergreen combo, and no combo carries an
+  Era tag. This was a deliberate scope decision, not an oversight: Era is
+  not a filter-criteria dimension.
+- **Grade**: Education's existing Nursery→Class 12 items moved out of the
+  item grid into `sliderItems`. Unlike Era, Grade *does* still participate
+  in normal category eligibility/backfill — no scope change there, only
+  the UI presentation moved from a 15-chip grid to a slider.
+
+### 4d. Evergreen combo updates — `DONE`
+
+- "Old Hindi Songs (90s)" renamed to "Hindi Songs" (dropped the era-coupled
+  framing now that Era is its own independent slider).
+- Added "English Songs" and "Upcoming Movie Trailers" (the latter
+  introduced a new "Trailer" item to the Entertainment group's item grid,
+  since no existing item covered it).
 
 ---
 
@@ -233,7 +282,10 @@ each would need its own BUILD/DEFER/REVIEW pass before implementation.
 | 1 | Evergreen combos + contextual eligibility/auto-fill | Medium | **DONE** |
 | 2 | Audience-first dimension order | Trivial | **DONE** |
 | 3 | Global Intent dimension | Medium | Planned |
-| 4 | Cap visible items per step | Medium | Planned |
+| 4 | Single-view accordion + editorial clustering (supersedes item cap) | Medium | **DONE** |
+| 4b | Full-taxonomy contextual eligibility (beyond Evergreen) | Large | Deferred |
+| 4c | Era slider (excluded from eligibility) + Grade slider | Medium | **DONE** |
+| 4d | Evergreen renames/additions (Hindi Songs, English Songs, Upcoming Movie Trailers) | Trivial | **DONE** |
 | 5 | Audience hard vs. soft filter | — | Resolved (soft, as-is) |
 | 6 | Format dimension | — | Not planned (conflicts with prior removal) |
 | 7 | Topic/Subtopic tree | Large | Deferred |

@@ -17,7 +17,8 @@ export interface FilterItem {
    * it conflicts with filters already selected elsewhere, and (b) auto-
    * filling those dimensions when the user selects this item and hasn't
    * chosen anything there yet. `category` refs point at {group, label}
-   * pairs in other category groups (never at Evergreen itself).
+   * pairs in other category groups (never at Evergreen itself, and never
+   * at a slider-only group — see FilterGroup.sliderItems).
    */
   impliedFilters?: {
     language?: string[]
@@ -27,10 +28,36 @@ export interface FilterItem {
   }
 }
 
+/**
+ * Minimal, editorial (not computed/scored) grouping of a group's `items`
+ * into small contextual cards, so a 15–23 item flat grid reads as a few
+ * related clusters instead of one wall of chips. `itemLabels` must cover
+ * every label in the group's `items` array exactly once — checked at
+ * runtime in dev via validateClusterCoverage (see bottom of file).
+ */
+export interface FilterCluster {
+  label: string
+  itemLabels: string[]
+}
+
 export interface FilterGroup {
   label: string
   icon: string
+  /** Rendered as clustered chip cards. Empty for slider-only groups (Era). */
   items: FilterItem[]
+  /** Editorial clustering of `items` into cards. Omit for slider-only groups. */
+  clusters?: FilterCluster[]
+  /**
+   * Rendered as a single horizontal slider instead of a chip grid —
+   * ordinal/continuous pickers (year, grade level) rather than a set of
+   * independent tags. Slider selections are single-select (choosing a new
+   * value replaces the previous one in that group) and are deliberately
+   * EXCLUDED from Evergreen's contextual eligibility matching — see
+   * isEvergreenEligible in searchFilters.ts. A group may have both `items`
+   * (clustered grid) and `sliderItems` (e.g. Education: subjects as chips,
+   * grade level as a slider) — Era has only sliderItems.
+   */
+  sliderItems?: FilterItem[]
 }
 
 export interface FlatDimension {
@@ -50,7 +77,8 @@ export interface GroupedDimension {
 export type FilterDimension = FlatDimension | GroupedDimension
 
 // Class 1 – Class 12, generated rather than hand-typed to avoid drift.
-const GRADE_ITEMS: FilterItem[] = [
+// Rendered as a slider within the Education group, not the item grid.
+const GRADE_SLIDER_ITEMS: FilterItem[] = [
   { label: 'Nursery', icon: 'N' },
   { label: 'JrKG', icon: 'Jr' },
   { label: 'SrKG', icon: 'Sr' },
@@ -60,6 +88,15 @@ const GRADE_ITEMS: FilterItem[] = [
     icon: String(i + 1),
   })),
 ]
+
+// 1940s – 2020s. A standalone Category group rendered as a slider. Not a
+// filter-criteria dimension — excluded from Evergreen eligibility matching
+// in both directions (an Era selection never hides/shows an Evergreen
+// combo, and no Evergreen combo carries an Era tag).
+const ERA_SLIDER_ITEMS: FilterItem[] = Array.from({ length: 9 }, (_, i) => {
+  const decade = 1940 + i * 10
+  return { label: `${decade}s`, value: `${decade}s`, icon: `'${String(decade).slice(2)}` }
+})
 
 export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
   language: {
@@ -99,6 +136,56 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       evergreen: {
         label: 'Evergreen',
         icon: '🌲',
+        clusters: [
+          {
+            label: 'Devotional & Family',
+            itemLabels: [
+              'Hanuman Chalisa',
+              'Aarti Sangrah',
+              'Bhagavad Gita Explained',
+              'Ramayan Full Episodes',
+              'Mahabharat Full Episodes',
+              'Morning Bhajans',
+            ],
+          },
+          {
+            label: 'Music',
+            itemLabels: [
+              'Bollywood-style Latest Songs',
+              'Hindi Songs',
+              'English Songs',
+              'Punjabi Songs',
+              'Romantic Hindi Songs',
+              'Lofi / Study Music',
+            ],
+          },
+          {
+            label: 'Kids & Learning',
+            itemLabels: [
+              'Nursery Rhymes',
+              'ABC Song for Kids',
+              'Class 10 Maths',
+              'NCERT Science',
+              'Spoken English Practice',
+            ],
+          },
+          {
+            label: 'Gaming',
+            itemLabels: ['BGMI Gameplay', 'Free Fire Highlights', 'Minecraft Survival', 'Total Gaming Live'],
+          },
+          {
+            label: 'Money & Tech',
+            itemLabels: ['Income Tax Filing', 'SIP Explained', 'Smartphone Review', 'Technical Guruji Review'],
+          },
+          {
+            label: 'Lifestyle',
+            itemLabels: ['Home Workout', 'Quick Indian Recipes'],
+          },
+          {
+            label: 'Entertainment',
+            itemLabels: ['CarryMinati Comedy', 'Upcoming Movie Trailers'],
+          },
+        ],
         items: [
           {
             label: 'Hanuman Chalisa',
@@ -173,13 +260,25 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
             },
           },
           {
-            label: 'Old Hindi Songs (90s)',
-            value: 'old Hindi songs 90s',
+            // Renamed from "Old Hindi Songs (90s)" — no longer era-specific
+            // (era now lives in its own Category group, see `era` below),
+            // so the old "Old Retro"-only audience tag was dropped too;
+            // this is now a general Hindi-songs shortcut, not a nostalgia one.
+            label: 'Hindi Songs',
+            value: 'Hindi songs',
             icon: '📻',
             impliedFilters: {
               language: ['Hindi'],
               category: [{ group: 'music', label: 'Song' }],
-              audience: ['Old Retro'],
+            },
+          },
+          {
+            label: 'English Songs',
+            value: 'English songs',
+            icon: '🎵',
+            impliedFilters: {
+              language: ['English'],
+              category: [{ group: 'music', label: 'Song' }],
             },
           },
           {
@@ -242,7 +341,6 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
               language: ['English', 'Hindi'],
               category: [
                 { group: 'education', label: 'Mathematics' },
-                { group: 'education', label: 'Class 10' },
               ],
               audience: ['Teen'],
             },
@@ -376,6 +474,14 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
               channel: ['Technical Guruji'],
             },
           },
+          {
+            label: 'Upcoming Movie Trailers',
+            value: 'upcoming movie trailers',
+            icon: '📽️',
+            impliedFilters: {
+              category: [{ group: 'entertainment', label: 'Trailer' }],
+            },
+          },
         ],
       },
       // Entertainment absorbed the old standalone Kids sub-category (all 10
@@ -384,11 +490,37 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       entertainment: {
         label: 'Entertainment',
         icon: '🎬',
+        clusters: [
+          {
+            label: 'Watch',
+            itemLabels: ['TV serial', 'Web series', 'Movie', 'Short film', 'Trailer', 'Drama', 'Reality show'],
+          },
+          {
+            label: 'Talk & Reaction',
+            itemLabels: ['Talk show', 'Interview', 'Game show', 'Prank', 'Vlog', 'Comedy'],
+          },
+          {
+            label: 'Kids',
+            itemLabels: [
+              'Cartoon',
+              'Animation',
+              'Rhyme',
+              'Poem',
+              'Kids song',
+              'Bedtime story',
+              'Fairy tale',
+              'Moral story',
+              'Educational',
+              'Toy / toy play',
+            ],
+          },
+        ],
         items: [
           { label: 'TV serial', icon: '📺' },
           { label: 'Web series', icon: '🎥' },
           { label: 'Movie', icon: '🎬' },
           { label: 'Short film', icon: '🎞️' },
+          { label: 'Trailer', icon: '📽️' },
           { label: 'Comedy', icon: '😂' },
           { label: 'Drama', icon: '🎭' },
           { label: 'Reality show', icon: '📸' },
@@ -413,6 +545,16 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       music: {
         label: 'Music',
         icon: '🎵',
+        clusters: [
+          {
+            label: 'Listen',
+            itemLabels: ['Song', 'Music video', 'Lyrics / lyric video', 'Live music', 'Cover song', 'Remix', 'Karaoke'],
+          },
+          {
+            label: 'Genres',
+            itemLabels: ['Classical music', 'Devotional music', 'Folk music', 'Ghazal'],
+          },
+        ],
         items: [
           { label: 'Song', icon: '🎵' },
           { label: 'Music video', icon: '🎥' },
@@ -428,10 +570,33 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
         ],
       },
       // Education reworked: dropped School education / Language learning /
-      // Technology, added science subjects and a full grade-level list.
+      // Technology, added science subjects. Grade levels (Nursery–Class 12)
+      // moved out of the item grid into `sliderItems` — see
+      // GRADE_SLIDER_ITEMS above.
       education: {
         label: 'Education',
         icon: '🎓',
+        clusters: [
+          {
+            label: 'Study Skills',
+            itemLabels: ['Exam preparation', 'Tutorial', 'How-to', 'Lecture', 'Course', 'Competitive exams'],
+          },
+          {
+            label: 'Subjects',
+            itemLabels: [
+              'Science',
+              'Mathematics',
+              'Physics',
+              'Chemistry',
+              'Biology',
+              'Zoology',
+              'Botany',
+              'Coding',
+              'History',
+              'Geography',
+            ],
+          },
+        ],
         items: [
           { label: 'Exam preparation', icon: '📝' },
           { label: 'Tutorial', icon: '🎥' },
@@ -449,14 +614,32 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
           { label: 'History', icon: '🏛️' },
           { label: 'Geography', icon: '🌍' },
           { label: 'Competitive exams', icon: '🏅' },
-          ...GRADE_ITEMS,
         ],
+        sliderItems: GRADE_SLIDER_ITEMS,
       },
       // Lifestyle absorbed Bhakti / Bhajan / Aarti / Yoga from the old
       // Devotion & Spirituality sub-category, which is now deleted.
       lifestyle: {
         label: 'Lifestyle',
         icon: '💆',
+        clusters: [
+          {
+            label: 'Home & Wellness',
+            itemLabels: ['Cooking', 'Recipe', 'Food', 'Fitness', 'Health & wellness', 'Home & DIY', 'Pets'],
+          },
+          {
+            label: 'Style & Travel',
+            itemLabels: ['Beauty', 'Fashion', 'Travel'],
+          },
+          {
+            label: 'Family',
+            itemLabels: ['Parenting'],
+          },
+          {
+            label: 'Devotion',
+            itemLabels: ['Bhakti', 'Bhajan', 'Aarti', 'Yoga'],
+          },
+        ],
         items: [
           { label: 'Cooking', icon: '🍳' },
           { label: 'Recipe', icon: '📋' },
@@ -479,6 +662,16 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       relationships: {
         label: 'Relationships & Social',
         icon: '❤️',
+        clusters: [
+          {
+            label: 'Romance & Family',
+            itemLabels: ['Love', 'Romance', 'Marriage', 'Relationships', 'Family', 'Friendship'],
+          },
+          {
+            label: 'Mindset',
+            itemLabels: ['Motivation', 'Inspirational', 'Emotional / sad'],
+          },
+        ],
         items: [
           { label: 'Love', icon: '❤️' },
           { label: 'Romance', icon: '💕' },
@@ -494,6 +687,24 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       news: {
         label: 'News & Information',
         icon: '📰',
+        clusters: [
+          {
+            label: 'Current Events',
+            itemLabels: ['News', 'Current affairs', 'Politics', 'Crime'],
+          },
+          {
+            label: 'Business & Finance',
+            itemLabels: ['Business', 'Finance'],
+          },
+          {
+            label: 'Entertainment & Sports News',
+            itemLabels: ['Sports news', 'Entertainment news'],
+          },
+          {
+            label: 'Long-form',
+            itemLabels: ['Documentary'],
+          },
+        ],
         items: [
           { label: 'News', icon: '📰' },
           { label: 'Current affairs', icon: '🗞️' },
@@ -509,6 +720,20 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       sports: {
         label: 'Sports',
         icon: '🏆',
+        clusters: [
+          {
+            label: 'Team Sports',
+            itemLabels: ['Cricket', 'Football', 'Kabaddi'],
+          },
+          {
+            label: 'Individual Sports',
+            itemLabels: ['Tennis', 'Badminton', 'Wrestling'],
+          },
+          {
+            label: 'Coverage',
+            itemLabels: ['Highlights', 'Live match', 'Analysis', 'Training'],
+          },
+        ],
         items: [
           { label: 'Cricket', icon: '🏏' },
           { label: 'Football', icon: '⚽' },
@@ -525,6 +750,20 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       technology: {
         label: 'Technology',
         icon: '💻',
+        clusters: [
+          {
+            label: 'Devices',
+            itemLabels: ['Smartphone', 'Gadget', 'Laptop / PC'],
+          },
+          {
+            label: 'Software & AI',
+            itemLabels: ['Apps', 'AI', 'Software', 'Gaming'],
+          },
+          {
+            label: 'Buying Guide',
+            itemLabels: ['Reviews', 'Unboxing'],
+          },
+        ],
         items: [
           { label: 'Smartphone', icon: '📱' },
           { label: 'Gadget', icon: '⌚' },
@@ -536,6 +775,16 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
           { label: 'Reviews', icon: '⭐' },
           { label: 'Unboxing', icon: '📦' },
         ],
+      },
+      // Standalone slider group — NOT a filter-criteria dimension. An Era
+      // selection never narrows Evergreen (or, once built, any other
+      // group's) eligibility, and no other item carries an Era tag. See
+      // isEvergreenEligible in searchFilters.ts.
+      era: {
+        label: 'Era',
+        icon: '🕰️',
+        items: [],
+        sliderItems: ERA_SLIDER_ITEMS,
       },
     },
   },
@@ -587,7 +836,7 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
 
 export function dimensionItemCount(dim: FilterDimension): number {
   if (dim.type === 'grouped') {
-    return Object.values(dim.groups).reduce((n, g) => n + g.items.length, 0)
+    return Object.values(dim.groups).reduce((n, g) => n + g.items.length + (g.sliderItems?.length ?? 0), 0)
   }
   return dim.items.length
 }
@@ -595,4 +844,23 @@ export function dimensionItemCount(dim: FilterDimension): number {
 /** The literal text appended to the search query for this item. */
 export function filterItemValue(item: FilterItem): string {
   return item.value ?? item.label
+}
+
+/**
+ * Dev-time safety net: every `items` label in a group with `clusters`
+ * should appear in exactly one cluster, so nothing silently disappears
+ * from the UI and nothing is double-counted. Not called in production
+ * paths — intended for a test or a one-off console check.
+ */
+export function validateClusterCoverage(group: FilterGroup): { missing: string[]; duplicated: string[] } {
+  const counts = new Map<string, number>()
+  for (const cluster of group.clusters ?? []) {
+    for (const label of cluster.itemLabels) {
+      counts.set(label, (counts.get(label) ?? 0) + 1)
+    }
+  }
+  const itemLabels = new Set(group.items.map((i) => i.label))
+  const missing = group.items.map((i) => i.label).filter((label) => !counts.has(label))
+  const duplicated = [...counts.entries()].filter(([label, n]) => n > 1 && itemLabels.has(label)).map(([label]) => label)
+  return { missing, duplicated }
 }

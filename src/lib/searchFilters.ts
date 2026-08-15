@@ -34,6 +34,25 @@ export function removeFilter(
   return current.filter((f) => filterKey(f) !== filterKey(target))
 }
 
+/**
+ * For slider groups (Era, Grade): unlike normal chip toggling, a slider
+ * represents one point on a scale, so selecting a new value replaces
+ * whatever was previously selected in that same group rather than adding
+ * alongside it. Selecting the currently-selected value again clears it.
+ */
+export function toggleSliderFilter(current: SelectedFilter[], next: SelectedFilter): SelectedFilter[] {
+  const alreadySelected = current.some(
+    (f) => f.dimension === next.dimension && f.group === next.group && f.label === next.label,
+  )
+  const withoutGroup = current.filter((f) => !(f.dimension === next.dimension && f.group === next.group))
+  return alreadySelected ? withoutGroup : [...withoutGroup, next]
+}
+
+/** Build a SelectedFilter from a slider group's FilterItem (Era, Grade). */
+export function makeSliderFilter(dimension: FilterDimensionKey, group: string, item: FilterItem): SelectedFilter {
+  return { dimension, group, label: item.label, icon: item.icon, value: filterItemValue(item) }
+}
+
 export function isFilterSelected(
   current: SelectedFilter[],
   dimension: FilterDimensionKey,
@@ -126,7 +145,13 @@ export function isEvergreenEligible(item: FilterItem, selected: SelectedFilter[]
     if (tags.length > 0 && !tags.some((t) => selChannel.some((s) => s.label === t))) return false
   }
 
-  const selCategory = selected.filter((f) => f.dimension === 'category' && f.group !== 'evergreen')
+  // 'evergreen' excluded so combos never hide each other; 'era' excluded
+  // because Era is deliberately not a filter-criteria dimension — an Era
+  // selection should never narrow which Evergreen combos are eligible (see
+  // FilterGroup.sliderItems doc comment in filterTaxonomy.ts).
+  const selCategory = selected.filter(
+    (f) => f.dimension === 'category' && f.group !== 'evergreen' && f.group !== 'era',
+  )
   if (selCategory.length > 0) {
     const tags = implied?.category ?? []
     if (

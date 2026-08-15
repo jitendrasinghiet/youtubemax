@@ -1,6 +1,57 @@
 # Documentation Sync Summary
 
-Last updated: 2026-08-13
+Last updated: 2026-08-15
+
+## Latest pass (2026-08-15)
+
+Implemented current-branch quick wins from `docs/FILTER_ROADMAP.md`
+(items 4, 4c, 4d — item 4b explicitly deferred):
+
+- **Single-view Category accordion**: replaced the switchable group-tab
+  rail with every group (Evergreen included) rendered as an expand/collapse
+  section in one scrollable view. Items within each group are split into
+  small editorial clusters (`FilterGroup.clusters`) rather than one flat
+  grid — a `validateClusterCoverage()` dev-time check confirms every item
+  in a clustered group is covered exactly once.
+- **Era slider**: new standalone Category group, 1940s–2020s in decade
+  steps, single-select, deliberately excluded from Evergreen's contextual
+  eligibility in both directions (verified by test).
+- **Grade slider**: Education's Nursery–Class 12 items moved from the item
+  grid into a slider — still participates in normal category eligibility,
+  only the UI presentation changed.
+- **Evergreen updates**: "Old Hindi Songs (90s)" → "Hindi Songs"; added
+  "English Songs" and "Upcoming Movie Trailers" (the latter added a new
+  "Trailer" item to Entertainment's grid).
+
+All changes verified with a throwaway vitest file (17 assertions —
+cluster coverage per group, era/grade slider behavior, evergreen
+renames) before being deleted; the pre-existing 46-test suite and
+production build remain green throughout.
+
+## Previous pass (2026-08-14)
+
+## Latest pass (2026-08-14)
+
+Added `docs/MASTER_PROMPT_FORK.md` — a complete handoff brief for forking
+this repo's current state into a new, separate product (a generic
+taxonomy-driven web-content navigation app, not YouTube-specific). Captures:
+- The new product's Laws/Rules/Design Choices/UX flows as originally
+  proposed, with two conflicting design-choice phrases resolved (in-app
+  content framing; local content-replay caching) rather than just deleted.
+- A full session decision log (search-provider ToS research: Google
+  Custom Search JSON API and Brave Search API approved, direct
+  scraping and Bing excluded — Bing Search API was fully retired
+  August 11, 2025; BYOK applicability mapped per provider; confirmation
+  that a Node.js collation backend is required, not optional, for this
+  product).
+- Explicit non-goals and a required "Architecture Delta + Action Plan"
+  first-response format for whoever picks up implementation next.
+
+This document does not authorize any implementation on its own — per its
+own section 0, design/code work on the fork waits for an explicit future
+request.
+
+## Previous pass (2026-08-13)
 
 ## Latest pass (2026-08-13)
 

@@ -27,9 +27,11 @@ import {
   buildEffectiveQuery,
   loadStoredFilters,
   makeSelectedFilter,
+  makeSliderFilter,
   persistFilters,
   removeFilter,
   toggleFilter,
+  toggleSliderFilter,
   type SelectedFilter,
 } from './lib/searchFilters'
 import { sortSearchResults, type SearchSortType } from './lib/searchSort'
@@ -271,6 +273,13 @@ function App() {
   // docs/FILTER_ROADMAP.md item 1.
   const handleSelectEvergreen = useCallback((item: FilterItem) => {
     setSelectedFilters((prev) => applyEvergreenSelection(prev, item))
+  }, [])
+
+  // Era / Grade sliders are single-select per group — picking a new value
+  // replaces the previous one in that same group instead of adding
+  // alongside it. See toggleSliderFilter in lib/searchFilters.ts.
+  const handleToggleSlider = useCallback((dimension: FilterDimensionKey, group: string, item: FilterItem) => {
+    setSelectedFilters((prev) => toggleSliderFilter(prev, makeSliderFilter(dimension, group, item)))
   }, [])
 
   const handleRemoveFilter = useCallback((filter: SelectedFilter) => {
@@ -1021,7 +1030,12 @@ function App() {
           />
 
           {filtersOpen && (
-            <FilterMenu selected={selectedFilters} onToggle={handleToggleFilter} onSelectEvergreen={handleSelectEvergreen} />
+            <FilterMenu
+              selected={selectedFilters}
+              onToggle={handleToggleFilter}
+              onSelectEvergreen={handleSelectEvergreen}
+              onToggleSlider={handleToggleSlider}
+            />
           )}
 
           {/* Discovery Search Bar (outside tabs) */}
