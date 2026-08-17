@@ -33,6 +33,13 @@ export interface SearchResultItem {
   safetyScore?: number
 }
 
+export interface PlaylistSearchResultItem {
+  playlistId: string
+  title: string
+  channel: string
+  thumbnail: string | null
+}
+
 export interface TranscriptSegment {
   start: number
   duration: number

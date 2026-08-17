@@ -43,6 +43,23 @@ export async function searchVideos(query: string, maxResults = 25): Promise<Sear
   return data as SearchResponse
 }
 
+export async function fetchPlaylistResults(
+  playlistId: string,
+  maxResults = 25,
+): Promise<{ results: SearchResultItem[]; warning?: string }> {
+  const params = new URLSearchParams({ playlistId, maxResults: String(maxResults) })
+  const res = await fetch(`/api/playlist?${params}`)
+  const data = await res.json()
+
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : 'Failed to load playlist',
+    )
+  }
+
+  return data as { results: SearchResultItem[]; warning?: string }
+}
+
 export async function fetchSearchSuggestions(query: string, maxResults = 8): Promise<string[]> {
   const trimmed = query.trim()
   if (!trimmed) return []

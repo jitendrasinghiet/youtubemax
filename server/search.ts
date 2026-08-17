@@ -4,7 +4,7 @@ import {
   type YouTubeChannelItem,
   type YouTubeVideoItem,
 } from './search-metadata.js'
-import type { SearchResultItem } from './types.js'
+import type { PlaylistSearchResultItem, SearchResultItem } from './types.js'
 
 export function buildYouTubeSearchUrl(query: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`
@@ -271,11 +271,7 @@ async function filterEmbeddableResults(
   return { filtered, removed: results.length - filtered.length }
 }
 
-async function searchViaResultsUrl(
-  query: string,
-  maxResults: number,
-  fetchFn: typeof fetch,
-): Promise<SearchResultItem[]> {
+async function fetchResultsPageInitialData(query: string, fetchFn: typeof fetch): Promise<unknown> {
   const url = buildYouTubeSearchUrl(query)
   const res = await fetchWithHeaders(fetchFn, url, {
     headers: { Accept: 'text/html,application/xhtml+xml' },
@@ -291,14 +287,19 @@ async function searchViaResultsUrl(
     throw new Error('Could not parse YouTube search page')
   }
 
-  return collectFromInitialData(initialData, maxResults)
+  return initialData
 }
 
-async function searchViaInnertube(
+async function searchViaResultsUrl(
   query: string,
   maxResults: number,
   fetchFn: typeof fetch,
 ): Promise<SearchResultItem[]> {
+  const initialData = await fetchResultsPageInitialData(query, fetchFn)
+  return collectFromInitialData(initialData, maxResults)
+}
+
+async function fetchInnertubeSearchData(query: string, fetchFn: typeof fetch): Promise<unknown> {
   const res = await fetchWithHeaders(
     fetchFn,
     'https://www.youtube.com/youtubei/v1/search?prettyPrint=false',
@@ -327,8 +328,133 @@ async function searchViaInnertube(
     throw new Error(`YouTube search API returned ${res.status}`)
   }
 
-  const data = await res.json()
+  return res.json()
+}
+
+async function searchViaInnertube(
+  query: string,
+  maxResults: number,
+  fetchFn: typeof fetch,
+): Promise<SearchResultItem[]> {
+  const data = await fetchInnertubeSearchData(query, fetchFn)
   return collectFromInitialData(data, maxResults)
+}
+
+function extractPlaylistThumbnail(renderer: Record<string, unknown>): string | null {
+  // playlistRenderer's thumbnail shape (community-documented, not an
+  // official schema — YouTube's internal JSON isn't published, so this is
+  // a best-effort match against the commonly-observed structure, not
+  // something verifiable without a live request):
+  //   thumbnails: [ { thumbnails: [ { url, width, height }, ... ] } ]
+  const outer = renderer.thumbnails
+  if (Array.isArray(outer) && outer.length > 0) {
+    const inner = (outer[0] as { thumbnails?: { url?: string; width?: number }[] } | undefined)?.thumbnails
+    if (Array.isArray(inner) && inner.length > 0) {
+      const best = [...inner].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]
+      if (best?.url) return best.url
+    }
+  }
+  return null
+}
+
+function playlistRendererToResult(renderer: Record<string, unknown>): PlaylistSearchResultItem | null {
+  const playlistId = typeof renderer.playlistId === 'string' ? renderer.playlistId : null
+  if (!playlistId) return null
+
+  const title = extractText(renderer.title)
+  if (!title) return null
+
+  return {
+    playlistId,
+    title,
+    channel: extractText(renderer.shortBylineText) || extractText(renderer.longBylineText) || 'Unknown channel',
+    thumbnail: extractPlaylistThumbnail(renderer),
+  }
+}
+
+function collectPlaylistsFromInitialData(data: unknown, maxResults: number): PlaylistSearchResultItem[] {
+  const results: PlaylistSearchResultItem[] = []
+  const seen = new Set<string>()
+
+  const tryAdd = (renderer: Record<string, unknown>) => {
+    if (results.length >= maxResults) return
+    const item = playlistRendererToResult(renderer)
+    if (!item || seen.has(item.playlistId)) return
+    seen.add(item.playlistId)
+    results.push(item)
+  }
+
+  const walk = (node: unknown) => {
+    if (!node || results.length >= maxResults) return
+
+    if (Array.isArray(node)) {
+      for (const child of node) walk(child)
+      return
+    }
+
+    if (typeof node !== 'object') return
+    const record = node as Record<string, unknown>
+
+    if (record.playlistRenderer && typeof record.playlistRenderer === 'object') {
+      tryAdd(record.playlistRenderer as Record<string, unknown>)
+    }
+
+    if (record.richItemRenderer && typeof record.richItemRenderer === 'object') {
+      const content = (record.richItemRenderer as Record<string, unknown>).content
+      walk(content)
+    }
+
+    for (const value of Object.values(record)) {
+      if (value && typeof value === 'object') walk(value)
+    }
+  }
+
+  walk(data)
+  return results
+}
+
+/**
+ * Scrapes YouTube's search results for playlists — the exact gap named at
+ * the very start of this project's playlist work (`server/search.ts` never
+ * parsed `playlistRenderer`, only `videoRenderer`). Deliberately mirrors
+ * `searchYouTubeVideos`'s two-attempt structure (results page, then
+ * innertube) and its fetch mechanism — same direct-fetch, no `proxy.ts`
+ * coupling, same as video search already does. No embeddable-check or
+ * Data API enrichment here; playlists don't need either.
+ *
+ * NOTE: `playlistRenderer`'s JSON shape isn't an official, documented
+ * schema (same caveat as everything else this file parses) — this was
+ * written against commonly-observed structure and has not been verified
+ * against a live request in this environment (no network access here).
+ * Treat this as a first pass to validate against real results, not as
+ * proven-correct the way the video parsing already is (that one has been
+ * running in production).
+ */
+export async function searchYouTubePlaylistsScraped(
+  query: string,
+  maxResults = 10,
+): Promise<PlaylistSearchResultItem[]> {
+  const trimmed = query.trim().slice(0, MAX_QUERY_LENGTH)
+  if (!trimmed) return []
+
+  const limit = Math.min(Math.max(maxResults, 1), 25)
+  const fetchFn = fetch
+
+  const attempts: Array<() => Promise<PlaylistSearchResultItem[]>> = [
+    () => fetchResultsPageInitialData(trimmed, fetchFn).then((data) => collectPlaylistsFromInitialData(data, limit)),
+    () => fetchInnertubeSearchData(trimmed, fetchFn).then((data) => collectPlaylistsFromInitialData(data, limit)),
+  ]
+
+  for (const attempt of attempts) {
+    try {
+      const results = await attempt()
+      if (results.length > 0) return results
+    } catch {
+      // Try next method.
+    }
+  }
+
+  return []
 }
 
 export async function searchYouTubeVideos(

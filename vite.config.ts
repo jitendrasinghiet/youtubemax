@@ -1,10 +1,35 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
 import { searchYouTubeVideos } from './server/search.ts'
 import { fetchYouTubeSuggestions } from './server/suggest.ts'
+import { fetchPlaylistItems, PlaylistFetchError } from './server/youtubePlaylists.ts'
+import { searchPlaylists, PlaylistSearchError } from './server/youtubePlaylistSearch.ts'
+import {
+  listLocalPlaylists,
+  readLocalPlaylist,
+  createLocalPlaylist,
+  updateLocalPlaylistMeta,
+  addLocalPlaylistItem,
+  removeLocalPlaylistItem,
+  reorderLocalPlaylistItems,
+  deleteLocalPlaylist,
+  LocalPlaylistError,
+} from './server/localPlaylistStore.ts'
 import { parseVideoId } from './server/youtube.ts'
+import type { IncomingMessage } from 'node:http'
+
+// Only the new dev-only local-playlist write routes need a JSON body —
+// every other route in this middleware is GET/query-string only.
+async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) {
+    chunks.push(chunk as Buffer)
+  }
+  const raw = Buffer.concat(chunks).toString('utf-8')
+  return raw ? (JSON.parse(raw) as T) : ({} as T)
+}
 
 function apiPlugin(): Plugin {
   return {
@@ -63,6 +88,187 @@ function apiPlugin(): Plugin {
           return
         }
 
+        // --- Dev-only local playlist manager (never in production: this
+        // middleware only exists in configureServer, and Vercel functions
+        // only come from api/*.ts, not this file). ---
+
+        if (url.pathname === '/api/dev/playlist-search') {
+          const q = url.searchParams.get('q')?.trim() ?? ''
+          if (!q) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: 'A search query (q) is required' }))
+            return
+          }
+          try {
+            const results = await searchPlaylists(q)
+            res.statusCode = 200
+            res.end(JSON.stringify({ results }))
+          } catch (err) {
+            if (err instanceof PlaylistSearchError) {
+              res.statusCode = err.statusCode
+              res.end(JSON.stringify({ error: err.message }))
+              return
+            }
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Playlist search failed' }))
+          }
+          return
+        }
+
+        if (url.pathname === '/api/dev/playlists' && req.method === 'GET') {
+          const playlists = await listLocalPlaylists()
+          res.statusCode = 200
+          res.end(JSON.stringify({ playlists }))
+          return
+        }
+
+        if (url.pathname === '/api/dev/playlists' && req.method === 'POST') {
+          try {
+            const body = await readJsonBody<{
+              label: string
+              icon?: string
+              channel?: string
+              loadedVia: 'id' | 'url' | 'search' | 'manual'
+              sourcePlaylistId?: string | null
+              seedResults?: Parameters<typeof createLocalPlaylist>[0]['seedResults']
+            }>(req)
+            if (!body.label?.trim()) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'label is required' }))
+              return
+            }
+            const playlist = await createLocalPlaylist(body)
+            res.statusCode = 201
+            res.end(JSON.stringify({ playlist }))
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to create playlist' }))
+          }
+          return
+        }
+
+        const localPlaylistMatch = url.pathname.match(/^\/api\/dev\/playlists\/([^/]+)$/)
+        if (localPlaylistMatch && req.method === 'GET') {
+          try {
+            const playlist = await readLocalPlaylist(localPlaylistMatch[1])
+            res.statusCode = 200
+            res.end(JSON.stringify({ playlist }))
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to read playlist' }))
+          }
+          return
+        }
+
+        if (localPlaylistMatch && req.method === 'PUT') {
+          try {
+            const body = await readJsonBody<{ label?: string; icon?: string; channel?: string }>(req)
+            const playlist = await updateLocalPlaylistMeta(localPlaylistMatch[1], body)
+            res.statusCode = 200
+            res.end(JSON.stringify({ playlist }))
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to update playlist' }))
+          }
+          return
+        }
+
+        if (localPlaylistMatch && req.method === 'DELETE') {
+          try {
+            await deleteLocalPlaylist(localPlaylistMatch[1])
+            res.statusCode = 204
+            res.end()
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to delete playlist' }))
+          }
+          return
+        }
+
+        const localPlaylistItemsMatch = url.pathname.match(/^\/api\/dev\/playlists\/([^/]+)\/items$/)
+        if (localPlaylistItemsMatch && req.method === 'POST') {
+          try {
+            const body = await readJsonBody<{
+              videoId: string
+              title: string
+              channel: string
+              thumbnail: string
+            }>(req)
+            if (!body.videoId) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'videoId is required' }))
+              return
+            }
+            const playlist = await addLocalPlaylistItem(localPlaylistItemsMatch[1], body)
+            res.statusCode = 200
+            res.end(JSON.stringify({ playlist }))
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to add item' }))
+          }
+          return
+        }
+
+        if (localPlaylistItemsMatch && req.method === 'PUT') {
+          try {
+            const body = await readJsonBody<{ orderedVideoIds: string[] }>(req)
+            const playlist = await reorderLocalPlaylistItems(localPlaylistItemsMatch[1], body.orderedVideoIds ?? [])
+            res.statusCode = 200
+            res.end(JSON.stringify({ playlist }))
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to reorder items' }))
+          }
+          return
+        }
+
+        const localPlaylistItemMatch = url.pathname.match(/^\/api\/dev\/playlists\/([^/]+)\/items\/([^/]+)$/)
+        if (localPlaylistItemMatch && req.method === 'DELETE') {
+          try {
+            const playlist = await removeLocalPlaylistItem(localPlaylistItemMatch[1], localPlaylistItemMatch[2])
+            res.statusCode = 200
+            res.end(JSON.stringify({ playlist }))
+          } catch (err) {
+            const statusCode = err instanceof LocalPlaylistError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to remove item' }))
+          }
+          return
+        }
+
+        if (url.pathname === '/api/playlist') {
+          const playlistId = url.searchParams.get('playlistId')?.trim() ?? ''
+          if (!playlistId || !/^[a-zA-Z0-9_-]{2,64}$/.test(playlistId)) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: 'A valid playlistId is required' }))
+            return
+          }
+
+          const maxResults = Number(url.searchParams.get('maxResults') ?? 25)
+
+          try {
+            const results = await fetchPlaylistItems(playlistId, maxResults)
+            res.statusCode = 200
+            res.end(JSON.stringify({ results }))
+          } catch (err) {
+            if (err instanceof PlaylistFetchError) {
+              res.statusCode = err.statusCode
+              res.end(JSON.stringify({ error: err.message }))
+              return
+            }
+            const message = err instanceof Error ? err.message : 'Failed to load playlist'
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: message }))
+          }
+          return
+        }
+
         if (url.pathname === '/api/suggest') {
           const query = url.searchParams.get('q')?.trim() ?? ''
           const maxResults = Number(url.searchParams.get('maxResults') ?? 8)
@@ -91,12 +297,28 @@ function apiPlugin(): Plugin {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), apiPlugin()],
-  server: {
-    host: '0.0.0.0',
-  },
-  preview: {
-    host: '0.0.0.0',
-  },
+export default defineConfig(({ mode }) => {
+  // BUG FIX: server/*.ts (this file's dev middleware, and by extension
+  // every route above) reads process.env.YOUTUBE_DATA_API_KEY directly.
+  // Vite's automatic .env handling only ever populates import.meta.env for
+  // client code — it does NOT touch process.env for Node-side code like
+  // this config file, and nothing here was previously bridging the two.
+  // Result: .env's value was silently never visible to any server/*.ts
+  // call under plain `npm run dev`, regardless of what was in the file.
+  // loadEnv() reads .env/.env.local/.env.[mode] the same way Vite always
+  // has; the explicit assignment loop below is the part that was missing.
+  const env = loadEnv(mode, process.cwd(), '')
+  for (const [key, value] of Object.entries(env)) {
+    if (process.env[key] === undefined) process.env[key] = value
+  }
+
+  return {
+    plugins: [react(), tailwindcss(), apiPlugin()],
+    server: {
+      host: '0.0.0.0',
+    },
+    preview: {
+      host: '0.0.0.0',
+    },
+  }
 })

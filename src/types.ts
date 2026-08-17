@@ -73,6 +73,21 @@ export interface MasterKeyword {
   chapterSpread?: number
 }
 
+export interface PlaylistSection {
+  playlistId: string
+  label: string
+  icon: string
+  results: SearchResultItem[]
+  warning?: string
+}
+
+export interface PlaylistSearchResultItem {
+  playlistId: string
+  title: string
+  channel: string
+  thumbnail: string | null
+}
+
 export interface SearchResponse {
   results: SearchResultItem[]
   searchUrl: string

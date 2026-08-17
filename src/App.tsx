@@ -16,6 +16,7 @@ import { useVoiceSearch } from './hooks/useVoiceSearch'
 import {
   analyzeVideo,
   appendSearchTerm,
+  fetchPlaylistResults,
   fetchSearchSuggestions,
   parseSearchTerms,
   removeSearchTerm,
@@ -35,7 +36,11 @@ import {
   type SelectedFilter,
 } from './lib/searchFilters'
 import { sortSearchResults, type SearchSortType } from './lib/searchSort'
-import type { AnalyzeResult, SearchResultItem } from './types'
+import { parsePlaylistId } from './lib/youtubeUrl'
+import { CURATED_PLAYLISTS } from './lib/curatedPlaylists'
+import { PlaylistSections } from './components/PlaylistSections'
+import { PlaylistManagerPanel } from './dev/PlaylistManagerPanel'
+import type { AnalyzeResult, SearchResultItem, PlaylistSection } from './types'
 
 const SEARCH_HISTORY_KEY = 'youtubemax.discoverySearchHistory'
 const SEARCH_HISTORY_LIMIT = 5
@@ -118,6 +123,7 @@ function App() {
   }, [])
 
   const popoutVideoId = searchParams.get('videoId')?.trim() ?? ''
+  const popoutPlaylistId = searchParams.get('list')?.trim() || null
   const popoutStartAt = Number(searchParams.get('start') ?? '0') || 0
   const isPopoutMode = searchParams.get('popout') === '1' && Boolean(popoutVideoId)
   const [windowSessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`)
@@ -131,6 +137,7 @@ function App() {
   const [showTranscriptPanel, setShowTranscriptPanel] = useState(false)
   const [showDebugMessages, setShowDebugMessages] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [devPlaylistManagerOpen, setDevPlaylistManagerOpen] = useState(false)
   const [showFilteredChapters, setShowFilteredChapters] = useState(false)
   const [showSummary, setShowSummary] = useState(true)
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -202,13 +209,76 @@ function App() {
     selectChapter,
   } = useClipMode(displayedChapters)
 
+  // Playlist context for whatever's in the viewer right now, from either an
+  // analyze-by-URL &list= paste or a click into a curated-playlist section
+  // below. Purely a VideoPlayer prop — never touches searchQuery/filters.
+  const [analyzedPlaylistId, setAnalyzedPlaylistId] = useState<string | null>(null)
+
+  // Curated static playlists: separate, order-preserving selection state.
+  // Deliberately NOT a SelectedFilter — see lib/searchFilters.ts docblock on
+  // buildEffectiveQuery. A playlist has no search-query value; selecting one
+  // fetches its real items and renders a pinned section, it never narrows
+  // or extends the keyword search below it.
+  const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([])
+  const [playlistSections, setPlaylistSections] = useState<PlaylistSection[]>([])
+  const [playlistsLoading, setPlaylistsLoading] = useState(false)
+
+  const togglePlaylist = useCallback((playlistId: string) => {
+    setSelectedPlaylists((current) =>
+      current.includes(playlistId)
+        ? current.filter((id) => id !== playlistId)
+        : [...current, playlistId],
+    )
+  }, [])
+
+  useEffect(() => {
+    if (selectedPlaylists.length === 0) {
+      setPlaylistSections([])
+      return
+    }
+
+    let cancelled = false
+    setPlaylistsLoading(true)
+
+    Promise.all(
+      selectedPlaylists.map(async (playlistId): Promise<PlaylistSection> => {
+        const meta = CURATED_PLAYLISTS.find((p) => p.id === playlistId)
+        try {
+          const { results, warning } = await fetchPlaylistResults(playlistId)
+          return { playlistId, label: meta?.label ?? playlistId, icon: meta?.icon ?? '🎵', results, warning }
+        } catch (err) {
+          return {
+            playlistId,
+            label: meta?.label ?? playlistId,
+            icon: meta?.icon ?? '🎵',
+            results: [],
+            warning: err instanceof Error ? err.message : 'Failed to load playlist',
+          }
+        }
+      }),
+    ).then((sections) => {
+      if (cancelled) return
+      // Re-order to match selectedPlaylists (selection order), not
+      // Promise.all's resolution order — they're usually the same, but
+      // don't rely on it.
+      const byId = new Map(sections.map((s) => [s.playlistId, s]))
+      setPlaylistSections(selectedPlaylists.map((id) => byId.get(id)!).filter(Boolean))
+      setPlaylistsLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedPlaylists])
+
   const runAnalysis = useCallback(
-    async (input: string) => {
+    async (input: string, playlistIdOverride?: string | null) => {
       setLoading(true)
       setError(null)
       setResult(null)
       setPlayStart(0)
       setViewerOpen(true)
+      setAnalyzedPlaylistId(playlistIdOverride !== undefined ? playlistIdOverride : parsePlaylistId(input))
 
       try {
         const data = await analyzeVideo(input, {
@@ -226,6 +296,13 @@ function App() {
       }
     },
     [ingestFromAnalysis, setPlayStart, showChaptersPanel, showSummaryPanel, showTranscriptPanel],
+  )
+
+  const playVideoFromPlaylist = useCallback(
+    (videoId: string, playlistId: string) => {
+      runAnalysis(videoId, playlistId)
+    },
+    [runAnalysis],
   )
 
   const handleVideoSearch = useCallback(async (input: string) => {
@@ -533,6 +610,11 @@ function App() {
     const url = new URL(window.location.href)
     url.searchParams.set('popout', '1')
     url.searchParams.set('videoId', result.meta.videoId)
+    if (analyzedPlaylistId) {
+      url.searchParams.set('list', analyzedPlaylistId)
+    } else {
+      url.searchParams.delete('list')
+    }
     url.searchParams.set('start', String(resumeAt))
     url.searchParams.set('cc', captionsEnabled ? '1' : '0')
     url.searchParams.set('rate', String(playbackRate))
@@ -617,7 +699,7 @@ function App() {
 
     popup.location.href = url.toString()
     popup.focus()
-  }, [captionsEnabled, playbackRate, playStart, result, viewerCurrentTime, viewerSize.height, viewerSize.width, windowSessionId])
+  }, [analyzedPlaylistId, captionsEnabled, playbackRate, playStart, result, viewerCurrentTime, viewerSize.height, viewerSize.width, windowSessionId])
 
   useEffect(() => {
     setViewerCurrentTime(playStart)
@@ -834,6 +916,7 @@ function App() {
           </div>
           <VideoPlayer
             videoId={popoutVideoId}
+            playlistId={popoutPlaylistId}
             startAt={popoutStartAt}
             captionsEnabled={captionsEnabled}
             playbackRate={playbackRate}
@@ -936,6 +1019,17 @@ function App() {
                   Install
                 </button>
               </div>
+            )}
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={() => setDevPlaylistManagerOpen(true)}
+                aria-label="Open local playlist manager (dev only)"
+                title="Local playlist manager — dev only"
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-2 text-xs font-medium text-emerald-300 transition hover:border-emerald-500/40"
+              >
+                <span aria-hidden="true">🛠</span>
+              </button>
             )}
             <div className="relative shrink-0">
               <button
@@ -1092,6 +1186,34 @@ function App() {
             {/* Discovery Content */}
             <div className="min-h-96">
               <div className="flex flex-col gap-3">
+                {CURATED_PLAYLISTS.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {CURATED_PLAYLISTS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => togglePlaylist(p.id)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                          selectedPlaylists.includes(p.id)
+                            ? 'border-red-500/50 bg-red-500/10 text-red-200'
+                            : 'border-white/10 bg-black/30 text-zinc-400 hover:border-white/20 hover:text-zinc-200'
+                        }`}
+                      >
+                        <span className="mr-1">{p.icon}</span>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {playlistSections.length > 0 && (
+                  <PlaylistSections
+                    sections={playlistSections}
+                    loading={playlistsLoading}
+                    onSelectVideo={playVideoFromPlaylist}
+                  />
+                )}
+
                 <SearchResultsGrid
                   results={searchResults}
                   sortedResults={sortedSearchResults}
@@ -1295,6 +1417,7 @@ function App() {
                       )}
                       <VideoPlayer
                         videoId={result.meta.videoId}
+                        playlistId={analyzedPlaylistId}
                         startAt={playStart}
                         captionsEnabled={captionsEnabled}
                         playbackRate={playbackRate}
@@ -1376,6 +1499,9 @@ function App() {
         </div>
       )}
 
+      {import.meta.env.DEV && devPlaylistManagerOpen && (
+        <PlaylistManagerPanel onClose={() => setDevPlaylistManagerOpen(false)} />
+      )}
 
     </div>
   )

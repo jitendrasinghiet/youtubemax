@@ -1,12 +1,13 @@
 # YouTubeMax Architecture
 
-## Status Snapshot (2026-08-05)
+## Status Snapshot (2026-08-16)
 
 - Discovery search defaults to `25` results and server clamps to `1..25`.
 - Main UX is discovery-first with a floating, draggable, resizable viewer.
 - Search-result click opens viewer centered in the viewport.
 - `Pop` opens a centered separate window (desktop) or new tab fallback (mobile).
 - Runtime transcript strategy selector (`jdepoix/direct/proxy`) is not currently surfaced in UI.
+- **New this iteration:** analyze-by-URL now preserves `&list=` playlist context end-to-end (parsed client-side in `src/lib/youtubeUrl.ts`, threaded into `VideoPlayer`'s native `list=` embed param — no custom queue logic). Curated static playlists are wired end-to-end (`/api/playlist` → official Data API `playlistItems.list`, pinned sections above the search grid, selection order preserved) but `src/lib/curatedPlaylists.ts` ships intentionally empty — no playlist IDs have been fabricated; real ones need editorial sourcing (see that file's header comment).
 - Notes below include historical design context; this section is the source of truth for current runtime behavior.
 
 ## Overview
@@ -664,12 +665,15 @@ describe('Search to Analysis Flow', () => {
 
 ## Security Considerations
 
-1. **No API keys stored** — All APIs are public (oEmbed, caption extraction)
-2. **User input validation** — VideoID validated against a strict regex before any API call
-3. **Query length cap** — Search queries are truncated to `MAX_QUERY_LENGTH` (200) in `server/constants.ts` before reaching outbound fetches
-4. **HTTPS only** — Vercel auto-enforces TLS
-5. **CORS headers** — API functions should set appropriate CORS headers
-6. **Rate limiting** — Not yet implemented; recommended on Vercel/edge to prevent scraping abuse
+1. **API keys** — `YOUTUBE_DATA_API_KEY` (optional today, required for curated playlists) is read server-side only via `process.env` in `server/*.ts` — never bundled into the client (no `VITE_`-prefixed equivalent exists anywhere in `src/`). Locally it comes from a gitignored `.env`; on Vercel from a dashboard env var, same pattern as `YOUTUBE_PROXY_URL`. See `.env.example`.
+2. **User input validation** — VideoID validated against a strict regex before any API call; playlist IDs validated against `/^[a-zA-Z0-9_-]{2,64}$/` before being forwarded to Google's API.
+3. **Query length cap** — Search queries are truncated to `MAX_QUERY_LENGTH` (200) in `server/constants.ts` before reaching outbound fetches.
+4. **HTTPS only** — Vercel auto-enforces TLS.
+5. **CORS headers** — API functions should set appropriate CORS headers.
+6. **Rate limiting** — Not yet implemented; recommended on Vercel/edge to prevent scraping abuse.
+7. **Quota monitoring (new)** — Unlike scraping, `/api/playlist`'s Data API calls are metered against a daily quota. `playlistItems.list` is ~1 unit/call, so this is cheap at normal traffic, but a runaway client (or a curated-playlist list that grows large) could exhaust it — worth dashboard monitoring once this sees real traffic.
+
+**Known compliance gap, not yet resolved:** `/api/search` (video search), the new scraped playlist-search path (`server/search.ts`'s `playlistRenderer` parsing, used by the local dev playlist tool), and the transcript-fetch path all work by rotating User-Agent strings and browser headers (`server/proxy.ts` for transcripts; `server/search.ts` uses a fixed browser User-Agent directly for search, not `proxy.ts`'s rotation) specifically to get past YouTube's anti-bot protection. This is scraping designed to evade detection, not incidental page-reading, and it sits in tension with not circumventing a content host's ToS. `/api/playlist` and playlist load-by-ID/URL (`playlistItems.list`) deliberately do not share that code path — see `server/youtubePlaylists.ts`'s header comment — so those stay clean by construction; playlist *search* specifically was a deliberate exception, made explicitly, trading Data API quota cost for scraping exposure. Migrating `/api/search` itself onto the official Data API is scoped as a separate, larger follow-up (see `docs/DELTA_REQUIREMENTS.md`).
 
 ---
 
@@ -716,9 +720,10 @@ npm run dev -- --profile
 
 - [ ] Cache analyzed videos (localStorage + sync)
 - [ ] Offline mode support
-- [ ] Playlist analysis
 - [ ] Custom chapter creation
 - [ ] Keyword export (CSV/JSON)
 - [ ] Clip download
 - [ ] Browser extension
 - [ ] Multi-language support
+- [ ] Source real curated playlist IDs into `src/lib/curatedPlaylists.ts` (editorial, blocks the playlist feature from actually showing anything)
+- [ ] Migrate `/api/search` off HTML scraping onto the official Data API (retires the remaining ToS exposure)

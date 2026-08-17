@@ -2,6 +2,13 @@ import { useEffect, useRef } from 'react'
 
 interface VideoPlayerProps {
   videoId: string
+  /**
+   * Optional playlist context (from a pasted &list= URL or a curated
+   * playlist selection). Uses YouTube's own list= embed param — plays this
+   * specific video within the playlist and auto-advances natively. No
+   * custom "next video" queue logic lives here on purpose.
+   */
+  playlistId?: string | null
   startAt?: number
   captionsEnabled?: boolean
   playbackRate?: number
@@ -9,7 +16,12 @@ interface VideoPlayerProps {
   onCurrentTimeChange?: (seconds: number) => void
 }
 
-function buildEmbedUrl(videoId: string, startAt: number, captionsEnabled: boolean): string {
+function buildEmbedUrl(
+  videoId: string,
+  startAt: number,
+  captionsEnabled: boolean,
+  playlistId?: string | null,
+): string {
   const params = new URLSearchParams({
     start: String(Math.floor(startAt)),
     autoplay: '1',
@@ -19,6 +31,10 @@ function buildEmbedUrl(videoId: string, startAt: number, captionsEnabled: boolea
 
   if (captionsEnabled) {
     params.set('cc_load_policy', '1')
+  }
+
+  if (playlistId) {
+    params.set('list', playlistId)
   }
 
   return `https://www.youtube.com/embed/${videoId}?${params.toString()}`
@@ -38,6 +54,7 @@ function sendPlayerCommand(iframe: HTMLIFrameElement | null, func: string, args:
 
 export function VideoPlayer({
   videoId,
+  playlistId = null,
   startAt = 0,
   captionsEnabled = false,
   playbackRate = 1,
@@ -86,8 +103,8 @@ export function VideoPlayer({
     const iframe = iframeRef.current
     if (!iframe) return
 
-    iframe.src = buildEmbedUrl(videoId, startAt, captionsEnabled)
-  }, [videoId, startAt, captionsEnabled])
+    iframe.src = buildEmbedUrl(videoId, startAt, captionsEnabled, playlistId)
+  }, [videoId, startAt, captionsEnabled, playlistId])
 
   useEffect(() => {
     schedulePlayerSync()
@@ -153,7 +170,7 @@ export function VideoPlayer({
       <iframe
         ref={iframeRef}
         className="h-full w-full"
-        src={buildEmbedUrl(videoId, initialStart, captionsEnabled)}
+        src={buildEmbedUrl(videoId, initialStart, captionsEnabled, playlistId)}
         onLoad={schedulePlayerSync}
         title="YouTube video player"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
