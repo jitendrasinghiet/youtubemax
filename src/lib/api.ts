@@ -1,4 +1,4 @@
-import type { AnalyzeResult, SearchResponse } from '../types'
+import type { AnalyzeResult, SearchResponse, SearchResultItem } from '../types'
 
 interface AnalyzeOptions {
   includeTranscript?: boolean
