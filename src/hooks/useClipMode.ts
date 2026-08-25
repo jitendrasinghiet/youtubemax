@@ -1,6 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Chapter } from '../types'
 
+const MIN_CLIP_DURATION_MS = 3000
+
+export interface ClipStep {
+  /** clipIndex clamped into bounds — differs from the requested index only
+   * when the chapter list shrank (e.g. a filter removed chapters) out from
+   * under an in-progress clip run. */
+  validIndex: number
+  /** Where playback should seek to for this step. */
+  playStart: number
+  /** ms until auto-advancing to the next chapter, or null on the last
+   * chapter (play it out rather than looping/stopping). */
+  advanceAfterMs: number | null
+}
+
+/**
+ * Pure decision logic for one clip-mode step, extracted out of the effect
+ * below so it's unit-testable without a React render harness — see
+ * useClipMode.test.ts. Returns null when clip mode has nothing to play
+ * (chapter list is empty), which the caller treats as "turn clip mode off".
+ */
+export function computeClipStep(clipIndex: number, displayedChapters: Chapter[]): ClipStep | null {
+  if (displayedChapters.length === 0) return null
+
+  const validIndex = Math.min(clipIndex, displayedChapters.length - 1)
+  const current = displayedChapters[validIndex]
+  const next = displayedChapters[validIndex + 1]
+
+  const advanceAfterMs = next ? Math.max((next.start - current.start) * 1000, MIN_CLIP_DURATION_MS) : null
+
+  return { validIndex, playStart: current.start, advanceAfterMs }
+}
+
 /**
  * Encapsulates playback position and "clip mode" — sequentially auto-advancing
  * through a list of chapters. `displayedChapters` should be a stable (memoized)
@@ -39,33 +71,29 @@ export function useClipMode(displayedChapters: Chapter[]) {
 
   useEffect(() => {
     if (!clipMode) return
-    if (displayedChapters.length === 0) {
+
+    const step = computeClipStep(clipIndex, displayedChapters)
+    if (!step) {
       setClipMode(false)
       return
     }
 
-    const validIndex = Math.min(clipIndex, displayedChapters.length - 1)
-    if (validIndex !== clipIndex) {
-      setClipIndex(validIndex)
+    if (step.validIndex !== clipIndex) {
+      setClipIndex(step.validIndex)
       return
     }
 
     if (clipTimerRef.current) clearTimeout(clipTimerRef.current)
+    setPlayStart(step.playStart)
 
-    const current = displayedChapters[validIndex]
-    setPlayStart(current.start)
-
-    const next = displayedChapters[validIndex + 1]
-    if (!next) {
+    if (step.advanceAfterMs == null) {
       // Last clip - continue playing it indefinitely until user stops
       return
     }
 
-    // Calculate duration until next filtered clip starts
-    const duration = Math.max((next.start - current.start) * 1000, 3000)
     clipTimerRef.current = setTimeout(() => {
       setClipIndex((i) => i + 1)
-    }, duration)
+    }, step.advanceAfterMs)
 
     return () => {
       if (clipTimerRef.current) clearTimeout(clipTimerRef.current)

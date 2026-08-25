@@ -9,7 +9,8 @@ import type { AnalyzeResult, MasterKeyword } from '../types'
  * @param incoming - The new keyword from analysis
  * @returns Merged keyword with higher score and preferred source
  */
-function mergeKeyword(
+/** Exported for unit testing — see useKeywordMasterList.test.ts. */
+export function mergeKeyword(
   existing: MasterKeyword | undefined,
   incoming: MasterKeyword,
 ): MasterKeyword {
@@ -47,7 +48,8 @@ function mergeKeyword(
  * Input: ["react", "react hooks", "the", "is", "useState", "component"]
  * Output: ["react hooks", "useState", "component"]  // Removed generic terms
  */
-function pruneNoise(keywords: MasterKeyword[]): MasterKeyword[] {
+/** Exported for unit testing — see useKeywordMasterList.test.ts. */
+export function pruneNoise(keywords: MasterKeyword[]): MasterKeyword[] {
   if (keywords.length < 3) return keywords
 
   // Stage 1: Calculate statistical thresholds for anomaly detection
