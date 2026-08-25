@@ -13,6 +13,7 @@
   - `server/localPlaylistStore.ts`'s `createLocalPlaylist` now rejects (409) loading the same `sourcePlaylistId` twice, naming the existing slug — loading a playlist by URL and then by ID no longer silently creates a duplicate local file.
   - Added `fetchPlaylistMeta` (`playlists.list`) to `server/youtubePlaylists.ts` plus a dev-only `/api/dev/playlist-meta` route; the Playlist Manager panel now best-effort fetches the real title/channel on an ID/URL load instead of defaulting to `Playlist <id>` / `Local` (silently falls back if the API key/quota is unavailable — never blocks the load).
   - Added `.github/workflows/ci.yml` — lint + test + build now run on every push/PR to `main`.
+  - Added dev-only bulk add-to-playlist: `SearchResultsGrid` renders a per-card checkbox (`import.meta.env.DEV` only) and a new `src/dev/AddToPlaylistBar.tsx` appears above the grid once one or more results are selected, letting you bulk-add them into an existing local playlist or a newly-created one via the same `localPlaylistStore.ts`/`/api/dev/playlists` path the Playlist Manager already uses. A per-item 409 ("already in this playlist") is treated as an expected skip in a batch add, not a failure. This is purely additive to the existing dev-only local-playlist workspace — no new persistence, nothing prod-facing.
 - Notes below include historical design context; this section is the source of truth for current runtime behavior.
 
 ## Overview
