@@ -5,6 +5,7 @@ import {
   addDevPlaylistItem,
   createDevPlaylist,
   deleteDevPlaylist,
+  fetchDevPlaylistMeta,
   listDevPlaylists,
   removeDevPlaylistItem,
   searchYouTubePlaylists,
@@ -58,9 +59,20 @@ export function PlaylistManagerPanel({ onClose }: PlaylistManagerPanelProps) {
       setError(null)
       try {
         const { results } = await fetchPlaylistResults(playlistId, 50)
-        const label = labelInput.trim() || defaultLabel
+
+        // Best-effort: an ID/URL load has no real title/channel to go on
+        // (search loads already pass the real title as defaultLabel). If
+        // this fails — no API key, quota, bad ID — fall back to the
+        // generic "Playlist <id>" label rather than blocking the load.
+        let meta: { title: string; channel: string } | undefined
+        if (loadedVia === 'id' || loadedVia === 'url') {
+          meta = await fetchDevPlaylistMeta(playlistId).catch(() => undefined)
+        }
+
+        const label = labelInput.trim() || meta?.title || defaultLabel
         await createDevPlaylist({
           label,
+          channel: meta?.channel,
           loadedVia,
           sourcePlaylistId: playlistId,
           seedResults: results,

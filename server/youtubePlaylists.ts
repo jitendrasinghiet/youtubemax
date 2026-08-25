@@ -1,7 +1,19 @@
 import type { SearchResultItem } from './types.js'
 
 const PLAYLIST_ITEMS_URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+const PLAYLISTS_URL = 'https://www.googleapis.com/youtube/v3/playlists'
 const MAX_RESULTS_CAP = 50
+
+interface YouTubePlaylistsResponse {
+  items?: Array<{
+    snippet?: {
+      title?: string
+      channelTitle?: string
+      thumbnails?: Record<string, { url?: string; width?: number }>
+    }
+  }>
+  error?: { message?: string }
+}
 
 interface YouTubePlaylistItemsResponse {
   items?: Array<{
@@ -108,4 +120,58 @@ export async function fetchPlaylistItems(
       }
     })
     .filter((item): item is SearchResultItem => item !== null)
+}
+
+export interface PlaylistMeta {
+  title: string
+  channel: string
+}
+
+/**
+ * Fetches a playlist's real title/channel via the official Data API
+ * (playlists.list — ~1 quota unit/call). Best-effort by design: callers
+ * should treat a thrown error as "metadata unavailable" and fall back to a
+ * placeholder label rather than blocking the load entirely.
+ */
+export async function fetchPlaylistMeta(
+  playlistId: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<PlaylistMeta> {
+  const apiKey = process.env.YOUTUBE_DATA_API_KEY?.trim()
+  if (!apiKey) {
+    throw new PlaylistFetchError('YOUTUBE_DATA_API_KEY is not configured.', 500)
+  }
+
+  const url = new URL(PLAYLISTS_URL)
+  url.searchParams.set('part', 'snippet')
+  url.searchParams.set('id', playlistId)
+  url.searchParams.set('key', apiKey)
+
+  let res: Response
+  try {
+    res = await fetchFn(url.toString(), { headers: { Accept: 'application/json' } })
+  } catch (err) {
+    throw new PlaylistFetchError(
+      err instanceof Error ? `Playlist metadata request failed: ${err.message}` : 'Playlist metadata request failed',
+    )
+  }
+
+  const data = (await res.json()) as YouTubePlaylistsResponse
+
+  if (!res.ok) {
+    throw new PlaylistFetchError(
+      data.error?.message ?? `YouTube Data API playlists request failed (${res.status})`,
+      res.status === 404 ? 404 : 502,
+    )
+  }
+
+  const snippet = data.items?.[0]?.snippet
+  if (!snippet?.title) {
+    throw new PlaylistFetchError(`No playlist found for id "${playlistId}"`, 404)
+  }
+
+  return {
+    title: snippet.title,
+    channel: snippet.channelTitle ?? 'Unknown channel',
+  }
 }

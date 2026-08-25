@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
 import { searchYouTubeVideos } from './server/search.ts'
 import { fetchYouTubeSuggestions } from './server/suggest.ts'
-import { fetchPlaylistItems, PlaylistFetchError } from './server/youtubePlaylists.ts'
+import { fetchPlaylistItems, fetchPlaylistMeta, PlaylistFetchError } from './server/youtubePlaylists.ts'
 import { searchPlaylists, PlaylistSearchError } from './server/youtubePlaylistSearch.ts'
 import {
   listLocalPlaylists,
@@ -111,6 +111,25 @@ function apiPlugin(): Plugin {
             }
             res.statusCode = 500
             res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Playlist search failed' }))
+          }
+          return
+        }
+
+        if (url.pathname === '/api/dev/playlist-meta') {
+          const playlistId = url.searchParams.get('playlistId')?.trim() ?? ''
+          if (!playlistId) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: 'A playlistId is required' }))
+            return
+          }
+          try {
+            const meta = await fetchPlaylistMeta(playlistId)
+            res.statusCode = 200
+            res.end(JSON.stringify({ meta }))
+          } catch (err) {
+            const statusCode = err instanceof PlaylistFetchError ? err.statusCode : 500
+            res.statusCode = statusCode
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to fetch playlist metadata' }))
           }
           return
         }

@@ -831,6 +831,72 @@ function App() {
     }
   }, [viewerSizePreset, captionsEnabled, playbackRate, isPopoutMode])
 
+  // Sort results based on selected sort type
+  const sortedSearchResults = useMemo(
+    () => sortSearchResults(searchResults, searchSortType, searchQuery),
+    [searchResults, searchSortType, searchQuery],
+  )
+
+  // Load default trending videos on first mount (session-based). Popout
+  // windows never render the discovery UI, so skip the fetch there.
+  useEffect(() => {
+    if (isPopoutMode) return
+    if (!defaultsLoaded && searchResults.length === 0 && !searchQuery) {
+      setDefaultsLoaded(true)
+      handleVideoSearch('trending')
+    }
+  }, [isPopoutMode, defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
+
+  useEffect(() => {
+    if (isPopoutMode) return
+    try {
+      const raw = localStorage.getItem(SEARCH_HISTORY_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return
+      setSearchHistory(
+        parsed
+          .filter((item): item is string => typeof item === 'string')
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .slice(0, SEARCH_HISTORY_LIMIT),
+      )
+    } catch {
+      // Ignore malformed localStorage values.
+    }
+  }, [isPopoutMode])
+
+  useEffect(() => {
+    if (isPopoutMode) return
+    const trimmed = searchQuery.trim()
+    if (!trimmed) {
+      setQuerySuggestions([])
+      setSuggestionsLoading(false)
+      return
+    }
+
+    let active = true
+    setSuggestionsLoading(true)
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const suggestions = await fetchSearchSuggestions(trimmed)
+        if (!active) return
+        setQuerySuggestions(suggestions)
+      } catch {
+        if (!active) return
+        setQuerySuggestions([])
+      } finally {
+        if (active) setSuggestionsLoading(false)
+      }
+    }, 180)
+
+    return () => {
+      active = false
+      clearTimeout(timeoutId)
+    }
+  }, [isPopoutMode, searchQuery])
+
   if (isPopoutMode) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white p-1.5">
@@ -926,68 +992,6 @@ function App() {
       </div>
     )
   }
-
-  // Sort results based on selected sort type
-  const sortedSearchResults = useMemo(
-    () => sortSearchResults(searchResults, searchSortType, searchQuery),
-    [searchResults, searchSortType, searchQuery],
-  )
-
-  // Load default trending videos on first mount (session-based)
-  useEffect(() => {
-    if (!defaultsLoaded && searchResults.length === 0 && !searchQuery) {
-      setDefaultsLoaded(true)
-      handleVideoSearch('trending')
-    }
-  }, [defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SEARCH_HISTORY_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw)
-      if (!Array.isArray(parsed)) return
-      setSearchHistory(
-        parsed
-          .filter((item): item is string => typeof item === 'string')
-          .map((item) => item.trim())
-          .filter(Boolean)
-          .slice(0, SEARCH_HISTORY_LIMIT),
-      )
-    } catch {
-      // Ignore malformed localStorage values.
-    }
-  }, [])
-
-  useEffect(() => {
-    const trimmed = searchQuery.trim()
-    if (!trimmed) {
-      setQuerySuggestions([])
-      setSuggestionsLoading(false)
-      return
-    }
-
-    let active = true
-    setSuggestionsLoading(true)
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        const suggestions = await fetchSearchSuggestions(trimmed)
-        if (!active) return
-        setQuerySuggestions(suggestions)
-      } catch {
-        if (!active) return
-        setQuerySuggestions([])
-      } finally {
-        if (active) setSuggestionsLoading(false)
-      }
-    }, 180)
-
-    return () => {
-      active = false
-      clearTimeout(timeoutId)
-    }
-  }, [searchQuery])
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">

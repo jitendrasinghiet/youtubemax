@@ -130,6 +130,19 @@ export async function createLocalPlaylist(input: {
 }): Promise<LocalPlaylist> {
   await ensureDir()
 
+  if (input.sourcePlaylistId) {
+    const existing = (await listLocalPlaylists()).find(
+      (p) => p.sourcePlaylistId === input.sourcePlaylistId,
+    )
+    if (existing) {
+      throw new LocalPlaylistError(
+        `This playlist is already loaded locally as "${existing.label}" (${existing.slug}). ` +
+          `Open it in the manager instead of loading it again.`,
+        409,
+      )
+    }
+  }
+
   let slug = slugify(input.label)
   let suffix = 2
   while (

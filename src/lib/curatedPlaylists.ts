@@ -31,17 +31,4 @@ export interface CuratedPlaylist {
  * Example shape once populated (NOT a real ID — do not use as-is):
  *   { id: 'PLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', label: 'New Releases', icon: '🎵', channel: 'Some Official Label' }
  */
-export const CURATED_PLAYLISTS: CuratedPlaylist[] = [
-  {
-    id: 'PLe4WWWHGaYWY',
-    label: 'Nothing',
-    icon: '🎵',
-    channel: 'Some Official Label'
-  },
-  {
-    id: 'PLCTteOspZ0QY',
-    label: 'Old Poems',
-    icon: '🎵',
-    channel: 'Some Official Label'
-  }
-]
+export const CURATED_PLAYLISTS: CuratedPlaylist[] = []

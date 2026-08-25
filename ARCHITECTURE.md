@@ -1,13 +1,18 @@
 # YouTubeMax Architecture
 
-## Status Snapshot (2026-08-16)
+## Status Snapshot (2026-08-25)
 
 - Discovery search defaults to `25` results and server clamps to `1..25`.
 - Main UX is discovery-first with a floating, draggable, resizable viewer.
 - Search-result click opens viewer centered in the viewport.
 - `Pop` opens a centered separate window (desktop) or new tab fallback (mobile).
 - Runtime transcript strategy selector (`jdepoix/direct/proxy`) is not currently surfaced in UI.
-- **New this iteration:** analyze-by-URL now preserves `&list=` playlist context end-to-end (parsed client-side in `src/lib/youtubeUrl.ts`, threaded into `VideoPlayer`'s native `list=` embed param — no custom queue logic). Curated static playlists are wired end-to-end (`/api/playlist` → official Data API `playlistItems.list`, pinned sections above the search grid, selection order preserved) but `src/lib/curatedPlaylists.ts` ships intentionally empty — no playlist IDs have been fabricated; real ones need editorial sourcing (see that file's header comment).
+- Analyze-by-URL preserves `&list=` playlist context end-to-end (parsed client-side in `src/lib/youtubeUrl.ts`, threaded into `VideoPlayer`'s native `list=` embed param — no custom queue logic). Curated static playlists are wired end-to-end (`/api/playlist` → official Data API `playlistItems.list`, pinned sections above the search grid, selection order preserved), but `src/lib/curatedPlaylists.ts` ships intentionally empty — two entries with fabricated/placeholder data (`channel: 'Some Official Label'`, copied verbatim from the file's own "do not use as-is" example comment) briefly landed on `main` and were reverted; real ones still need editorial sourcing per that file's header comment.
+- **New this iteration (repo health pass):**
+  - Fixed a real Rules-of-Hooks violation in `App.tsx` — a `useMemo` and three `useEffect` calls were physically placed after the `isPopoutMode` early return, so popout-mode renders and normal renders called a different number of hooks. Moved above the early return with `isPopoutMode` guards added inside each effect body, preserving prior behavior (those effects never ran in popout windows).
+  - `server/localPlaylistStore.ts`'s `createLocalPlaylist` now rejects (409) loading the same `sourcePlaylistId` twice, naming the existing slug — loading a playlist by URL and then by ID no longer silently creates a duplicate local file.
+  - Added `fetchPlaylistMeta` (`playlists.list`) to `server/youtubePlaylists.ts` plus a dev-only `/api/dev/playlist-meta` route; the Playlist Manager panel now best-effort fetches the real title/channel on an ID/URL load instead of defaulting to `Playlist <id>` / `Local` (silently falls back if the API key/quota is unavailable — never blocks the load).
+  - Added `.github/workflows/ci.yml` — lint + test + build now run on every push/PR to `main`.
 - Notes below include historical design context; this section is the source of truth for current runtime behavior.
 
 ## Overview

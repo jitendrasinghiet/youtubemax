@@ -34,6 +34,14 @@ export async function searchYouTubePlaylists(query: string): Promise<PlaylistSea
   return data.results
 }
 
+/** Best-effort: callers should treat a rejected promise as "no metadata
+ * available" and fall back to a placeholder label, not as a hard failure. */
+export async function fetchDevPlaylistMeta(playlistId: string): Promise<{ title: string; channel: string }> {
+  const res = await fetch(`/api/dev/playlist-meta?playlistId=${encodeURIComponent(playlistId)}`)
+  const data = await asJson<{ meta: { title: string; channel: string } }>(res)
+  return data.meta
+}
+
 export async function listDevPlaylists(): Promise<LocalPlaylist[]> {
   const res = await fetch('/api/dev/playlists')
   const data = await asJson<{ playlists: LocalPlaylist[] }>(res)
