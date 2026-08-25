@@ -1,9 +1,17 @@
-// Filter taxonomy: Language, Category (grouped), Audience, Channel.
+// Filter taxonomy: Language, Category (grouped), Audience, Channel, Vibe.
 // Each leaf item carries a search-friendly `value` (sent to the YouTube search
 // query) separate from its display `label`, plus an `icon` glyph used as the
 // small badge in the filter menu and in the selected-filter chips.
+//
+// Vibe (Mood + Context) is deliberately not like the other dimensions: its
+// items exist for people who can't type or describe what they want in
+// words — large tap targets, emoji-first, one word each. Its `value`s are
+// soft/generic modifiers ("relaxing", not "calm") rather than literal topic
+// keywords, and buildEffectiveQuery (searchFilters.ts) caps how many of them
+// ever reach the actual search query and appends them last — see the
+// comment there for why a naive concatenation would over-narrow results.
 
-export type FilterDimensionKey = 'language' | 'category' | 'audience' | 'channel'
+export type FilterDimensionKey = 'language' | 'category' | 'audience' | 'channel' | 'vibe'
 
 export interface FilterItem {
   /** Display label shown in the menu and in chips. */
@@ -831,6 +839,46 @@ export const FILTER_TAXONOMY: Record<FilterDimensionKey, FilterDimension> = {
       { label: 'CarryMinati', icon: 'CM' },
       { label: 'Total Gaming', icon: 'ToG' },
     ],
+  },
+
+  // Mood + Context: how someone feels / what they're doing right now, not a
+  // topic. Tap-only, emoji + one word each — no reading comprehension or
+  // typing required. Kept as two small flat groups (no clustering, no
+  // accordion) since 8 items each is already scannable in one glance.
+  vibe: {
+    type: 'grouped',
+    label: 'Vibe',
+    icon: '🧭',
+    groups: {
+      mood: {
+        label: 'Mood',
+        icon: '🙂',
+        items: [
+          { label: 'Happy', value: 'feel good', icon: '😊' },
+          { label: 'Calm', value: 'relaxing', icon: '😌' },
+          { label: 'Excited', value: 'exciting', icon: '⚡' },
+          { label: 'Comfort', value: 'comforting', icon: '🤗' },
+          { label: 'Sleepy', value: 'calm sleep', icon: '😴' },
+          { label: 'Wow', value: 'amazing', icon: '🤩' },
+          { label: 'Funny', value: 'funny', icon: '😂' },
+          { label: 'Focused', value: 'focus', icon: '🧘' },
+        ],
+      },
+      context: {
+        label: 'Context',
+        icon: '📍',
+        items: [
+          { label: 'Study', value: 'study', icon: '📚' },
+          { label: 'Cooking', value: 'cooking', icon: '🍳' },
+          { label: 'Travel', value: 'travel', icon: '🚗' },
+          { label: 'Family', value: 'family friendly', icon: '👨‍👩‍👧' },
+          { label: 'Workout', value: 'workout', icon: '💪' },
+          { label: 'Play', value: 'fun', icon: '🎮' },
+          { label: 'Party', value: 'party', icon: '🎉' },
+          { label: 'Bedtime', value: 'bedtime', icon: '🌙' },
+        ],
+      },
+    },
   },
 }
 

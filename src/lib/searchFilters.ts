@@ -61,15 +61,33 @@ export function isFilterSelected(
   return current.some((f) => f.dimension === dimension && f.label === label)
 }
 
+/** Vibe (mood/context) terms are soft nudges, never search-narrowing
+ * criteria — capped regardless of how many are selected. */
+const MAX_VIBE_TERMS = 2
+
 /**
  * Selected filters are implicitly folded into every search unless the user
  * removes the chip or clears all. This builds the actual string sent to the
- * search API: filter terms first (they act as a standing scope), then
- * whatever the user typed.
+ * search API: topical filter terms first (they act as a standing scope),
+ * then whatever the user typed, then — last, and capped at MAX_VIBE_TERMS —
+ * any selected Vibe (mood/context) terms.
+ *
+ * Vibe is deliberately excluded from the plain concatenation the other
+ * dimensions use. Tapping several mood/context icons at once is a normal,
+ * expected interaction for the audience Vibe is built for (see
+ * filterTaxonomy.ts), but literally appending every one of those terms to
+ * the query would over-narrow it and quietly filter out otherwise-good
+ * results — the cap plus "last, not first" ordering keeps Vibe acting as a
+ * gentle bias on top of the real search, never the thing that defines it.
  */
 export function buildEffectiveQuery(typedQuery: string, filters: SelectedFilter[]): string {
-  const filterTerms = filters.map((f) => f.value).join(' ')
-  return [filterTerms, typedQuery.trim()].filter(Boolean).join(' ').trim()
+  const topical = filters.filter((f) => f.dimension !== 'vibe')
+  const vibe = filters.filter((f) => f.dimension === 'vibe')
+
+  const topicalTerms = topical.map((f) => f.value).join(' ')
+  const vibeTerms = vibe.slice(0, MAX_VIBE_TERMS).map((f) => f.value).join(' ')
+
+  return [topicalTerms, typedQuery.trim(), vibeTerms].filter(Boolean).join(' ').trim()
 }
 
 export function loadStoredFilters(): SelectedFilter[] {

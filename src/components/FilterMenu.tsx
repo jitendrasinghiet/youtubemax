@@ -16,8 +16,9 @@ interface FilterMenuProps {
 }
 
 // Audience leads the rail — "who" before "what," matching the funnel model
-// (docs/FILTER_ROADMAP.md item 2).
-const DIMENSION_ORDER: FilterDimensionKey[] = ['audience', 'category', 'language', 'channel']
+// (docs/FILTER_ROADMAP.md item 2). Vibe (mood/context) leads even further —
+// it's the one dimension built for someone who can't read the others.
+const DIMENSION_ORDER: FilterDimensionKey[] = ['vibe', 'audience', 'category', 'language', 'channel']
 
 function ItemChip({
   item,
@@ -45,6 +46,29 @@ function ItemChip({
         {item.icon}
       </span>
       <span className="line-clamp-2 text-[10px] leading-tight">{item.label}</span>
+    </button>
+  )
+}
+
+// Bigger tap targets than the standard ItemChip — Vibe is built for people
+// who can't read the rest of this menu, so the emoji does the work and the
+// hit area is generous (roughly 64px, near the common child/motor-impaired
+// touch-target minimum) rather than the dense grid used everywhere else.
+function VibeChip({ item, active, onClick }: { item: FilterItem; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
+        active
+          ? 'border-red-500/60 bg-red-500/15 text-white'
+          : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
+      }`}
+    >
+      <span className="text-2xl leading-none" aria-hidden>
+        {item.icon}
+      </span>
+      <span className="text-[11px] font-medium leading-tight">{item.label}</span>
     </button>
   )
 }
@@ -261,6 +285,32 @@ export function FilterMenu({ selected, onToggle, onSelectEvergreen, onToggleSlid
               expanded={expandedGroups.has(groupKey)}
               onToggleExpanded={() => toggleExpanded(groupKey)}
             />
+          ))}
+        </div>
+      )}
+
+      {/* Vibe: two small always-open groups (Mood, Context), big tap
+          targets, no accordion/eligibility logic — this dimension is
+          deliberately the simplest thing in the menu. */}
+      {dim.type === 'grouped' && activeDim === 'vibe' && (
+        <div className="flex flex-col gap-3">
+          {Object.entries(dim.groups).map(([groupKey, group]) => (
+            <div key={groupKey}>
+              <div className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                <span aria-hidden>{group.icon}</span>
+                {group.label}
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
+                {group.items.map((item) => (
+                  <VibeChip
+                    key={item.label}
+                    item={item}
+                    active={isFilterSelected(selected, 'vibe', item.label)}
+                    onClick={() => onToggle('vibe', item.label, item.icon, groupKey)}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

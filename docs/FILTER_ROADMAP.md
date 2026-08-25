@@ -1,6 +1,6 @@
 # Filter/Discovery Roadmap — Delta Requirements
 
-Last updated: 2026-08-13
+Last updated: 2026-08-25
 
 ## Purpose
 
@@ -249,6 +249,44 @@ items 3, 4, and 8 exist.
 
 ---
 
+### 10. Vibe dimension (Mood + Context) — `DONE`
+
+**Gap:** Not from either source doc — a direct product ask, outside their
+scope. The taxonomy's other four dimensions all assume the user can read
+labels and type a query; there was no path for someone who can't (a child,
+someone not fluent in the app's language, anyone who just doesn't have the
+words for what they want) beyond tapping a pre-authored Evergreen combo.
+
+**What shipped:** A 5th dimension, `vibe`, leading the dimension rail
+ahead of Audience. Two small always-open groups — Mood (Happy, Calm,
+Excited, Comfort, Sleepy, Wow, Funny, Focused) and Context (Study,
+Cooking, Travel, Family, Workout, Play, Party, Bedtime) — rendered as
+large emoji-first tap targets (`VibeChip`, ~64px hit area) with no
+accordion, no eligibility logic, and no reading required beyond
+recognizing an emoji.
+
+**Query-building change (applies structurally, not just to Vibe):**
+`buildEffectiveQuery` previously concatenated every selected filter's
+value with no cap, filters-then-typed-query. That was flagged as a real
+risk specifically for Vibe — someone tapping several mood/context icons
+at once is normal there, and literally appending every term would
+over-narrow the search and quietly drop good results. Fix: Vibe terms use
+soft/generic values (`'feel good'`, not `'Happy'`), are capped at 2
+regardless of how many are selected, and are always appended *last*, after
+topical filters and the typed query. The UI itself places no cap on
+selection — tap as many as you like, same interaction model as every
+other dimension — only the query-building step caps Vibe's contribution.
+Covered by `src/lib/searchFilters.test.ts`.
+
+**Decision log:** Deliberately not built as an AI/NLP intent-detection
+layer (interpreting typed or spoken text into mood/context) — icon-only
+tap selection was the explicit choice, both for zero ongoing cost and
+because the target users (can't type/describe well) are better served by
+recognition than by generation. Revisit only if icon-only proves
+insufficient in practice.
+
+---
+
 ## Explicitly out of scope right now (from source doc 1)
 
 Carried over from the architecture-context review, unchanged — these are
@@ -291,4 +329,5 @@ each would need its own BUILD/DEFER/REVIEW pass before implementation.
 | 7 | Topic/Subtopic tree | Large | Deferred |
 | 8 | Trending Now dynamic panel | Large | Deferred |
 | 9 | Dynamic entity layer | Large | Deferred |
+| 10 | Vibe dimension (Mood + Context, icon-only) | Medium | **DONE** |
 | — | BYOK / quota / query dedup / entitlements | Large | Out of scope this session |
