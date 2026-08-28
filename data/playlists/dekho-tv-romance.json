@@ -1,0 +1,40 @@
+{
+  "slug": "dekho-tv-romance",
+  "label": "DEKHO — TV — Romance",
+  "icon": "📺",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "-wzxkNb_GFw",
+      "title": "Jassi Jaisi Koi Nahin",
+      "channel": "NatureCat Fanatic LPS Hater",
+      "thumbnail": "https://i.ytimg.com/vi/-wzxkNb_GFw/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gSAAuADigIMCAAQARhAIGUoUDAP&rs=AOn4CLCSAYYiU4wfOJ4Wn-frc8OZg9i98A",
+      "position": 0
+    },
+    {
+      "videoId": "vxW1WpOKyEY",
+      "title": "Pavitra Rishta",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/vxW1WpOKyEY/hq720.jpg?sqp=-oaymwE6CNAFEJQDSFXyq4qpAywIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIEkoQDAPuALzGA==&rs=AOn4CLB0Qo1Y6oHpO4cbDOvXK5NZu3mBkQ",
+      "position": 1
+    },
+    {
+      "videoId": "BtfFX7PCfQM",
+      "title": "Iss Pyaar Ko Kya Naam Doon?",
+      "channel": "All Serials Themes & Montages ",
+      "thumbnail": "https://i.ytimg.com/vi/BtfFX7PCfQM/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAsYFigIMCAAQARhPIF8oZTAP&rs=AOn4CLDwod-k2MTWNzVR_hnk83VYEvF6ug",
+      "position": 2
+    },
+    {
+      "videoId": "Apw3yhyFA9o",
+      "title": "Kumkum Bhagya",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/Apw3yhyFA9o/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIFIoNDAP&rs=AOn4CLBtRJzCTbhCW0fwACYNQa_tuycEgw",
+      "position": 3
+    }
+  ]
+}

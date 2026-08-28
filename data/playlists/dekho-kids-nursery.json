@@ -1,0 +1,68 @@
+{
+  "slug": "dekho-kids-nursery",
+  "label": "DEKHO — Kids — Nursery",
+  "icon": "🧸",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "WRVsOCh907o",
+      "title": "Cocomelon - Bath Song",
+      "channel": "Cocomelon",
+      "thumbnail": "https://i.ytimg.com/vi/WRVsOCh907o/hqdefault.jpg",
+      "position": 0
+    },
+    {
+      "videoId": "yCjJyiqpAuU",
+      "title": "Twinkle Twinkle Little Star",
+      "channel": "Traditional/YouTube",
+      "thumbnail": "https://i.ytimg.com/vi/yCjJyiqpAuU/hqdefault.jpg",
+      "position": 1
+    },
+    {
+      "videoId": "Gg9Y6z-N0g8",
+      "title": "Machhli Jal Ki Rani Hai",
+      "channel": "Traditional/YouTube",
+      "thumbnail": "https://i.ytimg.com/vi/Gg9Y6z-N0g8/hqdefault.jpg",
+      "position": 2
+    },
+    {
+      "videoId": "e_04ZrNroTo",
+      "title": "Wheels on the Bus",
+      "channel": "YouTube",
+      "thumbnail": "https://i.ytimg.com/vi/e_04ZrNroTo/hqdefault.jpg",
+      "position": 3
+    },
+    {
+      "videoId": "MR5XSOZJ4ws",
+      "title": "Baa Baa Black Sheep",
+      "channel": "Traditional/YouTube",
+      "thumbnail": "https://i.ytimg.com/vi/MR5XSOZJ4ws/hqdefault.jpg",
+      "position": 4
+    },
+    {
+      "videoId": "F4tHL8reNCs",
+      "title": "Johny Johny Yes Papa",
+      "channel": "LooLoo Kids",
+      "thumbnail": "https://i.ytimg.com/vi/F4tHL8reNCs/hqdefault.jpg",
+      "position": 5
+    },
+    {
+      "videoId": "cqhD-j7pzYM",
+      "title": "Phonics Song - Learn ABC with Johny",
+      "channel": "LooLoo Kids",
+      "thumbnail": "https://i.ytimg.com/vi/cqhD-j7pzYM/hqdefault.jpg",
+      "position": 6
+    },
+    {
+      "videoId": "Rq1t__qI91Y",
+      "title": "Down in The Jungle",
+      "channel": "LooLoo Kids",
+      "thumbnail": "https://i.ytimg.com/vi/Rq1t__qI91Y/hqdefault.jpg",
+      "position": 7
+    }
+  ]
+}

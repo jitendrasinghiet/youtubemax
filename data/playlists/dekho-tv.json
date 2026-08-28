@@ -1,0 +1,201 @@
+{
+  "slug": "dekho-tv",
+  "label": "DEKHO — TV",
+  "icon": "📺",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "EKFdSCCJhL0",
+      "title": "Vikram Aur Betaal",
+      "channel": "Tilak Kathayein",
+      "thumbnail": "https://i.ytimg.com/vi/EKFdSCCJhL0/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLDvNhoule3VPl315eOEDWV_6wGNZw",
+      "position": 0
+    },
+    {
+      "videoId": "6bHe2q5_8Zg",
+      "title": "Ramayan",
+      "channel": "Doordarshan",
+      "thumbnail": "https://i.ytimg.com/vi/6bHe2q5_8Zg/hqdefault.jpg",
+      "position": 1
+    },
+    {
+      "videoId": "6mMMzNS1r6E",
+      "title": "Rajani",
+      "channel": "Sameer Naik",
+      "thumbnail": "https://i.ytimg.com/vi/6mMMzNS1r6E/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIFsoSTAP&rs=AOn4CLAg84Em3Ft3vsYNnZNZJe-jb39XCA",
+      "position": 2
+    },
+    {
+      "videoId": "ymoKnBGSFGM",
+      "title": "Bharat Ek Khoj",
+      "channel": "Prasar Bharati Archives",
+      "thumbnail": "https://i.ytimg.com/vi/ymoKnBGSFGM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAlDqsCrh9fSbs1UABPL5OEoeXpmQ",
+      "position": 3
+    },
+    {
+      "videoId": "Us5lwVzXpMQ",
+      "title": "Flop Show",
+      "channel": "Prasar Bharati Archives",
+      "thumbnail": "https://i.ytimg.com/vi/Us5lwVzXpMQ/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgBzgWAAoAKigIMCAAQARhoIGgoaDAP&rs=AOn4CLDIprcCNVa-1uqExYCv7UwVXecZWg",
+      "position": 4
+    },
+    {
+      "videoId": "nTFmoG1eaC4",
+      "title": "Surabhi",
+      "channel": "Doordarshan National",
+      "thumbnail": "https://i.ytimg.com/vi/nTFmoG1eaC4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDsTAyunS_vjx-pbbV51JtEIwoEdQ",
+      "position": 5
+    },
+    {
+      "videoId": "qW4LZh2O4r8",
+      "title": "Chanakya",
+      "channel": "Chanakya_theofficial",
+      "thumbnail": "https://i.ytimg.com/vi/qW4LZh2O4r8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBPCDsn5fXgWJU0GMi-2DkcZACTtA",
+      "position": 6
+    },
+    {
+      "videoId": "dpdo8t2F8cQ",
+      "title": "Byomkesh Bakshi",
+      "channel": "Doordarshan National",
+      "thumbnail": "https://i.ytimg.com/vi/dpdo8t2F8cQ/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD2g4-PX6MWJGZYv2-ozR9IUujWGQ",
+      "position": 7
+    },
+    {
+      "videoId": "8j5_p0O6EuQ",
+      "title": "Tara",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/8j5_p0O6EuQ/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgBjgWAAuADigIMCAAQARhlIFEoTDAP&rs=AOn4CLCvCW8zvRf5vdlAoq9Te4D4x2yMdQ",
+      "position": 8
+    },
+    {
+      "videoId": "tY12ei_sNs4",
+      "title": "Sa Re Ga Ma",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/tY12ei_sNs4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD2vWtHtONqIH_yceRgRAmDDUjaIQ",
+      "position": 9
+    },
+    {
+      "videoId": "aif66Z5xwjM",
+      "title": "Hum Paanch",
+      "channel": "BIG Magic",
+      "thumbnail": "https://i.ytimg.com/vi/aif66Z5xwjM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAwu6HaISy9h2_1SaQdWwcytB5p_A",
+      "position": 10
+    },
+    {
+      "videoId": "G4Dxhl0argA",
+      "title": "Shaktimaan",
+      "channel": "Doordarshan National",
+      "thumbnail": "https://i.ytimg.com/vi/G4Dxhl0argA/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD-sMHwftkRYLo5Qp_H4hWN1Pvi2Q",
+      "position": 11
+    },
+    {
+      "videoId": "Fh4jMNXQOys",
+      "title": "Chandrakanta",
+      "channel": "Retro Rangmanch",
+      "thumbnail": "https://i.ytimg.com/vi/Fh4jMNXQOys/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCXrFezFZfZIeoNLChi637Faj6gdw",
+      "position": 12
+    },
+    {
+      "videoId": "IhKM5683bNA",
+      "title": "Kaun Banega Crorepati",
+      "channel": "WIKISAUCE",
+      "thumbnail": "https://i.ytimg.com/vi/IhKM5683bNA/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gKAAqACigIMCAAQARhyIEYoRTAP&rs=AOn4CLDNlSxhTMUw3bkdKMCrlqdR2SJXpw",
+      "position": 13
+    },
+    {
+      "videoId": "M61NZJI6qIs",
+      "title": "Kyunki Saas Bhi Kabhi Bahu Thi",
+      "channel": "StarPlus",
+      "thumbnail": "https://i.ytimg.com/vi/M61NZJI6qIs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDN5YUhg9RSiFKE2equtQPz5Hl0nQ",
+      "position": 14
+    },
+    {
+      "videoId": "KjpaOAzhHNI",
+      "title": "Kumkum",
+      "channel": "MediaXone",
+      "thumbnail": "https://i.ytimg.com/vi/KjpaOAzhHNI/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAUU6Da210YI3zdsqZrcJ6D_D1sqw",
+      "position": 15
+    },
+    {
+      "videoId": "-wzxkNb_GFw",
+      "title": "Jassi Jaisi Koi Nahin",
+      "channel": "NatureCat Fanatic LPS Hater",
+      "thumbnail": "https://i.ytimg.com/vi/-wzxkNb_GFw/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gSAAuADigIMCAAQARhAIGUoUDAP&rs=AOn4CLCSAYYiU4wfOJ4Wn-frc8OZg9i98A",
+      "position": 16
+    },
+    {
+      "videoId": "sbvdqLljJNQ",
+      "title": "Koffee with Karan",
+      "channel": "Star World",
+      "thumbnail": "https://i.ytimg.com/vi/sbvdqLljJNQ/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLANFeV4FpE83KdoLGsEDAerr_uc-A",
+      "position": 17
+    },
+    {
+      "videoId": "rxs75HgmWzw",
+      "title": "Balika Vadhu",
+      "channel": "Colors Rishtey Americas",
+      "thumbnail": "https://i.ytimg.com/vi/rxs75HgmWzw/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIFUoNTAP&rs=AOn4CLBNVvYtg8dPPJnRDRpbsYRPNREahQ",
+      "position": 18
+    },
+    {
+      "videoId": "vxW1WpOKyEY",
+      "title": "Pavitra Rishta",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/vxW1WpOKyEY/hq720.jpg?sqp=-oaymwE6CNAFEJQDSFXyq4qpAywIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIEkoQDAPuALzGA==&rs=AOn4CLB0Qo1Y6oHpO4cbDOvXK5NZu3mBkQ",
+      "position": 19
+    },
+    {
+      "videoId": "s6lszE2f4d8",
+      "title": "Dance India Dance",
+      "channel": "Dance India Dance",
+      "thumbnail": "https://i.ytimg.com/vi/s6lszE2f4d8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAVRDZVFhYbkM9zz_46BxcHkrPeVA",
+      "position": 20
+    },
+    {
+      "videoId": "BtfFX7PCfQM",
+      "title": "Iss Pyaar Ko Kya Naam Doon?",
+      "channel": "All Serials Themes & Montages ",
+      "thumbnail": "https://i.ytimg.com/vi/BtfFX7PCfQM/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAsYFigIMCAAQARhPIF8oZTAP&rs=AOn4CLDwod-k2MTWNzVR_hnk83VYEvF6ug",
+      "position": 21
+    },
+    {
+      "videoId": "K4pivVmV1yc",
+      "title": "Yeh Rishta Kya Kehlata Hai",
+      "channel": "JioHotstar",
+      "thumbnail": "https://i.ytimg.com/vi/K4pivVmV1yc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAJjXf8v3jld5--5C_ajR7KMqwaFQ",
+      "position": 22
+    },
+    {
+      "videoId": "Apw3yhyFA9o",
+      "title": "Kumkum Bhagya",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/Apw3yhyFA9o/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIFIoNDAP&rs=AOn4CLBtRJzCTbhCW0fwACYNQa_tuycEgw",
+      "position": 23
+    },
+    {
+      "videoId": "BsjaZixXfHs",
+      "title": "Baalveer",
+      "channel": "Sony SAB",
+      "thumbnail": "https://i.ytimg.com/vi/BsjaZixXfHs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCNAqMeQBHeRhRM1nBUKU5x6ucjjg",
+      "position": 24
+    },
+    {
+      "videoId": "KrZ_3o3UrSc",
+      "title": "Indian Idol 12",
+      "channel": "SET India",
+      "thumbnail": "https://i.ytimg.com/vi/KrZ_3o3UrSc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBuGsyi2d-o2JJYEBz-np6LFV1m3g",
+      "position": 25
+    },
+    {
+      "videoId": "nw5vTPczlr4",
+      "title": "Bigg Boss",
+      "channel": "JioHotstar and 2 more",
+      "thumbnail": "https://i.ytimg.com/vi/nw5vTPczlr4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAr869zfU6ibo8jjAUdYlUaXViaIQ",
+      "position": 26
+    }
+  ]
+}

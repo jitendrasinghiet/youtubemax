@@ -1,0 +1,47 @@
+{
+  "slug": "dekho-movies-thriller",
+  "label": "DEKHO — Movies — Thriller",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "XK5s4scKDWU",
+      "title": "Baazigar",
+      "channel": "Prakash Parab",
+      "thumbnail": "https://i.ytimg.com/vi/XK5s4scKDWU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBvbIJwE3PH1K2FsWD6P1aBYF1duw",
+      "position": 0
+    },
+    {
+      "videoId": "QlULorEPMig",
+      "title": "Sarfarosh",
+      "channel": "Tips Films",
+      "thumbnail": "https://i.ytimg.com/vi/QlULorEPMig/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC8xg=&rs=AOn4CLCWcATEQ-pAW9_yxn-uPAob0pJXWw",
+      "position": 1
+    },
+    {
+      "videoId": "_I0xx8Oj3Ww",
+      "title": "Ghajini",
+      "channel": "Indian Movie Trailers",
+      "thumbnail": "https://i.ytimg.com/vi/_I0xx8Oj3Ww/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBZ8V2x4Q4TbD7SECtdW1WhjCFtPA",
+      "position": 2
+    },
+    {
+      "videoId": "rsjamVgPoI8",
+      "title": "Kahaani",
+      "channel": "T-Series",
+      "thumbnail": "https://i.ytimg.com/vi/rsjamVgPoI8/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIEkoMTAP&rs=AOn4CLCITcrmbs9CLM2lwHW6YLTQkwRO6g",
+      "position": 3
+    },
+    {
+      "videoId": "2iVYI99VGaw",
+      "title": "Andhadhun",
+      "channel": "Star Studios Premiere",
+      "thumbnail": "https://i.ytimg.com/vi/2iVYI99VGaw/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLANT8X6b0HJISLiQgmkkjeeYIcD7Q",
+      "position": 4
+    }
+  ]
+}

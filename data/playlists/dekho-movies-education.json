@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-movies-education",
+  "label": "DEKHO — Movies — Education",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "tn_2Ie_jtX8",
+      "title": "Taare Zameen Par",
+      "channel": "SM. Sid",
+      "thumbnail": "https://i.ytimg.com/vi/tn_2Ie_jtX8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLA5-hf6A5-ZHo5AEvQxD_PPhbXvXw",
+      "position": 0
+    },
+    {
+      "videoId": "GjkFr48jk68",
+      "title": "Hindi Medium",
+      "channel": "T-Series",
+      "thumbnail": "https://i.ytimg.com/vi/GjkFr48jk68/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDIaQGEfApzZucW9fltv9e7nN8WKg",
+      "position": 1
+    },
+    {
+      "videoId": "1JgYFivz6XQ",
+      "title": "12th Fail",
+      "channel": "Cinema",
+      "thumbnail": "https://i.ytimg.com/vi/1JgYFivz6XQ/hqdefault.jpg",
+      "position": 2
+    }
+  ]
+}

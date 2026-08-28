@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-devotional",
+  "label": "DEKHO — Devotional",
+  "icon": "🙏",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "8ZpZ2o4HwP0",
+      "title": "Achyutam Keshavam",
+      "channel": "Art of Living",
+      "thumbnail": "https://i.ytimg.com/vi/8ZpZ2o4HwP0/hqdefault.jpg",
+      "position": 0
+    },
+    {
+      "videoId": "8M-oT1WkS1M",
+      "title": "Shiv Tandav Stotram",
+      "channel": "T-Series Bhakti",
+      "thumbnail": "https://i.ytimg.com/vi/8M-oT1WkS1M/hqdefault.jpg",
+      "position": 1
+    },
+    {
+      "videoId": "AETFvQonfV8",
+      "title": "Hanuman Chalisa",
+      "channel": "T-Series",
+      "thumbnail": "https://i.ytimg.com/vi/AETFvQonfV8/hqdefault.jpg",
+      "position": 2
+    }
+  ]
+}

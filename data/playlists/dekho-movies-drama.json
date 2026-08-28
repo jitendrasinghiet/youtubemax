@@ -1,0 +1,40 @@
+{
+  "slug": "dekho-movies-drama",
+  "label": "DEKHO — Movies — Drama",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "7JcW3lA0uxg",
+      "title": "Kismet",
+      "channel": "Support Elders",
+      "thumbnail": "https://i.ytimg.com/vi/7JcW3lA0uxg/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_A6AArgIigIMCAAQARhlIGUoZTAP&rs=AOn4CLDiUQMtQ4kXJM6j4v1_E0byY4DxXw",
+      "position": 0
+    },
+    {
+      "videoId": "Xn8dC0tAHZs",
+      "title": "Do Bigha Zamin",
+      "channel": "Shemaroo Megaplex",
+      "thumbnail": "https://i.ytimg.com/vi/Xn8dC0tAHZs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBswQYCTr6y1z-miJTYh8xqMKEbCA",
+      "position": 1
+    },
+    {
+      "videoId": "OFWHKtISBrY",
+      "title": "Mother India",
+      "channel": "Eagle Home Entertainments",
+      "thumbnail": "https://i.ytimg.com/vi/OFWHKtISBrY/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAlFcQpOry5HoHDdPu6q5GK0yDfpg",
+      "position": 2
+    },
+    {
+      "videoId": "69auJ1F1EsE",
+      "title": "Chumbak",
+      "channel": "Netflix India",
+      "thumbnail": "https://i.ytimg.com/vi/69auJ1F1EsE/hqdefault.jpg",
+      "position": 3
+    }
+  ]
+}

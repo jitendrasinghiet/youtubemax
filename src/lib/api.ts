@@ -43,6 +43,20 @@ export async function searchVideos(query: string, maxResults = 25): Promise<Sear
   return data as SearchResponse
 }
 
+/** Local-cache-first lookup -- scans every committed search result for
+ *  items matching these keywords, no live YouTube fetch. Meant to run the
+ *  moment a filter chip is toggled, not just on an explicit search
+ *  submit -- see server/searchCache.ts's searchCachedByKeywords(). */
+export async function searchCachedLocally(keywords: string[], maxResults = 25): Promise<SearchResultItem[]> {
+  const terms = keywords.map((k) => k.trim()).filter(Boolean)
+  if (terms.length === 0) return []
+  const params = new URLSearchParams({ keywords: terms.join(','), maxResults: String(maxResults) })
+  const res = await fetch(`/api/dev/search-cache?${params}`)
+  if (!res.ok) return []
+  const data = await res.json()
+  return Array.isArray(data.results) ? (data.results as SearchResultItem[]) : []
+}
+
 export async function fetchPlaylistResults(
   playlistId: string,
   maxResults = 25,

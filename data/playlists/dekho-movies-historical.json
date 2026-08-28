@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-movies-historical",
+  "label": "DEKHO — Movies — Historical",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "x-6cJebLXUc",
+      "title": "Kranti",
+      "channel": "ENTERTAINMENT FULLY LOADED",
+      "thumbnail": "https://i.ytimg.com/vi/x-6cJebLXUc/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLASAyuHmZ5L5kF3cmA1zP7i4YWp-Q",
+      "position": 0
+    },
+    {
+      "videoId": "cffAGIYTEHU",
+      "title": "Tanhaji",
+      "channel": "T-Series",
+      "thumbnail": "https://i.ytimg.com/vi/cffAGIYTEHU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC6uISCNCAV8RsjPBJfPUbyFSkX-g",
+      "position": 1
+    },
+    {
+      "videoId": "77vRyWNqZjM",
+      "title": "Chhaava",
+      "channel": "Maddock Films",
+      "thumbnail": "https://i.ytimg.com/vi/77vRyWNqZjM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAf0kH1goWLqh92iCcnFOPNoXXsXw",
+      "position": 2
+    }
+  ]
+}

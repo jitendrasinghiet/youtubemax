@@ -1,0 +1,47 @@
+{
+  "slug": "dekho-movies-family",
+  "label": "DEKHO — Movies — Family",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "FFRMi8OccGE",
+      "title": "Beta",
+      "channel": "Gaurang Doshi Productions",
+      "thumbnail": "https://i.ytimg.com/vi/FFRMi8OccGE/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhfIGUoPTAP&rs=AOn4CLC0W1LM1V009U2lFFChlVNP0d01pA",
+      "position": 0
+    },
+    {
+      "videoId": "45JY12a6zJA",
+      "title": "Hum Aapke Hain Koun..!",
+      "channel": "Rajshri",
+      "thumbnail": "https://i.ytimg.com/vi/45JY12a6zJA/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCUV05AZDVpC7V_820nzo7bVmf60w",
+      "position": 1
+    },
+    {
+      "videoId": "eeQ3CV-J3Ls",
+      "title": "Hum Saath-Saath Hain",
+      "channel": "Trailer Showcase",
+      "thumbnail": "https://i.ytimg.com/vi/eeQ3CV-J3Ls/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IEUoMDAP&rs=AOn4CLDusKRm98bnF0LDoAgbqYbZv3YOkw",
+      "position": 2
+    },
+    {
+      "videoId": "7uY1JbWZKPA",
+      "title": "Kabhi Khushi Kabhie Gham",
+      "channel": "Dharma Productions",
+      "thumbnail": "https://i.ytimg.com/vi/7uY1JbWZKPA/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBKH66_Aj9F7HNQVoq4Vz950brcKQ",
+      "position": 3
+    },
+    {
+      "videoId": "4nwAra0mz_Q",
+      "title": "Bajrangi Bhaijaan",
+      "channel": "Salman Khan Films",
+      "thumbnail": "https://i.ytimg.com/vi/4nwAra0mz_Q/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLA8iCJ_Vx4JhhpuDZdB8y2zgVVTtA",
+      "position": 4
+    }
+  ]
+}

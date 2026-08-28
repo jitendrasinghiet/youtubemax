@@ -1,0 +1,40 @@
+{
+  "slug": "dekho-tv-family",
+  "label": "DEKHO — TV — Family",
+  "icon": "📺",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "aif66Z5xwjM",
+      "title": "Hum Paanch",
+      "channel": "BIG Magic",
+      "thumbnail": "https://i.ytimg.com/vi/aif66Z5xwjM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAwu6HaISy9h2_1SaQdWwcytB5p_A",
+      "position": 0
+    },
+    {
+      "videoId": "M61NZJI6qIs",
+      "title": "Kyunki Saas Bhi Kabhi Bahu Thi",
+      "channel": "StarPlus",
+      "thumbnail": "https://i.ytimg.com/vi/M61NZJI6qIs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDN5YUhg9RSiFKE2equtQPz5Hl0nQ",
+      "position": 1
+    },
+    {
+      "videoId": "KjpaOAzhHNI",
+      "title": "Kumkum",
+      "channel": "MediaXone",
+      "thumbnail": "https://i.ytimg.com/vi/KjpaOAzhHNI/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAUU6Da210YI3zdsqZrcJ6D_D1sqw",
+      "position": 2
+    },
+    {
+      "videoId": "K4pivVmV1yc",
+      "title": "Yeh Rishta Kya Kehlata Hai",
+      "channel": "JioHotstar",
+      "thumbnail": "https://i.ytimg.com/vi/K4pivVmV1yc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAJjXf8v3jld5--5C_ajR7KMqwaFQ",
+      "position": 3
+    }
+  ]
+}

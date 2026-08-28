@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-movies-war",
+  "label": "DEKHO — Movies — War",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "kMIvCyrZn-Q",
+      "title": "Border",
+      "channel": "ENTERTAINMENT FULLY LOADED",
+      "thumbnail": "https://i.ytimg.com/vi/kMIvCyrZn-Q/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAUYwkKwNtRrMtF42P5SGpa157dbQ",
+      "position": 0
+    },
+    {
+      "videoId": "Cg8sbRFS3zU",
+      "title": "Uri: The Surgical Strike",
+      "channel": "RSVP Movies",
+      "thumbnail": "https://i.ytimg.com/vi/Cg8sbRFS3zU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD0yR5a800D90zGaN0KDrrhj8xAEA",
+      "position": 1
+    },
+    {
+      "videoId": "gvyUuxdRdR4",
+      "title": "Shershaah",
+      "channel": "Amazon Prime",
+      "thumbnail": "https://i.ytimg.com/vi/gvyUuxdRdR4/hqdefault.jpg",
+      "position": 2
+    }
+  ]
+}

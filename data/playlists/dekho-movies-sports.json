@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-movies-sports",
+  "label": "DEKHO — Movies — Sports",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "cR8rjP7Vr8k",
+      "title": "Jo Jeeta Wohi Sikandar",
+      "channel": "Cinemasti",
+      "thumbnail": "https://i.ytimg.com/vi/cR8rjP7Vr8k/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBp43lgye7Ib806421zbIoMrjQ78A",
+      "position": 0
+    },
+    {
+      "videoId": "hTt5FbgziPw",
+      "title": "Lagaan",
+      "channel": "Aamir Khan Talkies",
+      "thumbnail": "https://i.ytimg.com/vi/hTt5FbgziPw/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLCHkeDq8OaXFpLUCMLiEkCetPnuzQ",
+      "position": 1
+    },
+    {
+      "videoId": "wPxqcq6Byq0",
+      "title": "Sultan",
+      "channel": "YRF",
+      "thumbnail": "https://i.ytimg.com/vi/wPxqcq6Byq0/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAdFMWjoMeK6tSHb9oyFZykK2eZwQ",
+      "position": 2
+    }
+  ]
+}

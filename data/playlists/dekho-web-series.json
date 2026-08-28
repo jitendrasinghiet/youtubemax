@@ -1,0 +1,257 @@
+{
+  "slug": "dekho-web-series",
+  "label": "DEKHO — Web Series",
+  "icon": "🎞️",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "jU1zXUf5f30",
+      "title": "Scam 1992",
+      "channel": "SonyLIV",
+      "thumbnail": "https://i.ytimg.com/vi/jU1zXUf5f30/hqdefault.jpg",
+      "position": 0
+    },
+    {
+      "videoId": "oqxAJKy0ii4",
+      "title": "Squid Game",
+      "channel": "Netflix",
+      "thumbnail": "https://i.ytimg.com/vi/oqxAJKy0ii4/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC8xg=&rs=AOn4CLCNV5PxmYyYho7CSq0jZe-l4dfPZg",
+      "position": 1
+    },
+    {
+      "videoId": "z3G80r6V410",
+      "title": "Heeramandi",
+      "channel": "Netflix",
+      "thumbnail": "https://i.ytimg.com/vi/z3G80r6V410/hqdefault.jpg",
+      "position": 2
+    },
+    {
+      "videoId": "6DQ_lEmt0aM",
+      "title": "Jamtara",
+      "channel": "Netflix India",
+      "thumbnail": "https://i.ytimg.com/vi/6DQ_lEmt0aM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC0qy8NNVFsx2Bn5Gy4CxaDh-5Uog",
+      "position": 3
+    },
+    {
+      "videoId": "ViOutJ0kuJY",
+      "title": "Aspirants",
+      "channel": "The Viral Fever",
+      "thumbnail": "https://i.ytimg.com/vi/ViOutJ0kuJY/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBORsPMwgrUjxrChPne30Izh3-RGg",
+      "position": 4
+    },
+    {
+      "videoId": "-8RHxGQy7H8",
+      "title": "Yeh Meri Family",
+      "channel": "The Viral Fever",
+      "thumbnail": "https://i.ytimg.com/vi/-8RHxGQy7H8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBBoqZorYHjDgxrH4nDDdak4TXFrQ",
+      "position": 5
+    },
+    {
+      "videoId": "NscUnARPyYs",
+      "title": "Maharani",
+      "channel": "Sony LIV",
+      "thumbnail": "https://i.ytimg.com/vi/NscUnARPyYs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLA9koyyhbh9SF7zdXikBuDxSH1rmQ",
+      "position": 6
+    },
+    {
+      "videoId": "rOD-78_0pPU",
+      "title": "Rocket Boys",
+      "channel": "Sony LIV",
+      "thumbnail": "https://i.ytimg.com/vi/rOD-78_0pPU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLB26oD4ufw0GmXQ8A6eeI9SwQGSfA",
+      "position": 7
+    },
+    {
+      "videoId": "pgEiBaF2mHA",
+      "title": "Guns & Gulaabs",
+      "channel": "Netflix India",
+      "thumbnail": "https://i.ytimg.com/vi/pgEiBaF2mHA/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBzp5Y6--zAOVRNBLPmH6EuQDP7bw",
+      "position": 8
+    },
+    {
+      "videoId": "6QJQysiUxKc",
+      "title": "The Night Manager",
+      "channel": "JioHotstar",
+      "thumbnail": "https://i.ytimg.com/vi/6QJQysiUxKc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBtisKub1pEvE2sG4j5R10kPy57yA",
+      "position": 9
+    },
+    {
+      "videoId": "u0UkDQaR5KQ",
+      "title": "Made in Heaven",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/u0UkDQaR5KQ/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBmLn8ydMCw1aGd23_xlDOwGPPttw",
+      "position": 10
+    },
+    {
+      "videoId": "ZcFV_rJDa7s",
+      "title": "Tandav",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/ZcFV_rJDa7s/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC8xg=&rs=AOn4CLAgVuiuOL8xavlnhA9sm5aOTYnhtQ",
+      "position": 11
+    },
+    {
+      "videoId": "ZNeGF-PvRqw",
+      "title": "Mirzapur",
+      "channel": "OTT Platform",
+      "thumbnail": "https://i.ytimg.com/vi/ZNeGF-PvRqw/hqdefault.jpg",
+      "position": 12
+    },
+    {
+      "videoId": "T1y3aIfZXJ8",
+      "title": "Inside Edge",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/T1y3aIfZXJ8/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAS245yzHsf8Jr1AL-c-c_53CuMBA",
+      "position": 13
+    },
+    {
+      "videoId": "nxE-k2MLQIA",
+      "title": "Breathe",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/nxE-k2MLQIA/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAp4wqwssuuieXXpZ28qwTM9bnFiA",
+      "position": 14
+    },
+    {
+      "videoId": "pymRhLERVI4",
+      "title": "Hostages",
+      "channel": "DisneyPlus Hotstar_IN",
+      "thumbnail": "https://i.ytimg.com/vi/pymRhLERVI4/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDOhG_fZ-MN8C4R61TJj7k4XZNfpg",
+      "position": 15
+    },
+    {
+      "videoId": "KSVD5w1zw0g",
+      "title": "Aarya",
+      "channel": "JioHotstar",
+      "thumbnail": "https://i.ytimg.com/vi/KSVD5w1zw0g/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDIQ_s0lRjOB1LI3WpDKmKq7sxXvA",
+      "position": 16
+    },
+    {
+      "videoId": "pNWQGEQGUJU",
+      "title": "Kota Factory",
+      "channel": "OTT Platform",
+      "thumbnail": "https://i.ytimg.com/vi/pNWQGEQGUJU/hqdefault.jpg",
+      "position": 17
+    },
+    {
+      "videoId": "mojZJ7OeEM8",
+      "title": "Panchayat",
+      "channel": "OTT Platform",
+      "thumbnail": "https://i.ytimg.com/vi/mojZJ7OeEM8/hqdefault.jpg",
+      "position": 18
+    },
+    {
+      "videoId": "ah0BWt03qHE",
+      "title": "Suzhal",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/ah0BWt03qHE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAJ6RS2Nvhbl_SJcCNZ-fRIEYxbYg",
+      "position": 19
+    },
+    {
+      "videoId": "b6F7G104_ec",
+      "title": "Criminal Justice",
+      "channel": "JioHotstar",
+      "thumbnail": "https://i.ytimg.com/vi/b6F7G104_ec/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCT-i7OzO0HMrwW_CY3QkjfZyT8DQ",
+      "position": 20
+    },
+    {
+      "videoId": "rcQ_xZdzPBc",
+      "title": "Farzi",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/rcQ_xZdzPBc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCHKzYTZpg3wECR-91kuG9Ur7peLA",
+      "position": 21
+    },
+    {
+      "videoId": "jNuKwlKJx2E",
+      "title": "Delhi Crime",
+      "channel": "Netflix",
+      "thumbnail": "https://i.ytimg.com/vi/jNuKwlKJx2E/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDf4KNMtYU1lksA4t70AmHyq_-hsw",
+      "position": 22
+    },
+    {
+      "videoId": "GF0H5DZAE2g",
+      "title": "Special OPS",
+      "channel": "DisneyPlus Hotstar_IN",
+      "thumbnail": "https://i.ytimg.com/vi/GF0H5DZAE2g/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC03IjQtfMvc0KkQmDWcrHq9QD-xQ",
+      "position": 23
+    },
+    {
+      "videoId": "cNwWMW4mxO8",
+      "title": "Patal Lok",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/cNwWMW4mxO8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC3QZTOVBtinAk2mOtn12uN7QkScQ",
+      "position": 24
+    },
+    {
+      "videoId": "NGf_B81Hc2M",
+      "title": "Family Man",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/NGf_B81Hc2M/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDLdZHluaK6PCP4UGwGwYwl0gsdvA",
+      "position": 25
+    },
+    {
+      "videoId": "AkUgf2jIPyI",
+      "title": "Sacred Games",
+      "channel": "Netflix",
+      "thumbnail": "https://i.ytimg.com/vi/AkUgf2jIPyI/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCXSmKakdRhgE1CPXX-20q1GPPpdg",
+      "position": 26
+    },
+    {
+      "videoId": "oveko3h4pxk",
+      "title": "Asur",
+      "channel": "Wonderlik Studios",
+      "thumbnail": "https://i.ytimg.com/vi/oveko3h4pxk/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBTMTzv_Q93x3Vv1Dqf7qVCXODrOA",
+      "position": 27
+    },
+    {
+      "videoId": "7DJLNCp5HyI",
+      "title": "Gullak",
+      "channel": "Sony LIV and The Viral Fever",
+      "thumbnail": "https://i.ytimg.com/vi/7DJLNCp5HyI/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBotn1cqNOw1GURN0E_09I3yaCo9w",
+      "position": 28
+    },
+    {
+      "videoId": "cEukRxuyEUg",
+      "title": "Taaza Khabar",
+      "channel": "JioHotstar",
+      "thumbnail": "https://i.ytimg.com/vi/cEukRxuyEUg/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLASLuIoohyaQBBq-Fm9Z8SGoYOOrg",
+      "position": 29
+    },
+    {
+      "videoId": "5KaLhGFL51U",
+      "title": "Dahaad",
+      "channel": "Prime Video India",
+      "thumbnail": "https://i.ytimg.com/vi/5KaLhGFL51U/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBSrj7HFLYOM-cIrfiWsuL4XKYu_A",
+      "position": 30
+    },
+    {
+      "videoId": "iD3TZ_Xxc14",
+      "title": "The Railway Men",
+      "channel": "Netflix India",
+      "thumbnail": "https://i.ytimg.com/vi/iD3TZ_Xxc14/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCfUpaSbbGWwx6xSJFAPhGqwctZvQ",
+      "position": 31
+    },
+    {
+      "videoId": "8E8ylEjBY_U",
+      "title": "TVF Pitchers",
+      "channel": "MX Music 78..",
+      "thumbnail": "https://i.ytimg.com/vi/8E8ylEjBY_U/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAHirk7tOd7b_b5JxahFpji4ur2vw",
+      "position": 32
+    },
+    {
+      "videoId": "-Vui-DhwIAg",
+      "title": "Cars on the Road",
+      "channel": "Pixar",
+      "thumbnail": "https://i.ytimg.com/vi/-Vui-DhwIAg/hqdefault.jpg",
+      "position": 33
+    },
+    {
+      "videoId": "SdvzhCL7vIA",
+      "title": "3 Body Problem",
+      "channel": "Netflix",
+      "thumbnail": "https://i.ytimg.com/vi/SdvzhCL7vIA/hqdefault.jpg",
+      "position": 34
+    }
+  ]
+}

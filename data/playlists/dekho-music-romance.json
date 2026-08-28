@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-music-romance",
+  "label": "DEKHO — Music — Romance",
+  "icon": "🎵",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "rwfQqDtBDXU",
+      "title": "Tu Kahe Agar",
+      "channel": "Shemaroo Filmi Gaane",
+      "thumbnail": "https://i.ytimg.com/vi/rwfQqDtBDXU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC0nHq9IYtlPNVMoM7t3SeSGLODxQ",
+      "position": 0
+    },
+    {
+      "videoId": "TSWNHHNYv1w",
+      "title": "Aaja Re Pardesi",
+      "channel": "HD Songs Bollywood",
+      "thumbnail": "https://i.ytimg.com/vi/TSWNHHNYv1w/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBr6ZtdyNO2mEKhtB-0qe3rfCKUjA",
+      "position": 1
+    },
+    {
+      "videoId": "TFr6G5zveS8",
+      "title": "Lag Ja Gale",
+      "channel": "Woh Kaun Thi?",
+      "thumbnail": "https://i.ytimg.com/vi/TFr6G5zveS8/hqdefault.jpg",
+      "position": 2
+    }
+  ]
+}

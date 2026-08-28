@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-tv-fantasy",
+  "label": "DEKHO — TV — Fantasy",
+  "icon": "📺",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "EKFdSCCJhL0",
+      "title": "Vikram Aur Betaal",
+      "channel": "Tilak Kathayein",
+      "thumbnail": "https://i.ytimg.com/vi/EKFdSCCJhL0/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLDvNhoule3VPl315eOEDWV_6wGNZw",
+      "position": 0
+    },
+    {
+      "videoId": "Fh4jMNXQOys",
+      "title": "Chandrakanta",
+      "channel": "Retro Rangmanch",
+      "thumbnail": "https://i.ytimg.com/vi/Fh4jMNXQOys/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCXrFezFZfZIeoNLChi637Faj6gdw",
+      "position": 1
+    },
+    {
+      "videoId": "BsjaZixXfHs",
+      "title": "Baalveer",
+      "channel": "Sony SAB",
+      "thumbnail": "https://i.ytimg.com/vi/BsjaZixXfHs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCNAqMeQBHeRhRM1nBUKU5x6ucjjg",
+      "position": 2
+    }
+  ]
+}

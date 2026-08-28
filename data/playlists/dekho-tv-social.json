@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-tv-social",
+  "label": "DEKHO — TV — Social",
+  "icon": "📺",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "6mMMzNS1r6E",
+      "title": "Rajani",
+      "channel": "Sameer Naik",
+      "thumbnail": "https://i.ytimg.com/vi/6mMMzNS1r6E/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIFsoSTAP&rs=AOn4CLAg84Em3Ft3vsYNnZNZJe-jb39XCA",
+      "position": 0
+    },
+    {
+      "videoId": "8j5_p0O6EuQ",
+      "title": "Tara",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/8j5_p0O6EuQ/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgBjgWAAuADigIMCAAQARhlIFEoTDAP&rs=AOn4CLCvCW8zvRf5vdlAoq9Te4D4x2yMdQ",
+      "position": 1
+    },
+    {
+      "videoId": "rxs75HgmWzw",
+      "title": "Balika Vadhu",
+      "channel": "Colors Rishtey Americas",
+      "thumbnail": "https://i.ytimg.com/vi/rxs75HgmWzw/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIFUoNTAP&rs=AOn4CLBNVvYtg8dPPJnRDRpbsYRPNREahQ",
+      "position": 2
+    }
+  ]
+}

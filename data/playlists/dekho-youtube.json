@@ -1,0 +1,54 @@
+{
+  "slug": "dekho-youtube",
+  "label": "DEKHO — YouTube",
+  "icon": "▶️",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "8Px0djonn8s",
+      "title": "Chhota Bheem",
+      "channel": "Pogo",
+      "thumbnail": "https://i.ytimg.com/vi/8Px0djonn8s/hqdefault.jpg",
+      "position": 0
+    },
+    {
+      "videoId": "KYniUCGPGLs",
+      "title": "Masha and the Bear - Recipe for Disaster",
+      "channel": "Get Movies",
+      "thumbnail": "https://i.ytimg.com/vi/KYniUCGPGLs/hqdefault.jpg",
+      "position": 1
+    },
+    {
+      "videoId": "a18py61_F_w",
+      "title": "Tajdar-e-Haram",
+      "channel": "Coke Studio",
+      "thumbnail": "https://i.ytimg.com/vi/a18py61_F_w/hqdefault.jpg",
+      "position": 2
+    },
+    {
+      "videoId": "1GFbX-spV94",
+      "title": "The Kapil Sharma Show",
+      "channel": "Sony",
+      "thumbnail": "https://i.ytimg.com/vi/1GFbX-spV94/hqdefault.jpg",
+      "position": 3
+    },
+    {
+      "videoId": "kw4tT7SCmaY",
+      "title": "Afreen Afreen",
+      "channel": "Coke Studio",
+      "thumbnail": "https://i.ytimg.com/vi/kw4tT7SCmaY/hqdefault.jpg",
+      "position": 4
+    },
+    {
+      "videoId": "5Eqb_-j3FDA",
+      "title": "Pasoori",
+      "channel": "Coke Studio",
+      "thumbnail": "https://i.ytimg.com/vi/5Eqb_-j3FDA/hqdefault.jpg",
+      "position": 5
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "slug": "dekho-movies-comedy",
+  "label": "DEKHO — Movies — Comedy",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "2Rjm_AhZe-8",
+      "title": "Jaane Bhi Do Yaaro",
+      "channel": "Shemaroo Megaplex",
+      "thumbnail": "https://i.ytimg.com/vi/2Rjm_AhZe-8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLB4eygUqnrPLeJtQ3qx7Coq8AxpIg",
+      "position": 0
+    },
+    {
+      "videoId": "ggGMb7oVEHc",
+      "title": "Andaz Apna Apna",
+      "channel": "Tips Official",
+      "thumbnail": "https://i.ytimg.com/vi/ggGMb7oVEHc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAUUXMtR9PXRpwqoNSqb_frVMFOYg",
+      "position": 1
+    },
+    {
+      "videoId": "6lCGvu-hwX4",
+      "title": "Munna Bhai M.B.B.S.",
+      "channel": "Vidhu Vinod Chopra Films",
+      "thumbnail": "https://i.ytimg.com/vi/6lCGvu-hwX4/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB1gSAAuADigIMCAAQARhlIE4oSDAP&rs=AOn4CLAhfGkYx5nwUlUB3p21VwZE0E0Nxw",
+      "position": 2
+    },
+    {
+      "videoId": "N8_xcC6mafA",
+      "title": "Bunty Aur Babli",
+      "channel": "YRF Trailers",
+      "thumbnail": "https://i.ytimg.com/vi/N8_xcC6mafA/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLA4YLJ4plgkGByRRRXq9aqyMrjuKQ",
+      "position": 3
+    },
+    {
+      "videoId": "hZGR5Sj1Bfo",
+      "title": "Chennai Express",
+      "channel": "Red Chillies Entertainment",
+      "thumbnail": "https://i.ytimg.com/vi/hZGR5Sj1Bfo/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDeLxycYTN1Y0lYUiXjbmZHoAYk7A",
+      "position": 4
+    }
+  ]
+}

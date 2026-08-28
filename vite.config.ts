@@ -2,7 +2,8 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
-import { searchYouTubeVideos } from './server/search.ts'
+import { buildYouTubeSearchUrl, searchYouTubeVideos } from './server/search.ts'
+import { getCachedSearch, recordSearch, searchCachedByKeywords } from './server/searchCache.ts'
 import { fetchYouTubeSuggestions } from './server/suggest.ts'
 import { fetchPlaylistItems, fetchPlaylistMeta, PlaylistFetchError } from './server/youtubePlaylists.ts'
 import { searchPlaylists, PlaylistSearchError } from './server/youtubePlaylistSearch.ts'
@@ -75,13 +76,65 @@ function apiPlugin(): Plugin {
           }
 
           const maxResults = Number(url.searchParams.get('maxResults') ?? 12)
+          const bypassCache = url.searchParams.get('refresh') === '1'
 
           try {
+            if (!bypassCache) {
+              const cached = await getCachedSearch(query)
+              if (cached) {
+                res.statusCode = 200
+                res.end(
+                  JSON.stringify({
+                    results: cached.results,
+                    searchUrl: buildYouTubeSearchUrl(query),
+                    warning: undefined,
+                    fromCache: true,
+                    cachedAt: cached.searchedAt,
+                  }),
+                )
+                return
+              }
+            }
+
             const { results, searchUrl, warning } = await searchYouTubeVideos(query, maxResults)
+            // Dev-only write (see server/searchCache.ts's header) -- this
+            // middleware only exists in configureServer, never in the
+            // deployed api/*.ts path, so this can't run against a
+            // read-only production filesystem.
+            if (results.length > 0) {
+              await recordSearch(query, results)
+            }
             res.statusCode = 200
-            res.end(JSON.stringify({ results, searchUrl, warning }))
+            res.end(JSON.stringify({ results, searchUrl, warning, fromCache: false }))
           } catch (err) {
             const message = err instanceof Error ? err.message : 'Search failed'
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: message }))
+          }
+          return
+        }
+
+        // Local-cache-first lookup: given taxonomy/filter keywords (not a
+        // literal typed query), scans every committed search-cache file for
+        // matching items instead of hitting YouTube. Meant to be called the
+        // moment a filter chip is toggled -- before, and regardless of
+        // whether, an actual search ever runs -- so a facet like "Romance"
+        // or "Hindi" shows whatever's already cached instantly. Read-only,
+        // so (unlike /api/search's cache-miss path) this is safe to also
+        // wire into api/*.ts for production later.
+        if (url.pathname === '/api/dev/search-cache') {
+          const keywords = (url.searchParams.get('keywords') ?? '')
+            .split(',')
+            .map((k) => k.trim())
+            .filter(Boolean)
+          const limit = Number(url.searchParams.get('maxResults') ?? 25)
+
+          try {
+            const results = await searchCachedByKeywords(keywords, limit)
+            res.statusCode = 200
+            res.end(JSON.stringify({ results }))
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Local cache search failed'
             res.statusCode = 500
             res.end(JSON.stringify({ error: message }))
           }

@@ -20,6 +20,7 @@ import {
   fetchSearchSuggestions,
   parseSearchTerms,
   removeSearchTerm,
+  searchCachedLocally,
   searchVideos,
 } from './lib/api'
 import type { FilterDimensionKey, FilterItem } from './lib/filterTaxonomy'
@@ -110,6 +111,25 @@ function isLikelyMobileWindow() {
   return touchPoints > 1 && narrowViewport
 }
 
+/** Appends `incoming` onto `existing`, deduped by videoId -- the same
+ *  video legitimately shows up under several different queries/filters,
+ *  and this is what keeps a merged listing from repeating itself. Used
+ *  both for the cache-first filter lookup and for a live search's results
+ *  landing on top of whatever's already showing, rather than replacing it. */
+function mergeUniqueResults(
+  existing: SearchResultItem[],
+  incoming: SearchResultItem[],
+): SearchResultItem[] {
+  const seen = new Set(existing.map((r) => r.videoId))
+  const merged = existing.slice()
+  for (const item of incoming) {
+    if (seen.has(item.videoId)) continue
+    seen.add(item.videoId)
+    merged.push(item)
+  }
+  return merged
+}
+
 function isStandaloneDisplayMode() {
   if (typeof window === 'undefined') return false
   const iosStandalone = Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
@@ -122,10 +142,21 @@ function App() {
     return new URLSearchParams(window.location.search)
   }, [])
 
-  const popoutVideoId = searchParams.get('videoId')?.trim() ?? ''
+  // A `?videoId=` on the URL means two different things depending on
+  // `?popout=1`: with it, the floating popout player (isPopoutMode below);
+  // without it, "also play this inline in the main view" -- used together
+  // with `?discover=` by the sibling DEKHO project's detail pane, for a
+  // *confirmed* videoId (docs/SEARCH_CACHE.md), so the same link that
+  // pre-fills search results also starts the right one playing.
+  const requestedVideoId = searchParams.get('videoId')?.trim() ?? ''
   const popoutPlaylistId = searchParams.get('list')?.trim() || null
   const popoutStartAt = Number(searchParams.get('start') ?? '0') || 0
-  const isPopoutMode = searchParams.get('popout') === '1' && Boolean(popoutVideoId)
+  const isPopoutMode = searchParams.get('popout') === '1' && Boolean(requestedVideoId)
+  // Pre-fill + auto-run Discovery search from an external link -- e.g. the
+  // sibling DEKHO project's detail pane, for a title with no confirmed
+  // videoId yet (docs/SEARCH_CACHE.md). Deliberately just seeds the normal
+  // search flow, same as a typed query would -- no separate code path.
+  const discoverQuery = searchParams.get('discover')?.trim() ?? ''
   const [windowSessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`)
 
   const [loading, setLoading] = useState(false)
@@ -309,7 +340,6 @@ function App() {
     setSearchLoading(true)
     setSearchError(null)
     setSearchSoftWarning(null)
-    setSearchResults([])
     setSearchSortType('relevance')
 
     try {
@@ -317,7 +347,10 @@ function App() {
       // any filter selected, fall back to a default browse query.
       const effectiveQuery = buildEffectiveQuery(input, selectedFilters) || 'trending'
       const { results, warning } = await searchVideos(effectiveQuery)
-      setSearchResults(results)
+      // Merged on top of whatever's already showing (e.g. the cache-first
+      // filter lookup below), deduped by videoId -- a live search result
+      // set augments the local listing, it doesn't wipe it out.
+      setSearchResults((prev) => mergeUniqueResults(prev, results))
       if (warning) setSearchSoftWarning(warning)
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : 'Search failed')
@@ -331,11 +364,32 @@ function App() {
     persistFilters(selectedFilters)
   }, [selectedFilters])
 
-  // Filters are implicit — they're folded into the next search a user
-  // actually runs (typed submit, suggestion/history pick, or the Search
-  // button) — but toggling a filter chip does NOT fire a network call on its
-  // own. That keeps search requests tied to explicit user actions instead of
-  // firing on every checkbox click.
+  // Toggling a filter chip still never fires a live YouTube fetch on its
+  // own (see below) -- but it does now trigger an instant *local* lookup
+  // across every already-committed search-cache file for that filter's
+  // keyword, merged onto whatever's showing. This is "search the cache
+  // first" as a real behavior: applying a taxonomy filter like Romance or
+  // Hindi surfaces whatever's already cached immediately, before -- and
+  // regardless of whether -- an actual search ever runs.
+  useEffect(() => {
+    if (isPopoutMode || selectedFilters.length === 0) return
+    const keywords = selectedFilters.map((f) => f.value).filter(Boolean)
+    let cancelled = false
+    searchCachedLocally(keywords).then((cachedResults) => {
+      if (cancelled || cachedResults.length === 0) return
+      setSearchResults((prev) => mergeUniqueResults(prev, cachedResults))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedFilters, isPopoutMode])
+
+  // Filters are implicit — they're folded into the next *live* search a
+  // user actually runs (typed submit, suggestion/history pick, or the
+  // Search button) — but toggling a filter chip does NOT fire a live
+  // YouTube fetch on its own (the local cache lookup above is not that).
+  // That keeps real network requests tied to explicit user actions instead
+  // of firing on every checkbox click.
 
   const handleToggleFilter = useCallback(
     (dimension: FilterDimensionKey, label: string, icon: string, group?: string) => {
@@ -837,15 +891,34 @@ function App() {
     [searchResults, searchSortType, searchQuery],
   )
 
-  // Load default trending videos on first mount (session-based). Popout
-  // windows never render the discovery UI, so skip the fetch there.
+  // An external link (the sibling DEKHO project's detail pane) drives the
+  // initial state two ways, independently: `?discover=<query>` pre-fills +
+  // auto-runs Discovery search; `?videoId=` *without* `?popout=1` also
+  // plays that video inline in the main view alongside the results list --
+  // one for an unconfirmed title (search only), both together for a
+  // confirmed one (search + play). Checked first so the trending default
+  // below never races it.
   useEffect(() => {
     if (isPopoutMode) return
+    if (defaultsLoaded) return
+    if (!discoverQuery && !requestedVideoId) return
+    setDefaultsLoaded(true)
+    if (discoverQuery) handleSearchFromDiscovery(discoverQuery)
+    if (requestedVideoId) runAnalysis(requestedVideoId)
+  }, [isPopoutMode, discoverQuery, requestedVideoId, defaultsLoaded, handleSearchFromDiscovery, runAnalysis])
+
+  // Load default trending videos on first mount (session-based). Popout
+  // windows never render the discovery UI, so skip the fetch there. Skips
+  // entirely when a `?discover=`/`?videoId=` link is driving the initial
+  // state instead.
+  useEffect(() => {
+    if (isPopoutMode) return
+    if (discoverQuery || requestedVideoId) return
     if (!defaultsLoaded && searchResults.length === 0 && !searchQuery) {
       setDefaultsLoaded(true)
       handleVideoSearch('trending')
     }
-  }, [isPopoutMode, defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
+  }, [isPopoutMode, discoverQuery, requestedVideoId, defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
 
   useEffect(() => {
     if (isPopoutMode) return
@@ -981,7 +1054,7 @@ function App() {
             </button>
           </div>
           <VideoPlayer
-            videoId={popoutVideoId}
+            videoId={requestedVideoId}
             playlistId={popoutPlaylistId}
             startAt={popoutStartAt}
             captionsEnabled={captionsEnabled}

@@ -1,0 +1,96 @@
+{
+  "slug": "dekho-movies-action",
+  "label": "DEKHO — Movies — Action",
+  "icon": "🎬",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T06:03:40.000Z",
+  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "items": [
+    {
+      "videoId": "h0R8-9kRweQ",
+      "title": "Sholay",
+      "channel": "Cinema",
+      "thumbnail": "https://i.ytimg.com/vi/h0R8-9kRweQ/hqdefault.jpg",
+      "position": 0
+    },
+    {
+      "videoId": "DuJ_7UVyGIc",
+      "title": "Deewaar",
+      "channel": "Abhi Prabhakar",
+      "thumbnail": "https://i.ytimg.com/vi/DuJ_7UVyGIc/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gKAAqACigIMCAAQARhlIFEoPjAP&rs=AOn4CLB_dcQeBuoD9Lfk5Bixtn9RbpjYDA",
+      "position": 1
+    },
+    {
+      "videoId": "SzzT4E9MBqY",
+      "title": "Qurbani",
+      "channel": "sreedhar vissapragada",
+      "thumbnail": "https://i.ytimg.com/vi/SzzT4E9MBqY/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgBzgWAAuADigIMCAAQARhlIF8oUDAP&rs=AOn4CLDKRxpHfSsIJK170STbTrUadO-jOw",
+      "position": 2
+    },
+    {
+      "videoId": "YZj8dgkJyLY",
+      "title": "Coolie",
+      "channel": "ZeeCinemaME",
+      "thumbnail": "https://i.ytimg.com/vi/YZj8dgkJyLY/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB7ASAAuADigIMCAAQARhWIFsoZTAP&rs=AOn4CLDpsqYFg3ENQExOvG-qvGWfX9kIzQ",
+      "position": 3
+    },
+    {
+      "videoId": "X9NofuCv_hM",
+      "title": "Karma",
+      "channel": "Mukta Arts Ltd.",
+      "thumbnail": "https://i.ytimg.com/vi/X9NofuCv_hM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBAwstzO1O-VeQsLljxDdBw1u84qw",
+      "position": 4
+    },
+    {
+      "videoId": "cRZFHJs14yE",
+      "title": "Tezaab",
+      "channel": "Amar Kashyap ",
+      "thumbnail": "https://i.ytimg.com/vi/cRZFHJs14yE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDI_yXtponmkxl0SWsmU93UmC5xOg",
+      "position": 5
+    },
+    {
+      "videoId": "E79uAWWN7ko",
+      "title": "Hum",
+      "channel": "SJ Presents",
+      "thumbnail": "https://i.ytimg.com/vi/E79uAWWN7ko/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBGprydDhZl5010z1E77rk-cewdnw",
+      "position": 6
+    },
+    {
+      "videoId": "lzOH61u36W0",
+      "title": "Main Hoon Na",
+      "channel": "Red Chillies Entertainment",
+      "thumbnail": "https://i.ytimg.com/vi/lzOH61u36W0/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBAqjapjfADqem_qVDN12xMmtsdOg",
+      "position": 7
+    },
+    {
+      "videoId": "oRIIeyIa6nE",
+      "title": "Dhoom 2",
+      "channel": "YRF",
+      "thumbnail": "https://i.ytimg.com/vi/oRIIeyIa6nE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDoTj9XKPvAoedjqw2LFdA9jlJrkw",
+      "position": 8
+    },
+    {
+      "videoId": "v5v3JA2b9vY",
+      "title": "Dabangg",
+      "channel": "RelianceEntertainment",
+      "thumbnail": "https://i.ytimg.com/vi/v5v3JA2b9vY/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB1AaAAtYDigIMCAAQARhlIGAoNTAP&rs=AOn4CLAaH0GxwErHadmz-l684yFN6BvoNw",
+      "position": 9
+    },
+    {
+      "videoId": "COv52Qyctws",
+      "title": "Jawan",
+      "channel": "Cinema",
+      "thumbnail": "https://i.ytimg.com/vi/COv52Qyctws/hqdefault.jpg",
+      "position": 10
+    },
+    {
+      "videoId": "4cR-YvI4W94",
+      "title": "Pushpa 2",
+      "channel": "Cinema",
+      "thumbnail": "https://i.ytimg.com/vi/4cR-YvI4W94/hqdefault.jpg",
+      "position": 11
+    }
+  ]
+}

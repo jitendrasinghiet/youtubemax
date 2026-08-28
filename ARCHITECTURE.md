@@ -1,6 +1,6 @@
 # YouTubeMax Architecture
 
-## Status Snapshot (2026-08-25)
+## Status Snapshot (2026-08-28)
 
 - Discovery search defaults to `25` results and server clamps to `1..25`.
 - Main UX is discovery-first with a floating, draggable, resizable viewer.
@@ -16,6 +16,29 @@
   - Added dev-only bulk add-to-playlist: `SearchResultsGrid` renders a per-card checkbox (`import.meta.env.DEV` only) and a new `src/dev/AddToPlaylistBar.tsx` appears above the grid once one or more results are selected, letting you bulk-add them into an existing local playlist or a newly-created one via the same `localPlaylistStore.ts`/`/api/dev/playlists` path the Playlist Manager already uses. A per-item 409 ("already in this playlist") is treated as an expected skip in a batch add, not a failure. This is purely additive to the existing dev-only local-playlist workspace — no new persistence, nothing prod-facing.
   - Added a 5th filter dimension, **Vibe** (`filterTaxonomy.ts`), leading the dimension rail: two small always-open groups, **Mood** (Happy/Calm/Excited/Comfort/Sleepy/Wow/Funny/Focused) and **Context** (Study/Cooking/Travel/Family/Workout/Play/Party/Bedtime), rendered as large emoji-first tap targets (`VibeChip` in `FilterMenu.tsx`) — no reading or typing required, built for users who can't describe what they want in words. Selection is uncapped in the UI (tap as many as you like, same as every other dimension), but `buildEffectiveQuery` (`searchFilters.ts`) treats vibe specially: its terms are soft/generic (`'feel good'`, not `'Happy'`), capped at 2 regardless of selection count, and always appended *last*, after topical filters and the typed query — so it can only ever nudge results, never dominate or over-narrow them the way the prior uncapped concatenation (still true for every other dimension) risked. Covered by `src/lib/searchFilters.test.ts`. Live-verified: selecting 3 mood/context chips and searching produced `q=<typed> <2 capped vibe terms>`, confirming both the cap and the ordering.
   - Closed the test-coverage gap on hooks and the two Vercel API routes (previously 100% pure-function-only, zero on either). `useKeywordMasterList`'s `mergeKeyword`/`pruneNoise` and `useClipMode`'s new `computeClipStep` (extracted from its effect specifically to be unit-testable without a React render harness — no `@testing-library/react`/jsdom added, keeping the existing pure-function-only test philosophy) are now covered by `src/hooks/*.test.ts`. `api/analyze.ts`/`api/search.ts` get handler-level smoke tests (`api/*.test.ts`, `server/analyze.js`/`server/search.js` mocked via `vi.hoisted`) — method/validation/status-code/error-mapping, no real network calls. `vitest.config.ts`'s `include` now covers `api/**/*.test.ts`. 57 → 86 tests.
+- **New this iteration (cache-first search + DEKHO cross-repo sync):**
+  full detail in `docs/SEARCH_CACHE.md` — summarized here since it
+  touches `App.tsx` state shape directly. `server/searchCache.ts` gained
+  `searchCachedByKeywords()`, exposed at `GET /api/dev/search-cache`
+  (dev-only) and `src/lib/api.ts`'s `searchCachedLocally()`. `App.tsx`:
+  added a module-level `mergeUniqueResults(existing, incoming)` (dedup by
+  videoId) used both by a new effect that fires on `selectedFilters`
+  change (instant cache-only lookup, no fetch, merged onto whatever's
+  showing) and by `handleVideoSearch` (a live search now merges onto
+  existing results instead of replacing them). Renamed `popoutVideoId` →
+  `requestedVideoId`, now dual-purpose: a popout still opens a separate
+  window/tab as before, but a non-popout `requestedVideoId` triggers
+  inline `runAnalysis()` playback — this is what lets `?discover=<query>
+  &videoId=<id>` fire a search *and* inline-play a specific result from
+  one URL, both mount effects consolidated to run together rather than
+  as two independent, possibly-racing effects. Verified live: toggling a
+  filter chip took results 23→48 with zero network fetch; a live search
+  submitted after that took it to 67 (merged onto the 48, not replacing
+  them). Sibling DEKHO project also started writing real playlists here —
+  `data/playlists/dekho-*.json`, one per DEKHO content bucket, via its own
+  `scripts/sync_youtubemax_playlists.py` — ordinary entries in
+  `localPlaylistStore.ts`'s store, no code change needed on this side to
+  read them.
 - Notes below include historical design context; this section is the source of truth for current runtime behavior.
 
 ## Overview
