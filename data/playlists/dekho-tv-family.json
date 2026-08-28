@@ -5,50 +5,43 @@
   "channel": "DEKHO",
   "loadedVia": "manual",
   "sourcePlaylistId": null,
-  "lastPulledAt": "2026-08-28T16:23:29.000Z",
-  "lastEditedAt": "2026-08-28T16:23:29.000Z",
+  "lastPulledAt": "2026-08-28T16:38:09.000Z",
+  "lastEditedAt": "2026-08-28T16:38:09.000Z",
   "items": [
-    {
-      "videoId": "aOF9U5gJ7J8",
-      "title": "Buniyaad",
-      "channel": "Bollywood & Doordarshan Archives ",
-      "thumbnail": "https://i.ytimg.com/vi/aOF9U5gJ7J8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAyr6akGBO29CIGV1KcLjUjmh52XA",
-      "position": 0
-    },
     {
       "videoId": "aif66Z5xwjM",
       "title": "Hum Paanch",
       "channel": "BIG Magic",
       "thumbnail": "https://i.ytimg.com/vi/aif66Z5xwjM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAwu6HaISy9h2_1SaQdWwcytB5p_A",
-      "position": 1
+      "position": 0
     },
     {
       "videoId": "M61NZJI6qIs",
       "title": "Kyunki Saas Bhi Kabhi Bahu Thi",
       "channel": "StarPlus",
       "thumbnail": "https://i.ytimg.com/vi/M61NZJI6qIs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDN5YUhg9RSiFKE2equtQPz5Hl0nQ",
-      "position": 2
+      "position": 1
     },
     {
       "videoId": "KjpaOAzhHNI",
       "title": "Kumkum",
       "channel": "MediaXone",
       "thumbnail": "https://i.ytimg.com/vi/KjpaOAzhHNI/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAUU6Da210YI3zdsqZrcJ6D_D1sqw",
-      "position": 3
+      "position": 2
     },
     {
       "videoId": "K4pivVmV1yc",
       "title": "Yeh Rishta Kya Kehlata Hai",
       "channel": "JioHotstar",
       "thumbnail": "https://i.ytimg.com/vi/K4pivVmV1yc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAJjXf8v3jld5--5C_ajR7KMqwaFQ",
-      "position": 4
+      "position": 3
     },
     {
       "videoId": "xjsr4X-FHEE",
       "title": "Anupamaa",
       "channel": "Orygnals",
       "thumbnail": "https://i.ytimg.com/vi/xjsr4X-FHEE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCnYJaOwyqAQwMexeMy1sZ9jI2_FQ",
-      "position": 5
+      "position": 4
     }
   ]
 }
