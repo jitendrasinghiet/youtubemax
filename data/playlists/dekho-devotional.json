@@ -5,148 +5,288 @@
   "channel": "DEKHO",
   "loadedVia": "manual",
   "sourcePlaylistId": null,
-  "lastPulledAt": "2026-08-28T16:54:43.000Z",
-  "lastEditedAt": "2026-08-28T16:54:43.000Z",
+  "lastPulledAt": "2026-08-28T17:50:35.000Z",
+  "lastEditedAt": "2026-08-28T17:50:35.000Z",
   "items": [
+    {
+      "videoId": "GKQG2ZFnObg",
+      "title": "Shree Lakshmi Aarti",
+      "channel": "Shemaroo Bhakti",
+      "thumbnail": "https://i.ytimg.com/vi/GKQG2ZFnObg/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBU-U4h1-SzBwu3Zb2BqmmKw8tZkw",
+      "position": 0
+    },
     {
       "videoId": "8ZpZ2o4HwP0",
       "title": "Achyutam Keshavam",
       "channel": "Art of Living",
       "thumbnail": "https://i.ytimg.com/vi/8ZpZ2o4HwP0/hqdefault.jpg",
-      "position": 0
+      "position": 1
     },
     {
       "videoId": "8M-oT1WkS1M",
       "title": "Shiv Tandav Stotram",
       "channel": "T-Series Bhakti",
       "thumbnail": "https://i.ytimg.com/vi/8M-oT1WkS1M/hqdefault.jpg",
-      "position": 1
+      "position": 2
     },
     {
       "videoId": "W6v93j9JpkY",
       "title": "Brahma Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/W6v93j9JpkY/hq720.jpg?sqp=-oaymwE6CNAFEJQDSFXyq4qpAywIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IDsoSjAPuAL3GA==&rs=AOn4CLDnbRzrPm_WrovvOHkeTNNfOqX2zw",
-      "position": 2
+      "position": 3
+    },
+    {
+      "videoId": "LrDZZO23RRQ",
+      "title": "Shree Bhairav Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/LrDZZO23RRQ/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLBFM7gKMNZTlkX0yuG8iKD0k_rRqg",
+      "position": 4
     },
     {
       "videoId": "6bAVKYTzbbM",
       "title": "Ganga Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/6bAVKYTzbbM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAyaCzUFb51cfKj5kNtltrp9Vm5Gw",
-      "position": 3
+      "position": 5
+    },
+    {
+      "videoId": "pcNYbQzFhk4",
+      "title": "Best of Yamuna Bhajans",
+      "channel": "Shemaroo Bhakti",
+      "thumbnail": "https://i.ytimg.com/vi/pcNYbQzFhk4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBDzJ97KObsl1B8iPP75ZFSauZ_JQ",
+      "position": 6
     },
     {
       "videoId": "SfTpVisNnCo",
       "title": "Shiva Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/SfTpVisNnCo/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLARqqaT8hQM9-JW15LHVttOAQnMsg",
-      "position": 4
+      "position": 7
+    },
+    {
+      "videoId": "FEMR5alT7CY",
+      "title": "Shree Krishna Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/FEMR5alT7CY/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAHLmlimVMrjs5gl8P0SeWXXpcISQ",
+      "position": 8
     },
     {
       "videoId": "9kcSBysWWGg",
       "title": "Krishna Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/9kcSBysWWGg/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IFEoFDAP&rs=AOn4CLD_MUuegssz19J9TJ-dFCt-rx8LEg",
-      "position": 5
+      "position": 9
+    },
+    {
+      "videoId": "EHkncEspk6Q",
+      "title": "Best of Rama Bhajans",
+      "channel": "Saregama Bhakti and Samarpit the band",
+      "thumbnail": "https://i.ytimg.com/vi/EHkncEspk6Q/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDigGVtDTz0jW2VGXTWWR64ESLETA",
+      "position": 10
+    },
+    {
+      "videoId": "tMYE0UJUNK8",
+      "title": "Shree Hanuman Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/tMYE0UJUNK8/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIEkoRDAP&rs=AOn4CLCNKNgqL347FvZ3J3CiAHN_6v6CsA",
+      "position": 11
     },
     {
       "videoId": "Hc4iUrZCmLE",
       "title": "Shree Mata Rani Aarti",
       "channel": "Bhakti Jyoti Channel",
       "thumbnail": "https://i.ytimg.com/vi/Hc4iUrZCmLE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDk8cuPLMwy9L236tuMBe5DLu7AZg",
-      "position": 6
+      "position": 12
     },
     {
       "videoId": "mZPSHAKR_9c",
       "title": "Radha Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/mZPSHAKR_9c/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDKK-3RRuE1gxP72WxmKh4ixF5i_A",
-      "position": 7
+      "position": 13
     },
     {
       "videoId": "ksPEwPcFGbU",
       "title": "Hanuman Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/ksPEwPcFGbU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCGu6sz6NF1fFMnuS2cFwCAwJYCpQ",
-      "position": 8
+      "position": 14
+    },
+    {
+      "videoId": "yd0VjsSONMY",
+      "title": "Best of Ganga Bhajans",
+      "channel": "Saregama Bhakti",
+      "thumbnail": "https://i.ytimg.com/vi/yd0VjsSONMY/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC8xg=&rs=AOn4CLCwurWZtPxK8gZs_LFtiwKfj3761w",
+      "position": 15
+    },
+    {
+      "videoId": "Y5kIExTTtvY",
+      "title": "Shree Ganga Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/Y5kIExTTtvY/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAtiPZN59BocCfTHZEIyusOqWQhFQ",
+      "position": 16
+    },
+    {
+      "videoId": "4tQmUdx1cvk",
+      "title": "Best of Mata Rani Bhajans",
+      "channel": "Shemaroo Filmi Gaane",
+      "thumbnail": "https://i.ytimg.com/vi/4tQmUdx1cvk/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD6jHN3V-chFCHvQIDPma1-ixQXmg",
+      "position": 17
     },
     {
       "videoId": "1pvfus9rD6Y",
       "title": "Durga Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/1pvfus9rD6Y/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLBueE8N2RdCPc4yaVg3D3KdnHliKg",
-      "position": 9
+      "position": 18
+    },
+    {
+      "videoId": "Y1-ULW8ESj8",
+      "title": "Shree Sai Baba Aarti",
+      "channel": "Shemaroo Bhakti",
+      "thumbnail": "https://i.ytimg.com/vi/Y1-ULW8ESj8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDrafPHKfZOv4BsL4klv6QRbN4w9Q",
+      "position": 19
+    },
+    {
+      "videoId": "TZldcPyQPjs",
+      "title": "Shree Kali Aarti",
+      "channel": "Shemaroo Kids Hindi- Balgeet & Children's Songs",
+      "thumbnail": "https://i.ytimg.com/vi/TZldcPyQPjs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCb0E5SJx6hKkPhiQA-M1eSwewWig",
+      "position": 20
+    },
+    {
+      "videoId": "Vvwyg5NiGbI",
+      "title": "Best of Bhairav Bhajans",
+      "channel": "T-Series",
+      "thumbnail": "https://i.ytimg.com/vi/Vvwyg5NiGbI/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDFCOMGVYWzkRkWrDY2VgEdTS-osQ",
+      "position": 21
+    },
+    {
+      "videoId": "vwSdtSABGmg",
+      "title": "Shree Durga Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/vwSdtSABGmg/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBLsgmadiVw-PJBFT9iVGDPKynr6w",
+      "position": 22
+    },
+    {
+      "videoId": "ASb9b3pHglU",
+      "title": "Best of Hanuman Bhajans",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/ASb9b3pHglU/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IDooEzAP&rs=AOn4CLC8QfkPVXK7K05xFB-bZEmYcitKoA",
+      "position": 23
     },
     {
       "videoId": "Ba9N-1xJBtg",
       "title": "Bhairav Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/Ba9N-1xJBtg/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBBxvnsv1IBmGtlCixfr-SKghQdPg",
-      "position": 10
+      "position": 24
     },
     {
       "videoId": "oGvlhx2ThEc",
       "title": "Powerful Krishna Mantra 108 Times",
       "channel": "Various Artists - Topic",
       "thumbnail": "https://i.ytimg.com/vi/oGvlhx2ThEc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAOA2XHuYs9sHlh0bBbOqnILXvblA",
-      "position": 11
+      "position": 25
+    },
+    {
+      "videoId": "XfwM8tLvyXg",
+      "title": "Best of Surya Bhajans",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/XfwM8tLvyXg/hq720.jpg?sqp=-oaymwEgCNAFEJQDSFXyq4qpAxIIARUAAIhCGAFwAcABBrgC9xg=&rs=AOn4CLA5xg23tNjwvoLPOO05Y4CSSqphQQ",
+      "position": 26
     },
     {
       "videoId": "8UPbSbg-8uo",
       "title": "Shree Saraswati Aarti",
       "channel": "Bhakti Jyoti Channel",
       "thumbnail": "https://i.ytimg.com/vi/8UPbSbg-8uo/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDZo9oTiYsBHs1u0x2FB_CXvVBzjg",
-      "position": 12
+      "position": 27
     },
     {
       "videoId": "gv8Q4rrkqWE",
       "title": "Lakshmi Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/gv8Q4rrkqWE/hq720.jpg?sqp=-oaymwE6CNAFEJQDSFXyq4qpAywIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_ICIoEzAPuALzGA==&rs=AOn4CLD2S0WrNj7JcRRn-E0AWwaeVUkk6g",
-      "position": 13
+      "position": 28
+    },
+    {
+      "videoId": "LbrI3NOE6Lk",
+      "title": "Best of Lakshmi Bhajans",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/LbrI3NOE6Lk/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCshToBm0LJVyYhZUaDAwUX-atiJg",
+      "position": 29
     },
     {
       "videoId": "RwOttd-PUH8",
       "title": "Saraswati Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/RwOttd-PUH8/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IEgoFTAP&rs=AOn4CLAWB-RAgwm0gUipc3Jyk1oSjzWq8Q",
-      "position": 14
+      "position": 30
+    },
+    {
+      "videoId": "0T-FEbLeBbs",
+      "title": "Shree Vishnu Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/0T-FEbLeBbs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDWAh6S3X7yzqkskSXoQIztMzgM2w",
+      "position": 31
     },
     {
       "videoId": "AETFvQonfV8",
       "title": "Hanuman Chalisa",
       "channel": "T-Series",
       "thumbnail": "https://i.ytimg.com/vi/AETFvQonfV8/hqdefault.jpg",
-      "position": 15
+      "position": 32
     },
     {
       "videoId": "4D6kxrlGaRo",
       "title": "Kali Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/4D6kxrlGaRo/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_ICAoEzAP&rs=AOn4CLDuwAV9dPtEIrdNOsRNsiuzmT6TnA",
-      "position": 16
+      "position": 33
     },
     {
       "videoId": "ubpFE66UnPs",
       "title": "Vishnu Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/ubpFE66UnPs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC5tjh8B4srKjszQDRYGB3aD3t66A",
-      "position": 17
+      "position": 34
     },
     {
       "videoId": "I96iVRU9-yE",
       "title": "Sai Baba Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/I96iVRU9-yE/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCfIJay8_F8KV4SrUpoC8mXkE51DQ",
-      "position": 18
+      "position": 35
+    },
+    {
+      "videoId": "F9uURnkc8iA",
+      "title": "Shree Surya Aarti",
+      "channel": "T-Series Bhakti Sagar",
+      "thumbnail": "https://i.ytimg.com/vi/F9uURnkc8iA/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAah-PjXLyD3zCL1iclqPixsMeSmg",
+      "position": 36
+    },
+    {
+      "videoId": "h3vLotsKOXQ",
+      "title": "Best of Brahma Bhajans",
+      "channel": "Saregama Carnatic Classical",
+      "thumbnail": "https://i.ytimg.com/vi/h3vLotsKOXQ/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDD0GP-NjAD_0H83MJrSko_DJay6A",
+      "position": 37
+    },
+    {
+      "videoId": "3vnCzw0nR1k",
+      "title": "Shree Radha Aarti",
+      "channel": " Shemaroo Devi Bhakti",
+      "thumbnail": "https://i.ytimg.com/vi/3vnCzw0nR1k/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD54o_ZxaTqCmFwdXc5MpmkN68z5g",
+      "position": 38
     },
     {
       "videoId": "aPFocROXYuY",
       "title": "Surya Amritwani",
       "channel": "T-Series Bhakti Sagar",
       "thumbnail": "https://i.ytimg.com/vi/aPFocROXYuY/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IDIoEzAP&rs=AOn4CLDMqQ7v_b8N7vqEtge_9PZDy8M5eQ",
-      "position": 19
+      "position": 39
     }
   ]
 }
