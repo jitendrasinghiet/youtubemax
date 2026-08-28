@@ -89,6 +89,63 @@ function parseViewCount(raw: string | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0
+  const m = a.length
+  const n = b.length
+  if (m === 0) return n
+  if (n === 0) return m
+  const dp = new Array(n + 1)
+  for (let j = 0; j <= n; j++) dp[j] = j
+  for (let i = 1; i <= m; i++) {
+    let prevDiag = dp[0]
+    dp[0] = i
+    for (let j = 1; j <= n; j++) {
+      const tmp = dp[j]
+      dp[j] = a[i - 1] === b[j - 1] ? prevDiag : 1 + Math.min(prevDiag, dp[j], dp[j - 1])
+      prevDiag = tmp
+    }
+  }
+  return dp[n]
+}
+
+// A typed filter/query word should still match a close variant of what's
+// actually in the cache -- a typo ("aashiqi" vs "aashiqui"), a plural or
+// suffix difference ("rhyme" vs "rhymes"), a partial word still being
+// typed ("kahani" vs "kahaniyan") -- not just a literal substring. The
+// distance threshold scales with word length so short words (where any
+// edit is a large relative change, and false-positive risk is highest --
+// "cat" vs "car") stay strict rather than fuzzy-matching everything.
+export function wordsAreSimilar(a: string, b: string): boolean {
+  if (a === b) return true
+  // A single- or double-character word (e.g. "z" from "Z for Zebra", "3d")
+  // is a trivial startsWith() prefix of almost anything sharing its first
+  // letter -- too short for "partial word" or "typo" to mean anything, so
+  // gate both checks below on a minimum length instead of just the longer
+  // word (a length-23 nonsense term still spuriously "starts with" a
+  // real 1-char token otherwise).
+  const minLen = Math.min(a.length, b.length)
+  if (minLen < 3) return false
+  // A real typo/plural/partial-typing variant overwhelmingly keeps the
+  // first letter -- this is what makes the full O(n*m) Levenshtein scan
+  // below affordable at cache-wide scale (thousands of results, tens of
+  // words each, every query keystroke): almost every comparison exits
+  // here instead of running the DP.
+  if (a[0] !== b[0]) return false
+  if (a.startsWith(b) || b.startsWith(a)) return true
+  const maxLen = Math.max(a.length, b.length)
+  if (maxLen < 4) return false
+  const threshold = maxLen <= 6 ? 1 : 2
+  return levenshtein(a, b) <= threshold
+}
+
+/** True if `term` matches `haystack` either as a literal substring (the
+ *  original, exact behavior) or as a close variant of one of its words. */
+function haystackMatches(term: string, haystack: string, haystackWords: string[]): boolean {
+  if (haystack.includes(term)) return true
+  return haystackWords.some((hw) => wordsAreSimilar(term, hw))
+}
+
 export interface BrowseCacheOptions {
   /** Filter-chip values -- OR'd together (any one matching is enough), same
    *  as picking "Romance" or "Hindi" has always meant. Empty/omitted means
@@ -97,7 +154,9 @@ export interface BrowseCacheOptions {
   /** The Discovery search box's typed text, matched independently of
    *  `keywords` and AND'd against it (both constraints must hold) -- every
    *  whitespace-separated word must appear somewhere in the item, same as
-   *  a normal "search within a list" box, not a single literal phrase. */
+   *  a normal "search within a list" box, not a single literal phrase. A
+   *  word that isn't a literal substring can still match a close variant
+   *  (typo, plural, partial word) -- see `wordsAreSimilar` below. */
   query?: string
   offset?: number
   limit?: number
@@ -143,8 +202,9 @@ export async function browseCache(options: BrowseCacheOptions = {}): Promise<Bro
       if (!item.videoId || seen.has(item.videoId)) continue
       if (keywordTerms.length > 0 || queryWords.length > 0) {
         const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
-        if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystack.includes(t))) continue
-        if (queryWords.length > 0 && !queryWords.every((w) => haystack.includes(w))) continue
+        const haystackWords = haystack.split(/\s+/).filter(Boolean)
+        if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystackMatches(t, haystack, haystackWords))) continue
+        if (queryWords.length > 0 && !queryWords.every((w) => haystackMatches(w, haystack, haystackWords))) continue
       }
       seen.add(item.videoId)
       all.push(item)
