@@ -1,6 +1,6 @@
 # Filter/Discovery Roadmap — Delta Requirements
 
-Last updated: 2026-08-25
+Last updated: 2026-08-29
 
 ## Purpose
 
@@ -287,6 +287,26 @@ insufficient in practice.
 
 ---
 
+### 11. Per-chip match counts — `DONE`
+
+**Gap:** A filter chip gave no indication of how many cached videos it
+would actually match — a plausible-looking chip could narrow to zero
+results, discovered only after tapping it.
+
+**What shipped:** `server/searchCache.ts`'s `getFacetCounts()` computes
+a literal-substring match count per taxonomy term across the whole local
+cache, in one batched call for all ~275 terms (`src/lib/api.ts`'s
+`fetchFacetCounts()`, `src/lib/filterTaxonomy.ts`'s
+`allFilterItemValues()`), fetched once on load and passed down through
+`FilterMenu` to every `ItemChip`/`VibeChip`/`SliderRow` as a small
+`"(N)"` badge — omitted (not shown as `"(0)"`) while the count hasn't
+loaded yet, so "not fetched" and "zero matches" don't look the same.
+See the sibling repo's `docs/SEARCH_CACHE.md` for the caching/
+performance detail (memoized alongside the same 60s TTL `browseCache()`
+now uses).
+
+---
+
 ## Explicitly out of scope right now (from source doc 1)
 
 Carried over from the architecture-context review, unchanged — these are
@@ -330,4 +350,5 @@ each would need its own BUILD/DEFER/REVIEW pass before implementation.
 | 8 | Trending Now dynamic panel | Large | Deferred |
 | 9 | Dynamic entity layer | Large | Deferred |
 | 10 | Vibe dimension (Mood + Context, icon-only) | Medium | **DONE** |
+| 11 | Per-chip match counts | Medium | **DONE** |
 | — | BYOK / quota / query dedup / entitlements | Large | Out of scope this session |

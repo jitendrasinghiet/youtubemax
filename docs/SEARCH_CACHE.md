@@ -147,6 +147,76 @@ searching "Kesariya Brahmastra" opened a distinct "Search results for…"
 section above the still-unchanged library feed, and "✕ Clear" removed
 just that section.
 
+## Filter/search matching is fuzzy, not just literal substring
+
+`browseCache()`'s `keywords`/`query` matching originally checked
+`haystack.includes(term)` only. `wordsAreSimilar()` (same file) now also
+accepts a typo, plural/suffix variant, or partial word — `"aashiqi"`
+matches `"aashiqui"`, `"kahani"` matches `"kahaniyan"` — via a
+first-letter-gated Levenshtein check (cheap enough to run across the
+whole cache; the first-letter gate is load-bearing, not cosmetic — real
+typos/variants overwhelmingly keep the first letter, and without it the
+DP runs on every word pair). Two real bugs were found and fixed building
+this, both now covered by `server/searchCache.test.ts`: a single-
+character haystack word (e.g. `"z"` from `"Z for Zebra"`) is a trivial
+`startsWith()` prefix of almost any same-starting-letter query, so both
+the prefix check and the Levenshtein fallback are gated on a minimum
+word length (3), not just the longer word's length.
+
+**Performance**: at the current cache size (600+ committed files),
+reading every file on every call costs ~1-1.5s — `loadAllUniqueResults()`
+memoizes the deduped item list in-process for 60s, shared by both
+`browseCache()` and `getFacetCounts()` below, so repeated calls in that
+window are near-instant. Still worth watching if the cache keeps growing;
+no further optimization done yet.
+
+## Per-chip match counts (`getFacetCounts`)
+
+`FilterMenu` shows how many cached videos actually match each filter
+chip — `"Hindi Songs (709)"`, `"Bhagavad Gita Explained (0)"` — instead
+of a chip that might filter down to zero with no way to know in advance.
+`server/searchCache.ts`'s `getFacetCounts(terms)` scans the same
+deduped item list once for the whole taxonomy (~275 terms in one
+batched call, not one round trip per chip — `src/lib/api.ts`'s
+`fetchFacetCounts()`), literal-substring matching only (not
+`wordsAreSimilar`'s fuzzy tolerance — these are curated taxonomy terms,
+not user-typed text, so a literal count is both faster and less
+surprising than a fuzzy near-miss the user never sees explained).
+Memoized alongside `loadAllUniqueResults`'s 60s TTL. Exposed at
+`GET /api/search-cache-facet-counts` (dev middleware + a real
+`api/search-cache-facet-counts.ts` Vercel function, same split as
+`/api/search-cache` above). `src/lib/filterTaxonomy.ts`'s
+`allFilterItemValues()` is the term list — every flat/grouped/slider
+item's `filterItemValue()` across the whole `FILTER_TAXONOMY`, fetched
+once on load, not gated behind opening the filter menu.
+
+## UI polish: sticky search bar, scroll-to-top, search-clear fix
+
+Three fixes from the same pass, all in `src/App.tsx`, once the
+cache-backed feed routinely started running into the thousands of items:
+
+- **`SelectedFiltersBar` + `DiscoverySearchBar` are now `sticky top-0`**,
+  staying visible while the results feed scrolls beneath them. The full
+  `FilterMenu` picker stays normal-flow/collapsible below the sticky
+  bar — it's opened, used, closed, not needed while scrolling, and can
+  get tall enough that pinning it too would eat the screen.
+- **A floating "back to top" button** appears past 600px of scroll
+  (`window.scrollY`, tracked via a scroll listener) — the feed is a
+  plain window-scrolled list with no inner overflow container, so there
+  was no other way back up short of a long manual scroll.
+- **Clearing or editing the search box after a live search landed now
+  auto-dismisses that search's pinned results.** Previously nothing tied
+  `liveResults` to `searchQuery` — a real bug, not a missing feature.
+  Fixed by wrapping `DiscoverySearchBar`'s `onQueryChange` (tied to the
+  text field's own `onChange`, not a derived effect on `searchQuery` —
+  that would have also fired for a filter-only search, which can leave
+  `searchQuery` at `''` the whole time without ever having stale live
+  results to dismiss).
+
+Also removed: the "Install as app" header banner (text + button) — kept
+the compact `Install` button in popout mode, a minimal control alongside
+similar compact controls there, not a dedicated banner.
+
 ## `dekho-*` playlists in `data/playlists/`
 
 The sibling DEKHO project also writes real, native playlists here —
