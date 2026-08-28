@@ -5,8 +5,8 @@
   "channel": "DEKHO",
   "loadedVia": "manual",
   "sourcePlaylistId": null,
-  "lastPulledAt": "2026-08-28T09:17:59.000Z",
-  "lastEditedAt": "2026-08-28T09:17:59.000Z",
+  "lastPulledAt": "2026-08-28T16:23:29.000Z",
+  "lastEditedAt": "2026-08-28T16:23:29.000Z",
   "items": [
     {
       "videoId": "8Px0djonn8s",
@@ -51,11 +51,32 @@
       "position": 5
     },
     {
+      "videoId": "I4uvM7BW5ZU",
+      "title": "Lion ki Kahani - Kids Story",
+      "channel": "Hindi Fairy Tales",
+      "thumbnail": "https://i.ytimg.com/vi/I4uvM7BW5ZU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDj7MQYwUMczumdCEEnpZSuUlLnwA",
+      "position": 6
+    },
+    {
+      "videoId": "AOtITEKQbqw",
+      "title": "Giraffe ki Kahani - Kids Story",
+      "channel": "fairy tales Hindi fairy toons",
+      "thumbnail": "https://i.ytimg.com/vi/AOtITEKQbqw/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBXKbK7ePRt4OLPt77_E9Vzr_9jIw",
+      "position": 7
+    },
+    {
+      "videoId": "WB0pOejytQA",
+      "title": "Dhokla Recipe - Restaurant Style",
+      "channel": "chaitanya food vlog",
+      "thumbnail": "https://i.ytimg.com/vi/WB0pOejytQA/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDA5Kz_YXXDttnbQ0tYhQQCr2o7Ig",
+      "position": 8
+    },
+    {
       "videoId": "5Eqb_-j3FDA",
       "title": "Pasoori",
       "channel": "Coke Studio",
       "thumbnail": "https://i.ytimg.com/vi/5Eqb_-j3FDA/hqdefault.jpg",
-      "position": 6
+      "position": 9
     }
   ]
 }

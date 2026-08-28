@@ -5,8 +5,8 @@
   "channel": "DEKHO",
   "loadedVia": "manual",
   "sourcePlaylistId": null,
-  "lastPulledAt": "2026-08-28T09:17:59.000Z",
-  "lastEditedAt": "2026-08-28T09:17:59.000Z",
+  "lastPulledAt": "2026-08-28T16:23:29.000Z",
+  "lastEditedAt": "2026-08-28T16:23:29.000Z",
   "items": [
     {
       "videoId": "EKFdSCCJhL0",
@@ -23,11 +23,18 @@
       "position": 1
     },
     {
+      "videoId": "TMv8cAgjpNA",
+      "title": "Naagin",
+      "channel": "Colors TV",
+      "thumbnail": "https://i.ytimg.com/vi/TMv8cAgjpNA/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARgUIGwocjAP&rs=AOn4CLBK0O_H40r8S8MHTY6Zk3HsHYi8fA",
+      "position": 2
+    },
+    {
       "videoId": "BsjaZixXfHs",
       "title": "Baalveer",
       "channel": "Sony SAB",
       "thumbnail": "https://i.ytimg.com/vi/BsjaZixXfHs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCNAqMeQBHeRhRM1nBUKU5x6ucjjg",
-      "position": 2
+      "position": 3
     }
   ]
 }
