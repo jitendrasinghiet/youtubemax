@@ -58,6 +58,45 @@
   `mouseover`/`mouseout` events: the iframe appears with the correct
   embed URL after the delay, disappears on leave, and a quick
   hover-then-leave within the delay window never loads anything at all.
+- **New this iteration (hover-preview follow-ups — asked together with
+  DEKHO's, this repo only got the two that actually apply here):**
+  - **Mute preference now persists** instead of resetting to muted every
+    single preview. `VideoCard.tsx`'s embed gained `enablejsapi=1` and
+    `controls=1` (was `controls=0` — there was previously no way to
+    manually unmute at all; a click inside a cross-origin iframe doesn't
+    bubble to the wrapping `<button onClick={onSelect}>`, so this doesn't
+    risk accidentally opening the full viewer just from unmuting).
+    YouTube's IFrame Player API is attached to the existing iframe
+    (`new window.YT.Player(iframeEl, {...})`, the documented
+    "attach to an existing iframe" mode) purely to poll `.isMuted()`
+    every 500ms (the API has no "mute changed" event) and persist it to
+    `localStorage['youtubemax.previewMuted']`. Each new card's hover
+    reads that key fresh into a ref at hover-open time — not React state,
+    since a *different* card may have updated the shared preference more
+    recently than this one last rendered. The API script itself
+    (`https://www.youtube.com/iframe_api`) loads once, lazily, cached in
+    a module-level promise. **Whether an unmuted preview actually
+    produces sound is still the browser's autoplay policy call** — this
+    only controls what gets requested/remembered, not what the browser
+    ultimately allows.
+  - **Touch devices skip the feature entirely, on purpose.** A
+    touchscreen has no "hover without touching" gesture and no
+    `mouseleave`-equivalent to close a preview that got stuck open, so a
+    literal hover simulation would be broken there, not degraded. New
+    `src/hooks/useSupportsHover.ts` gates the whole thing on
+    `matchMedia('(hover: hover) and (pointer: fine)')` — `handleEnter`/
+    `handleLeave` in `VideoCard.tsx` early-return when it's false, so a
+    touch device falls back to its original tap-to-open behavior,
+    unchanged. Uses the identical hook/pattern as DEKHO's own version
+    (separate repos, independent files) — DEKHO's was verified live via
+    mobile-viewport emulation; this one wasn't independently re-checked
+    this pass, same hook and gating shape though.
+  - **Not yet verified live, next session**: the mute-persistence
+    poll-and-persist loop end-to-end (this session's dev server died
+    mid-test, a recurring environment characteristic this whole pass, not
+    a bug found in the feature) — code path reasoned through carefully
+    and believed correct, but not confirmed the same way everything above
+    it was.
 - Notes below include historical design context; this section is the source of truth for current runtime behavior.
 
 ## Overview

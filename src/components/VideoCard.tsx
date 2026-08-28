@@ -1,11 +1,67 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatViewCount } from '../lib/api'
+import { useSupportsHover } from '../hooks/useSupportsHover'
 import type { SearchResultItem } from '../types'
 
 // A quick mouse pass across the grid shouldn't spin up a real embed for
 // every card it crosses -- this is the same "hover intent" delay
 // YouTube's own homepage uses before a thumbnail starts playing.
 const HOVER_INTENT_MS = 500
+// The IFrame Player API has no "mute changed" event, only a pollable
+// isMuted() -- this is how a manual unmute via the embed's own controls
+// gets noticed and remembered.
+const MUTE_POLL_MS = 500
+const MUTE_PREF_KEY = 'youtubemax.previewMuted'
+
+function loadMutePreference(): boolean {
+  try {
+    const raw = localStorage.getItem(MUTE_PREF_KEY)
+    return raw === null ? true : JSON.parse(raw)
+  } catch {
+    return true
+  }
+}
+
+function saveMutePreference(muted: boolean): void {
+  try {
+    localStorage.setItem(MUTE_PREF_KEY, JSON.stringify(muted))
+  } catch {
+    // storage full/unavailable -- preference just won't persist this session
+  }
+}
+
+interface YTPlayer {
+  isMuted(): boolean
+  destroy(): void
+}
+declare global {
+  interface Window {
+    YT?: { Player: new (el: HTMLElement | string, options: Record<string, unknown>) => YTPlayer }
+    onYouTubeIframeAPIReady?: () => void
+  }
+}
+
+let apiLoadPromise: Promise<void> | null = null
+
+/** Loads YouTube's IFrame Player API script once (idempotent), resolving
+ *  once `window.YT.Player` is available. Only needed to read back
+ *  whether the user muted/unmuted the embed -- the preview itself plays
+ *  via the plain <iframe src> regardless of whether this ever resolves. */
+function loadYouTubeIframeApi(): Promise<void> {
+  if (window.YT?.Player) return Promise.resolve()
+  if (apiLoadPromise) return apiLoadPromise
+  apiLoadPromise = new Promise((resolve) => {
+    const previous = window.onYouTubeIframeAPIReady
+    window.onYouTubeIframeAPIReady = () => {
+      previous?.()
+      resolve()
+    }
+    const script = document.createElement('script')
+    script.src = 'https://www.youtube.com/iframe_api'
+    document.head.appendChild(script)
+  })
+  return apiLoadPromise
+}
 
 interface VideoCardProps {
   video: SearchResultItem
@@ -16,17 +72,57 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video, selected, onToggleSelected, onSelect, showSelectCheckbox }: VideoCardProps) {
+  const supportsHover = useSupportsHover()
   const [showPreview, setShowPreview] = useState(false)
   const timerRef = useRef<number | undefined>(undefined)
+  const iframeElRef = useRef<HTMLIFrameElement | null>(null)
+  const playerRef = useRef<YTPlayer | null>(null)
+  const pollRef = useRef<number | undefined>(undefined)
+  // Read fresh on each preview start rather than kept in React state --
+  // another card may have updated the shared preference since this one
+  // last rendered, and this is the only place that needs the value.
+  const preferMutedRef = useRef(true)
 
   const handleEnter = () => {
-    timerRef.current = window.setTimeout(() => setShowPreview(true), HOVER_INTENT_MS)
+    if (!supportsHover) return
+    timerRef.current = window.setTimeout(() => {
+      preferMutedRef.current = loadMutePreference()
+      setShowPreview(true)
+    }, HOVER_INTENT_MS)
   }
 
   const handleLeave = () => {
+    if (!supportsHover) return
     window.clearTimeout(timerRef.current)
     setShowPreview(false)
   }
+
+  useEffect(() => {
+    if (!showPreview) return
+    let cancelled = false
+
+    loadYouTubeIframeApi().then(() => {
+      if (cancelled || !iframeElRef.current || !window.YT) return
+      playerRef.current = new window.YT.Player(iframeElRef.current, {
+        events: {
+          onReady: () => {
+            pollRef.current = window.setInterval(() => {
+              const player = playerRef.current
+              if (!player) return
+              saveMutePreference(player.isMuted())
+            }, MUTE_POLL_MS)
+          },
+        },
+      })
+    })
+
+    return () => {
+      cancelled = true
+      window.clearInterval(pollRef.current)
+      playerRef.current?.destroy()
+      playerRef.current = null
+    }
+  }, [showPreview, video.videoId])
 
   return (
     <div className="group relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
@@ -51,15 +147,19 @@ export function VideoCard({ video, selected, onToggleSelected, onSelect, showSel
       >
         <div className="relative w-full h-32 bg-black">
           <img src={video.thumbnail} alt="" className="w-full h-32 object-cover" />
-          {/* Muted autoplay is required, not cosmetic: browsers block
-             unmuted iframe autoplay without a prior user gesture, so a
-             silent hover-preview like this only actually plays if muted.
-             Mounted only once the hover-intent delay fires, and unmounted
-             (not just hidden) on mouse-leave so playback actually stops. */}
+          {/* Muted-by-default autoplay is required, not cosmetic: browsers
+             block unmuted iframe autoplay without a prior user gesture.
+             The starting mute state instead follows whatever the user
+             last set via the embed's own controls (preferMutedRef, read
+             fresh at hover-open time) -- unmute once and later previews
+             stay unmuted until muted again, on this device. Mounted only
+             once the hover-intent delay fires, and unmounted (not just
+             hidden) on mouse-leave so playback actually stops. */}
           {showPreview && (
             <iframe
               key={video.videoId}
-              src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0`}
+              ref={iframeElRef}
+              src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=${preferMutedRef.current ? 1 : 0}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
               title={video.title}
               allow="autoplay; encrypted-media"
               frameBorder={0}
