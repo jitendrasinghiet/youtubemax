@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
 import { buildYouTubeSearchUrl, searchYouTubeVideos } from './server/search.ts'
-import { browseCache, getCachedSearch, recordSearch } from './server/searchCache.ts'
+import { browseCache, getCachedSearch, getFacetCounts, recordSearch } from './server/searchCache.ts'
 import { fetchYouTubeSuggestions } from './server/suggest.ts'
 import { fetchPlaylistItems, fetchPlaylistMeta, PlaylistFetchError } from './server/youtubePlaylists.ts'
 import { searchPlaylists, PlaylistSearchError } from './server/youtubePlaylistSearch.ts'
@@ -140,6 +140,26 @@ function apiPlugin(): Plugin {
             res.end(JSON.stringify({ results, total }))
           } catch (err) {
             const message = err instanceof Error ? err.message : 'Local cache search failed'
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: message }))
+          }
+          return
+        }
+
+        // Same shape as /api/search-cache above, local-dev equivalent of
+        // api/search-cache-facet-counts.ts -- see that file's header.
+        if (url.pathname === '/api/search-cache-facet-counts') {
+          const terms = (url.searchParams.get('terms') ?? '')
+            .split('|')
+            .map((t) => t.trim())
+            .filter(Boolean)
+
+          try {
+            const counts = await getFacetCounts(terms)
+            res.statusCode = 200
+            res.end(JSON.stringify({ counts }))
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Facet count computation failed'
             res.statusCode = 500
             res.end(JSON.stringify({ error: message }))
           }

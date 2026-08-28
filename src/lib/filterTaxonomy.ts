@@ -894,6 +894,25 @@ export function filterItemValue(item: FilterItem): string {
   return item.value ?? item.label
 }
 
+/** Every filter value across the whole taxonomy (flat dimensions, grouped
+ *  dimensions' items, and slider items) -- the term list for a single
+ *  batched facet-count fetch (src/lib/api.ts's fetchFacetCounts), rather
+ *  than one request per chip. */
+export function allFilterItemValues(): string[] {
+  const values: string[] = []
+  for (const dim of Object.values(FILTER_TAXONOMY)) {
+    if (dim.type === 'flat') {
+      for (const item of dim.items) values.push(filterItemValue(item))
+    } else {
+      for (const group of Object.values(dim.groups)) {
+        for (const item of group.items) values.push(filterItemValue(item))
+        for (const item of group.sliderItems ?? []) values.push(filterItemValue(item))
+      }
+    }
+  }
+  return values
+}
+
 /**
  * Dev-time safety net: every `items` label in a group with `clusters`
  * should appear in exactly one cluster, so nothing silently disappears

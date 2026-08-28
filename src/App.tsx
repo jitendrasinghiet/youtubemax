@@ -17,13 +17,14 @@ import {
   analyzeVideo,
   appendSearchTerm,
   browseCachedResults,
+  fetchFacetCounts,
   fetchPlaylistResults,
   fetchSearchSuggestions,
   parseSearchTerms,
   removeSearchTerm,
   searchVideos,
 } from './lib/api'
-import type { FilterDimensionKey, FilterItem } from './lib/filterTaxonomy'
+import { allFilterItemValues, type FilterDimensionKey, type FilterItem } from './lib/filterTaxonomy'
 import {
   applyEvergreenSelection,
   buildEffectiveQuery,
@@ -223,6 +224,8 @@ function App() {
   const [defaultsLoaded, setDefaultsLoaded] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>(() => loadStoredFilters())
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const [facetCounts, setFacetCounts] = useState<Record<string, number>>({})
 
   const {
     keywords: masterKeywords,
@@ -380,10 +383,61 @@ function App() {
     setLiveQuery(null)
   }, [])
 
+  // Editing the search box (typing, or clearing it) after a live search
+  // has landed should drop that now-stale pinned result set rather than
+  // leaving it on screen until the user finds the separate dismiss
+  // button -- the cache feed below already re-pages itself on every
+  // searchQuery change (see the effect below), so only liveResults was
+  // going stale. Tied to the text field's own onChange, not a derived
+  // effect on searchQuery, so a filter-only search (which never touches
+  // this field, and can leave searchQuery at '' the whole time) doesn't
+  // get its own live results dismissed the instant they land.
+  const handleSearchQueryChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value)
+      if (liveResults.length > 0) dismissLiveResults()
+    },
+    [liveResults.length, dismissLiveResults],
+  )
+
   // Persist selected filters (in selection order) so they survive a reload.
   useEffect(() => {
     persistFilters(selectedFilters)
   }, [selectedFilters])
+
+  // Floating "back to top" affordance -- the results feed is a plain
+  // window-scrolled list (no inner overflow container), and it now
+  // routinely runs into the thousands of cached items, so getting back
+  // to the sticky search/filter bar without a long manual scroll matters.
+  useEffect(() => {
+    if (isPopoutMode) return
+    const THRESHOLD = 600
+    const handleScroll = () => setShowScrollTop(window.scrollY > THRESHOLD)
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isPopoutMode])
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  // One batched fetch for the whole taxonomy's worth of chip counts
+  // ("Romance (23)," not just "Romance") -- server/searchCache.ts's
+  // getFacetCounts() computes this from the same local cache the default
+  // feed already reads, memoized there, so this is cheap even though it
+  // covers ~275 terms. Fetched once on load (not gated behind opening the
+  // filter menu) so the numbers are already there the first time it opens.
+  useEffect(() => {
+    if (isPopoutMode) return
+    let active = true
+    fetchFacetCounts(allFilterItemValues()).then((counts) => {
+      if (active) setFacetCounts(counts)
+    })
+    return () => {
+      active = false
+    }
+  }, [isPopoutMode])
 
   // The cache-backed default feed: browses the *entire* local search-cache
   // -- no live YouTube fetch, ever, for this effect. This is "search the
@@ -1155,20 +1209,6 @@ function App() {
                 </h1>              
               </div>
             </div>
-            {!isStandaloneApp && deferredInstallPrompt && (
-              <div className="min-w-0 flex-1 px-1 text-center text-[11px] text-emerald-200 sm:text-xs">
-                <span className="hidden sm:inline">Install as app on Android for a cleaner no-address-bar experience.</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void promptInstallApp()
-                  }}
-                  className="ml-0 rounded border border-emerald-400/50 bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-100 transition hover:bg-emerald-500/25 sm:ml-2"
-                >
-                  Install
-                </button>
-              </div>
-            )}
             {import.meta.env.DEV && (
               <button
                 type="button"
@@ -1263,14 +1303,44 @@ function App() {
         </header>
 
         <div className="flex flex-col gap-1">
-          {/* Selected filters — implicitly applied to every search until removed/cleared */}
-          <SelectedFiltersBar
-            filters={selectedFilters}
-            onRemove={handleRemoveFilter}
-            onClearAll={handleClearFilters}
-            filtersOpen={filtersOpen}
-            onToggleFilters={() => setFiltersOpen((v) => !v)}
-          />
+          {/* Search box + active-filter summary stay pinned to the top of
+              the viewport while the results feed below scrolls -- with
+              thousands of cached items in that feed now, losing access to
+              these without scrolling all the way back up was the actual
+              complaint. The full filter picker (FilterMenu, below) stays
+              normal-flow/collapsible rather than also sticky -- it's opened,
+              used, then closed, not needed while scrolling through results,
+              and can get tall enough that pinning it would eat the screen. */}
+          <div className="sticky top-0 z-30 -mx-4 flex flex-col gap-1 border-b border-white/5 bg-zinc-950/95 px-4 pb-2 pt-1 backdrop-blur sm:-mx-6 sm:px-6">
+            {/* Selected filters — implicitly applied to every search until removed/cleared */}
+            <SelectedFiltersBar
+              filters={selectedFilters}
+              onRemove={handleRemoveFilter}
+              onClearAll={handleClearFilters}
+              filtersOpen={filtersOpen}
+              onToggleFilters={() => setFiltersOpen((v) => !v)}
+            />
+
+            {/* Discovery Search Bar (outside tabs) */}
+            <DiscoverySearchBar
+              query={searchQuery}
+              onQueryChange={handleSearchQueryChange}
+              onSubmit={(query) => {
+                addSearchHistory(query)
+                handleSearchFromDiscovery(query)
+              }}
+              loading={searchLoading}
+              isVoiceListening={isVoiceListening}
+              onToggleVoice={toggleVoiceSearch}
+              history={searchHistory}
+              onHistorySelect={handleHistorySelect}
+              onHistoryDelete={removeSearchHistoryItem}
+              onHistoryClear={clearSearchHistory}
+              suggestions={querySuggestions}
+              suggestionsLoading={suggestionsLoading}
+              onSuggestionSelect={handleSuggestionSelect}
+            />
+          </div>
 
           {filtersOpen && (
             <FilterMenu
@@ -1278,29 +1348,21 @@ function App() {
               onToggle={handleToggleFilter}
               onSelectEvergreen={handleSelectEvergreen}
               onToggleSlider={handleToggleSlider}
+              facetCounts={facetCounts}
             />
           )}
 
-          {/* Discovery Search Bar (outside tabs) */}
-          <DiscoverySearchBar
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            onSubmit={(query) => {
-              addSearchHistory(query)
-              handleSearchFromDiscovery(query)
-            }}
-            loading={searchLoading}
-            isVoiceListening={isVoiceListening}
-            onToggleVoice={toggleVoiceSearch}
-            history={searchHistory}
-            onHistorySelect={handleHistorySelect}
-            onHistoryDelete={removeSearchHistoryItem}
-            onHistoryClear={clearSearchHistory}
-            suggestions={querySuggestions}
-            suggestionsLoading={suggestionsLoading}
-            onSuggestionSelect={handleSuggestionSelect}
-          />
-
+          {showScrollTop && (
+            <button
+              type="button"
+              onClick={scrollToTop}
+              aria-label="Scroll back to top"
+              title="Back to top"
+              className="fixed bottom-5 right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-zinc-900/90 text-lg text-zinc-200 shadow-2xl backdrop-blur transition hover:border-white/20 hover:text-white sm:right-6"
+            >
+              ↑
+            </button>
+          )}
 
           {showDebugMessages && searchError && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">

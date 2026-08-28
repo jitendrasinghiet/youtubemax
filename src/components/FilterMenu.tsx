@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   FILTER_TAXONOMY,
   dimensionItemCount,
+  filterItemValue,
   type FilterDimensionKey,
   type FilterGroup,
   type FilterItem,
@@ -13,6 +14,21 @@ interface FilterMenuProps {
   onToggle: (dimension: FilterDimensionKey, label: string, icon: string, group?: string) => void
   onSelectEvergreen: (item: FilterItem) => void
   onToggleSlider: (dimension: FilterDimensionKey, group: string, item: FilterItem) => void
+  /** How many cached videos match each filter value -- see src/lib/api.ts's
+   *  fetchFacetCounts. Keyed by filterItemValue(item), not the label (the
+   *  two differ for some items -- e.g. Era's "2010s" is both, but a few
+   *  items send a different search term than what's shown). Missing/empty
+   *  while the first fetch is in flight -- chips render without a count
+   *  rather than a misleading "0" in that window. */
+  facetCounts: Record<string, number>
+}
+
+/** A small "(N)" badge next to a chip's label -- omitted (not "(0)") while
+ *  counts haven't loaded yet, since undefined at this point means "not
+ *  fetched," not "zero matches." */
+function CountBadge({ count }: { count: number | undefined }) {
+  if (count === undefined) return null
+  return <span className="text-[9px] text-zinc-500">({count})</span>
 }
 
 // Audience leads the rail — "who" before "what," matching the funnel model
@@ -25,11 +41,13 @@ function ItemChip({
   active,
   onClick,
   accent = 'red',
+  count,
 }: {
   item: FilterItem
   active: boolean
   onClick: () => void
   accent?: 'red' | 'emerald'
+  count?: number
 }) {
   const activeClass =
     accent === 'emerald' ? 'border-emerald-500/60 bg-emerald-500/15 text-white' : 'border-red-500/60 bg-red-500/15 text-white'
@@ -46,6 +64,7 @@ function ItemChip({
         {item.icon}
       </span>
       <span className="line-clamp-2 text-[10px] leading-tight">{item.label}</span>
+      <CountBadge count={count} />
     </button>
   )
 }
@@ -54,7 +73,17 @@ function ItemChip({
 // who can't read the rest of this menu, so the emoji does the work and the
 // hit area is generous (roughly 64px, near the common child/motor-impaired
 // touch-target minimum) rather than the dense grid used everywhere else.
-function VibeChip({ item, active, onClick }: { item: FilterItem; active: boolean; onClick: () => void }) {
+function VibeChip({
+  item,
+  active,
+  onClick,
+  count,
+}: {
+  item: FilterItem
+  active: boolean
+  onClick: () => void
+  count?: number
+}) {
   return (
     <button
       type="button"
@@ -69,6 +98,7 @@ function VibeChip({ item, active, onClick }: { item: FilterItem; active: boolean
         {item.icon}
       </span>
       <span className="text-[11px] font-medium leading-tight">{item.label}</span>
+      <CountBadge count={count} />
     </button>
   )
 }
@@ -80,6 +110,7 @@ function SliderRow({
   dimension,
   selected,
   onToggleSlider,
+  facetCounts,
 }: {
   label: string
   items: FilterItem[]
@@ -87,6 +118,7 @@ function SliderRow({
   dimension: FilterDimensionKey
   selected: SelectedFilter[]
   onToggleSlider: FilterMenuProps['onToggleSlider']
+  facetCounts: Record<string, number>
 }) {
   return (
     <div className="mb-3">
@@ -107,6 +139,7 @@ function SliderRow({
             >
               <span className="text-[10px] font-semibold leading-none">{item.icon}</span>
               <span className="text-[9px] leading-tight text-zinc-400">{item.label}</span>
+              <CountBadge count={facetCounts[filterItemValue(item)]} />
             </button>
           )
         })}
@@ -124,6 +157,7 @@ function CategoryGroupSection({
   onToggleSlider,
   expanded,
   onToggleExpanded,
+  facetCounts,
 }: {
   groupKey: string
   group: FilterGroup
@@ -133,6 +167,7 @@ function CategoryGroupSection({
   onToggleSlider: FilterMenuProps['onToggleSlider']
   expanded: boolean
   onToggleExpanded: () => void
+  facetCounts: Record<string, number>
 }) {
   const isEvergreen = groupKey === 'evergreen'
   const rawItems = group.items
@@ -172,6 +207,7 @@ function CategoryGroupSection({
               dimension="category"
               selected={selected}
               onToggleSlider={onToggleSlider}
+              facetCounts={facetCounts}
             />
           )}
 
@@ -199,6 +235,7 @@ function CategoryGroupSection({
                       onClick={() =>
                         isEvergreen ? onSelectEvergreen(item) : onToggle('category', item.label, item.icon, groupKey)
                       }
+                      count={facetCounts[filterItemValue(item)]}
                     />
                   ))}
                 </div>
@@ -215,6 +252,7 @@ function CategoryGroupSection({
                   accent={isEvergreen ? 'emerald' : 'red'}
                   active={isFilterSelected(selected, 'category', item.label)}
                   onClick={() => (isEvergreen ? onSelectEvergreen(item) : onToggle('category', item.label, item.icon, groupKey))}
+                  count={facetCounts[filterItemValue(item)]}
                 />
               ))}
             </div>
@@ -225,7 +263,7 @@ function CategoryGroupSection({
   )
 }
 
-export function FilterMenu({ selected, onToggle, onSelectEvergreen, onToggleSlider }: FilterMenuProps) {
+export function FilterMenu({ selected, onToggle, onSelectEvergreen, onToggleSlider, facetCounts }: FilterMenuProps) {
   const [activeDim, setActiveDim] = useState<FilterDimensionKey>('category')
   // Evergreen open by default — the whole point of one-tap combos is being
   // seen before the manual browse groups, and single-view means everything
@@ -284,6 +322,7 @@ export function FilterMenu({ selected, onToggle, onSelectEvergreen, onToggleSlid
               onToggleSlider={onToggleSlider}
               expanded={expandedGroups.has(groupKey)}
               onToggleExpanded={() => toggleExpanded(groupKey)}
+              facetCounts={facetCounts}
             />
           ))}
         </div>
@@ -307,6 +346,7 @@ export function FilterMenu({ selected, onToggle, onSelectEvergreen, onToggleSlid
                     item={item}
                     active={isFilterSelected(selected, 'vibe', item.label)}
                     onClick={() => onToggle('vibe', item.label, item.icon, groupKey)}
+                    count={facetCounts[filterItemValue(item)]}
                   />
                 ))}
               </div>
@@ -324,6 +364,7 @@ export function FilterMenu({ selected, onToggle, onSelectEvergreen, onToggleSlid
               item={item}
               active={isFilterSelected(selected, activeDim, item.label)}
               onClick={() => onToggle(activeDim, item.label, item.icon)}
+              count={facetCounts[filterItemValue(item)]}
             />
           ))}
         </div>

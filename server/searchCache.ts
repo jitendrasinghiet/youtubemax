@@ -180,16 +180,20 @@ export interface BrowseCacheResult {
  * than replacing it with a different code path -- see App.tsx's
  * cache-feed effect.
  */
-export async function browseCache(options: BrowseCacheOptions = {}): Promise<BrowseCacheResult> {
-  const keywordTerms = (options.keywords ?? []).map((k) => k.toLowerCase().trim()).filter(Boolean)
-  const queryWords = (options.query ?? '').toLowerCase().trim().split(/\s+/).filter(Boolean)
-  const offset = Math.max(0, options.offset ?? 0)
-  const limit = Math.max(1, options.limit ?? 24)
+// Shared by browseCache and getFacetCounts -- both need "every unique
+// cached item, across every committed file" as their starting point; this
+// is the ~1-1.5s-at-current-cache-size file-read cost documented on
+// browseCache below, factored out so it isn't duplicated.
+let allResultsCache: { items: SearchResultItem[]; loadedAt: number } | null = null
+const ALL_RESULTS_TTL_MS = 60_000
 
+async function loadAllUniqueResults(): Promise<SearchResultItem[]> {
+  if (allResultsCache && Date.now() - allResultsCache.loadedAt < ALL_RESULTS_TTL_MS) {
+    return allResultsCache.items
+  }
   const files = await listCachedQueries()
   const seen = new Set<string>()
   const all: SearchResultItem[] = []
-
   for (const file of files) {
     let entry: SearchCacheEntry
     try {
@@ -200,17 +204,68 @@ export async function browseCache(options: BrowseCacheOptions = {}): Promise<Bro
     }
     for (const item of entry.results ?? []) {
       if (!item.videoId || seen.has(item.videoId)) continue
-      if (keywordTerms.length > 0 || queryWords.length > 0) {
-        const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
-        const haystackWords = haystack.split(/\s+/).filter(Boolean)
-        if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystackMatches(t, haystack, haystackWords))) continue
-        if (queryWords.length > 0 && !queryWords.every((w) => haystackMatches(w, haystack, haystackWords))) continue
-      }
       seen.add(item.videoId)
       all.push(item)
     }
   }
+  allResultsCache = { items: all, loadedAt: Date.now() }
+  return all
+}
+
+export async function browseCache(options: BrowseCacheOptions = {}): Promise<BrowseCacheResult> {
+  const keywordTerms = (options.keywords ?? []).map((k) => k.toLowerCase().trim()).filter(Boolean)
+  const queryWords = (options.query ?? '').toLowerCase().trim().split(/\s+/).filter(Boolean)
+  const offset = Math.max(0, options.offset ?? 0)
+  const limit = Math.max(1, options.limit ?? 24)
+
+  const items = await loadAllUniqueResults()
+  const all: SearchResultItem[] = []
+
+  for (const item of items) {
+    if (keywordTerms.length > 0 || queryWords.length > 0) {
+      const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
+      const haystackWords = haystack.split(/\s+/).filter(Boolean)
+      if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystackMatches(t, haystack, haystackWords))) continue
+      if (queryWords.length > 0 && !queryWords.every((w) => haystackMatches(w, haystack, haystackWords))) continue
+    }
+    all.push(item)
+  }
 
   all.sort((a, b) => parseViewCount(b.viewCount) - parseViewCount(a.viewCount))
   return { results: all.slice(offset, offset + limit), total: all.length }
+}
+
+// Facet counts: "how many cached videos actually match each filter chip,"
+// so the FilterMenu can show "Romance (23)" instead of a chip that might
+// filter down to zero. Deliberately literal-substring matching only, not
+// wordsAreSimilar's typo/fuzzy tolerance -- these are curated taxonomy
+// terms (server/../src/lib/filterTaxonomy.ts), not user-typed text, and a
+// literal count is both faster (no per-term word-by-word fallback across
+// ~7,600 cached items) and less surprising (a chip count shouldn't include
+// a fuzzy near-miss the user never gets to see explained). Memoized
+// alongside loadAllUniqueResults's own TTL, keyed by the exact term list,
+// so re-opening the filter menu without new cache data is instant.
+let facetCountsCache: { key: string; counts: Record<string, number>; loadedAt: number } | null = null
+
+export async function getFacetCounts(terms: string[]): Promise<Record<string, number>> {
+  const uniqueTerms = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)))
+  const key = uniqueTerms.slice().sort().join(' ')
+  if (facetCountsCache && facetCountsCache.key === key && Date.now() - facetCountsCache.loadedAt < ALL_RESULTS_TTL_MS) {
+    return facetCountsCache.counts
+  }
+
+  const items = await loadAllUniqueResults()
+  const lowerTerms = uniqueTerms.map((t) => t.toLowerCase())
+  const counts: Record<string, number> = {}
+  for (const term of uniqueTerms) counts[term] = 0
+
+  for (const item of items) {
+    const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
+    for (let i = 0; i < lowerTerms.length; i++) {
+      if (haystack.includes(lowerTerms[i])) counts[uniqueTerms[i]]++
+    }
+  }
+
+  facetCountsCache = { key, counts, loadedAt: Date.now() }
+  return counts
 }

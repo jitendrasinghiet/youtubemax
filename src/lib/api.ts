@@ -77,6 +77,22 @@ export async function browseCachedResults(
   }
 }
 
+/** How many cached videos match each of the given filter terms -- one
+ *  round trip for the whole taxonomy (~275 terms) rather than one per
+ *  chip. Terms are joined with `|` (a term itself is very unlikely to
+ *  contain a pipe, unlike a comma). See server/searchCache.ts's
+ *  getFacetCounts() -- literal-substring counts, not fuzzy, matching what
+ *  selecting that single chip would actually filter to. */
+export async function fetchFacetCounts(terms: string[]): Promise<Record<string, number>> {
+  const unique = Array.from(new Set(terms.map((t) => t.trim()).filter(Boolean)))
+  if (unique.length === 0) return {}
+  const params = new URLSearchParams({ terms: unique.join('|') })
+  const res = await fetch(`/api/search-cache-facet-counts?${params}`)
+  if (!res.ok) return {}
+  const data = await res.json()
+  return data && typeof data.counts === 'object' ? (data.counts as Record<string, number>) : {}
+}
+
 export async function fetchPlaylistResults(
   playlistId: string,
   maxResults = 25,

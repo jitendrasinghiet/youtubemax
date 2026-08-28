@@ -28,7 +28,7 @@ describe('wordsAreSimilar', () => {
     // "z" is trivially a startsWith() prefix of any z-word -- caught a real
     // bug where a nonsense 23-char query matched cache entries containing
     // a lone "z" token (from "Z for Zebra").
-    expect(wordsAreSimilar('zzzxqvnonexistentquery', 'z')).toBe(false)
+    expect(wordsAreSimilar('qxvbjklnonexistentquery', 'z')).toBe(false)
     expect(wordsAreSimilar('a', 'aashiqui')).toBe(false)
   })
 
@@ -63,7 +63,7 @@ describe('browseCache', () => {
   it(
     'still returns nothing for words that share no real similarity',
     async () => {
-      const result = await browseCache({ query: 'zzzxqvnonexistentquery' })
+      const result = await browseCache({ query: 'qxvbjklnonexistentquery' })
       expect(result.total).toBe(0)
     },
     15000,
