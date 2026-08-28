@@ -89,16 +89,27 @@ visits.
 ## The default feed is the cache, browsable and paginated
 
 `server/searchCache.ts`'s `browseCache()` is the superset this app is
-actually built on: given no keywords, it pages through **every** cached
-result across every committed cache file (deduped by videoId, sorted by
-view count); given keywords, it's the same scan narrowed to matches
-(what `searchCachedByKeywords()` did before `browseCache` existed, kept
-today as a thin wrapper for the one-shot keyword-only case). Exposed at
-`GET /api/dev/search-cache`, accepting `keywords` (optional), `offset`,
-and `maxResults` — the response carries `{ results, total }` so the
-client always knows whether there's more to page in. `src/lib/api.ts`'s
-`browseCachedResults()` is the typed client wrapper; `searchCachedLocally()`
-(keywords required, no `total`) still exists for a one-shot lookup.
+actually built on: given no `keywords`/`query`, it pages through
+**every** cached result across every committed cache file (deduped by
+videoId, sorted by view count); `keywords` (filter chips, OR'd together)
+and `query` (the typed Discovery search box, AND'd word-by-word) each
+narrow that same scan independently, on top of each other. Exposed at
+`GET /api/search-cache`, accepting `keywords`, `query`, `offset`, and
+`maxResults` — the response carries `{ results, total }` so the client
+always knows whether there's more to page in. `src/lib/api.ts`'s
+`browseCachedResults()` is the typed client wrapper.
+
+**This is a real Vercel function** (`api/search-cache.ts`), not a
+dev-only route — `browseCache()` only ever reads the committed
+`data/search-cache/*.json` files, which ship with the deployment, so
+it's exactly as safe in Vercel's read-only production functions as
+`getCachedSearch()` already was. `vite.config.ts`'s dev middleware
+handles the identical path (`/api/search-cache`) locally with the same
+underlying call, so behavior doesn't diverge between `npm run dev` and
+production. (This used to live at `/api/dev/search-cache`, dev-only by
+convention — since the default discovery feed depends on it entirely,
+that meant the feed silently rendered empty on Vercel until this was
+moved to a real endpoint.)
 
 `src/App.tsx` opens on this feed directly — **no live "trending" fetch on
 mount anymore**. `cacheResults` pages in on load ("From your library"),

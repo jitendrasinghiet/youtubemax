@@ -120,10 +120,12 @@ function apiPlugin(): Plugin {
         // each narrow the result set independently, on top of each other;
         // both omitted browses the *entire* cache (paginated via
         // `offset`/`maxResults`) -- this is the default discovery feed on
-        // first load, see App.tsx. Read-only, so (unlike /api/search's
-        // cache-miss path) this is safe to also wire into api/*.ts for
-        // production later.
-        if (url.pathname === '/api/dev/search-cache') {
+        // first load, see App.tsx. Read-only, so unlike every other
+        // handler in this block it's NOT under /api/dev/ -- api/search-
+        // cache.ts is the real Vercel function for production; this dev
+        // middleware handler is just the local-dev equivalent of it, same
+        // path, same underlying browseCache() call.
+        if (url.pathname === '/api/search-cache') {
           const keywords = (url.searchParams.get('keywords') ?? '')
             .split(',')
             .map((k) => k.trim())

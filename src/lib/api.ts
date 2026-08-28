@@ -68,7 +68,7 @@ export async function browseCachedResults(
   const terms = keywords.map((k) => k.trim()).filter(Boolean)
   if (terms.length > 0) params.set('keywords', terms.join(','))
   if (query.trim()) params.set('query', query.trim())
-  const res = await fetch(`/api/dev/search-cache?${params}`)
+  const res = await fetch(`/api/search-cache?${params}`)
   if (!res.ok) return { results: [], total: 0 }
   const data = await res.json()
   return {
