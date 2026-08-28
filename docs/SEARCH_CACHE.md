@@ -147,24 +147,48 @@ searching "Kesariya Brahmastra" opened a distinct "Search results for…"
 section above the still-unchanged library feed, and "✕ Clear" removed
 just that section.
 
-## Filter/search matching is fuzzy, not just literal substring
+## Filter/search matching: `keywords` literal, `query` fuzzy, always tiered
 
-`browseCache()`'s `keywords`/`query` matching originally checked
-`haystack.includes(term)` only. `wordsAreSimilar()` (same file) now also
-accepts a typo, plural/suffix variant, or partial word — `"aashiqi"`
-matches `"aashiqui"`, `"kahani"` matches `"kahaniyan"` — via a
+`browseCache()`'s `query` (the typed Discovery box) accepts a typo,
+plural/suffix variant, or partial word via `wordsAreSimilar()` —
+`"aashiqi"` matches `"aashiqui"`, `"kahani"` matches `"kahaniyan"` — via a
 first-letter-gated Levenshtein check (cheap enough to run across the
 whole cache; the first-letter gate is load-bearing, not cosmetic — real
 typos/variants overwhelmingly keep the first letter, and without it the
-DP runs on every word pair). Two real bugs were found and fixed building
-this, both now covered by `server/searchCache.test.ts`: a single-
+DP runs on every word pair). Two real bugs were found and fixed while
+building this, both covered by `server/searchCache.test.ts`: a single-
 character haystack word (e.g. `"z"` from `"Z for Zebra"`) is a trivial
 `startsWith()` prefix of almost any same-starting-letter query, so both
 the prefix check and the Levenshtein fallback are gated on a minimum
-word length (3), not just the longer word's length.
+word length (3); and requiring only *some* words of a multi-word term to
+match let `wordsAreSimilar` compare a whole phrase against one haystack
+word (see the next paragraph for why that mattered more for `keywords`
+than `query`).
 
-**Performance**: at the current cache size (600+ committed files),
-reading every file on every call costs ~1-1.5s — `loadAllUniqueResults()`
+**`keywords` (filter-chip values) are matched as a literal phrase only —
+no fuzzy fallback.** A real bug, found live: `"Hindi Songs"` (a filter
+chip) showed a count of 859 but selecting it returned 2,569 results,
+because `wordsAreSimilar("hindi songs", "hindi")` is trivially `true`
+(`"hindi songs".startsWith("hindi")`) — the whole two-word chip value was
+being checked against single haystack words one at a time, so the chip
+matched any video merely containing "Hindi," ignoring "Songs" entirely.
+Fixed by giving `keywords` the same literal-phrase rule `getFacetCounts`
+already used (below) — a chip's displayed count and what selecting it
+returns can now never disagree, verified by
+`server/searchCache.test.ts`. `query` keeps its fuzzy tolerance, since
+that's genuinely user-typed text where typo tolerance helps; curated
+taxonomy terms don't need it and the phrase-scatter risk isn't worth it.
+
+**Results are ranked in tiers, not by view count alone.** A result
+reached only through `query`'s fuzzy fallback is now ranked below every
+literal match, regardless of view count — previously a popular fuzzy
+near-miss could outrank an exact but lower-viewed result (verified: a
+"kahaani" search's literal matches, down to 69 views, all rank above the
+first fuzzy-only match, a 1.1-billion-view unrelated rhyme). View count
+only breaks ties within a tier.
+
+**Performance**: at the current cache size (1,000+ committed files),
+reading every file on every call costs ~2s — `loadAllUniqueResults()`
 memoizes the deduped item list in-process for 60s, shared by both
 `browseCache()` and `getFacetCounts()` below, so repeated calls in that
 window are near-instant. Still worth watching if the cache keeps growing;

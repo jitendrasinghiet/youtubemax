@@ -305,6 +305,16 @@ See the sibling repo's `docs/SEARCH_CACHE.md` for the caching/
 performance detail (memoized alongside the same 60s TTL `browseCache()`
 now uses).
 
+**Bug found after shipping, now fixed**: a multi-word chip value like
+"Hindi Songs" showed a count (859) that disagreed with what selecting it
+actually returned (2,569) — `browseCache()`'s `keywords` matching used
+the same fuzzy `wordsAreSimilar` fallback as the typed search box, and
+checking a whole two-word phrase against single haystack words let
+`"Hindi Songs"` match any video merely containing "Hindi." Fixed by
+making `keywords` match as a literal phrase only, the same rule
+`getFacetCounts` already used — a chip's count and its results can no
+longer disagree. Full detail in `docs/SEARCH_CACHE.md`.
+
 ---
 
 ## Explicitly out of scope right now (from source doc 1)

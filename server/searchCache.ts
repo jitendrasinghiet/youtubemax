@@ -139,24 +139,28 @@ export function wordsAreSimilar(a: string, b: string): boolean {
   return levenshtein(a, b) <= threshold
 }
 
-/** True if `term` matches `haystack` either as a literal substring (the
- *  original, exact behavior) or as a close variant of one of its words. */
-function haystackMatches(term: string, haystack: string, haystackWords: string[]): boolean {
-  if (haystack.includes(term)) return true
-  return haystackWords.some((hw) => wordsAreSimilar(term, hw))
-}
-
 export interface BrowseCacheOptions {
   /** Filter-chip values -- OR'd together (any one matching is enough), same
    *  as picking "Romance" or "Hindi" has always meant. Empty/omitted means
-   *  "no filter constraint," not "match nothing." */
+   *  "no filter constraint," not "match nothing." Matched as a literal
+   *  phrase only, the same rule `getFacetCounts` uses -- these are curated
+   *  taxonomy terms, not typed text, so the chip's displayed count and
+   *  what selecting it actually returns can never disagree. No
+   *  `wordsAreSimilar` fuzzy fallback here (see the note in `query` below
+   *  for why that matters: a multi-word term like "Hindi Songs" checked
+   *  word-by-word against wordsAreSimilar previously matched almost
+   *  anything merely containing "Hindi"). */
   keywords?: string[]
   /** The Discovery search box's typed text, matched independently of
    *  `keywords` and AND'd against it (both constraints must hold) -- every
    *  whitespace-separated word must appear somewhere in the item, same as
    *  a normal "search within a list" box, not a single literal phrase. A
    *  word that isn't a literal substring can still match a close variant
-   *  (typo, plural, partial word) -- see `wordsAreSimilar` below. */
+   *  (typo, plural, partial word) via `wordsAreSimilar` -- appropriate
+   *  here since this is genuinely user-typed text, unlike `keywords`.
+   *  A result reached only through this fuzzy fallback is ranked below
+   *  every literal match (see `browseCache`'s tiered sort), not mixed in
+   *  by view count alone. */
   query?: string
   offset?: number
   limit?: number
@@ -219,19 +223,48 @@ export async function browseCache(options: BrowseCacheOptions = {}): Promise<Bro
   const limit = Math.max(1, options.limit ?? 24)
 
   const items = await loadAllUniqueResults()
-  const all: SearchResultItem[] = []
+  // { item, tier }: tier 0 = every matched term was a literal substring,
+  // tier 1 = at least one query word only matched via wordsAreSimilar's
+  // typo/plural tolerance. Sorted tier-first so a perfect match always
+  // outranks a merely-similar one, view count only breaking ties within
+  // the same tier -- previously a popular fuzzy near-miss could outrank
+  // an exact but less-viewed match.
+  const scored: { item: SearchResultItem; tier: number }[] = []
 
   for (const item of items) {
+    let tier = 0
     if (keywordTerms.length > 0 || queryWords.length > 0) {
       const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
-      const haystackWords = haystack.split(/\s+/).filter(Boolean)
-      if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystackMatches(t, haystack, haystackWords))) continue
-      if (queryWords.length > 0 && !queryWords.every((w) => haystackMatches(w, haystack, haystackWords))) continue
+      // Filter-chip values are curated taxonomy terms (src/lib/
+      // filterTaxonomy.ts), not typed text -- matched as a literal
+      // phrase only, deliberately the same rule getFacetCounts uses, so
+      // a chip's displayed count and what selecting it actually returns
+      // can never disagree (verified: "Hindi Songs" previously showed
+      // 859 but returned 2,569 -- wordsAreSimilar comparing the whole
+      // phrase against a single haystack word let it match anything
+      // merely containing "Hindi"). No fuzzy fallback here.
+      if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystack.includes(t))) continue
+
+      if (queryWords.length > 0) {
+        const haystackWords = haystack.split(/\s+/).filter(Boolean)
+        let matchedAll = true
+        for (const w of queryWords) {
+          if (haystack.includes(w)) continue
+          if (haystackWords.some((hw) => wordsAreSimilar(w, hw))) {
+            tier = 1
+            continue
+          }
+          matchedAll = false
+          break
+        }
+        if (!matchedAll) continue
+      }
     }
-    all.push(item)
+    scored.push({ item, tier })
   }
 
-  all.sort((a, b) => parseViewCount(b.viewCount) - parseViewCount(a.viewCount))
+  scored.sort((a, b) => a.tier - b.tier || parseViewCount(b.item.viewCount) - parseViewCount(a.item.viewCount))
+  const all = scored.map((s) => s.item)
   return { results: all.slice(offset, offset + limit), total: all.length }
 }
 

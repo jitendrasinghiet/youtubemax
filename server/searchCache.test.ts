@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { browseCache, wordsAreSimilar } from './searchCache'
+import { browseCache, getFacetCounts, wordsAreSimilar } from './searchCache'
 
 describe('wordsAreSimilar', () => {
   it('matches identical words', () => {
@@ -65,6 +65,42 @@ describe('browseCache', () => {
     async () => {
       const result = await browseCache({ query: 'qxvbjklnonexistentquery' })
       expect(result.total).toBe(0)
+    },
+    15000,
+  )
+
+  // A multi-word filter-chip value ("Hindi Songs") checked word-by-word
+  // against wordsAreSimilar (built for single-word typo tolerance) let
+  // "hindi songs".startsWith("hindi") match any video merely containing
+  // "Hindi" -- a real bug found live (859 shown on the chip, 2,569 actually
+  // returned). Keywords are now literal-phrase-only, the same rule
+  // getFacetCounts uses, so the two can never disagree.
+  it(
+    "a multi-word keyword's displayed count always matches what selecting it returns",
+    async () => {
+      const applied = await browseCache({ keywords: ['Hindi Songs'], limit: 1 })
+      const counts = await getFacetCounts(['Hindi Songs'])
+      expect(applied.total).toBe(counts['Hindi Songs'])
+      expect(applied.total).toBeGreaterThan(0)
+    },
+    15000,
+  )
+
+  // "Perfect matches should top by relevance, similar content lower" --
+  // a literal match must outrank a fuzzy-only match regardless of view
+  // count (previously a popular fuzzy near-miss could outrank an exact
+  // but less-viewed result, since everything sorted by view count alone).
+  it(
+    'ranks every literal query match above every fuzzy-only match, view count only breaking ties within a tier',
+    async () => {
+      const result = await browseCache({ query: 'kahaani', limit: 50 })
+      const isLiteral = (item: { title: string; channel: string; tags?: string[] }) =>
+        [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase().includes('kahaani')
+      const flags = result.results.map(isLiteral)
+      const firstFuzzy = flags.indexOf(false)
+      expect(firstFuzzy).toBeGreaterThan(0) // some literal matches exist
+      // Nothing literal appears after the first fuzzy-only result.
+      expect(flags.slice(firstFuzzy).some(Boolean)).toBe(false)
     },
     15000,
   )
