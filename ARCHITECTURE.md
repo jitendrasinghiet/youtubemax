@@ -43,6 +43,21 @@
   DEKHO content bucket, via its own `scripts/sync_youtubemax_playlists.py`
   — ordinary entries in `localPlaylistStore.ts`'s store, no code change
   needed on this side to read them.
+- **New this iteration (hover-to-preview, YouTube homepage style):**
+  `SearchResultsGrid.tsx`'s inline card `.map()` body extracted into a new
+  `VideoCard.tsx` specifically so each card can hold its own hover state
+  (React hooks can't live inside a `.map()` callback). Hovering a card
+  starts a 500ms hover-intent timer (same reasoning as YouTube's own
+  homepage — a quick pass across the grid shouldn't spin up a real embed
+  per card); once it fires, the thumbnail `<img>` is replaced in place by
+  `<iframe src=".../embed/{id}?autoplay=1&mute=1&controls=0">` sized to
+  match. `mute=1` is required, not cosmetic — browsers block unmuted
+  iframe autoplay without a prior user gesture. Mouse-leave clears the
+  timer and un-mounts the iframe entirely (not just hides it), which is
+  what actually stops playback. Verified via dispatched
+  `mouseover`/`mouseout` events: the iframe appears with the correct
+  embed URL after the delay, disappears on leave, and a quick
+  hover-then-leave within the delay window never loads anything at all.
 - Notes below include historical design context; this section is the source of truth for current runtime behavior.
 
 ## Overview
