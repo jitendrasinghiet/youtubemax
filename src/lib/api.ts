@@ -43,18 +43,38 @@ export async function searchVideos(query: string, maxResults = 25): Promise<Sear
   return data as SearchResponse
 }
 
-/** Local-cache-first lookup -- scans every committed search result for
- *  items matching these keywords, no live YouTube fetch. Meant to run the
- *  moment a filter chip is toggled, not just on an explicit search
- *  submit -- see server/searchCache.ts's searchCachedByKeywords(). */
-export async function searchCachedLocally(keywords: string[], maxResults = 25): Promise<SearchResultItem[]> {
+export interface BrowseCachePage {
+  results: SearchResultItem[]
+  total: number
+}
+
+/** Pages through the *entire* local search-result cache -- no live YouTube
+ *  fetch. `keywords` (filter chips) and `query` (the typed Discovery search
+ *  box) each narrow the result set independently, on top of each other;
+ *  both omitted browses everything. This is what backs the default
+ *  discovery feed (infinite scroll on first load), what a selected filter
+ *  re-pages against, and what typing in the search box re-pages against
+ *  before any online search runs -- see server/searchCache.ts's
+ *  browseCache(). */
+export async function browseCachedResults(
+  { keywords = [], query = '', offset = 0, limit = 24 }: {
+    keywords?: string[]
+    query?: string
+    offset?: number
+    limit?: number
+  } = {},
+): Promise<BrowseCachePage> {
+  const params = new URLSearchParams({ offset: String(offset), maxResults: String(limit) })
   const terms = keywords.map((k) => k.trim()).filter(Boolean)
-  if (terms.length === 0) return []
-  const params = new URLSearchParams({ keywords: terms.join(','), maxResults: String(maxResults) })
+  if (terms.length > 0) params.set('keywords', terms.join(','))
+  if (query.trim()) params.set('query', query.trim())
   const res = await fetch(`/api/dev/search-cache?${params}`)
-  if (!res.ok) return []
+  if (!res.ok) return { results: [], total: 0 }
   const data = await res.json()
-  return Array.isArray(data.results) ? (data.results as SearchResultItem[]) : []
+  return {
+    results: Array.isArray(data.results) ? (data.results as SearchResultItem[]) : [],
+    total: typeof data.total === 'number' ? data.total : 0,
+  }
 }
 
 export async function fetchPlaylistResults(

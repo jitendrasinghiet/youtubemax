@@ -89,28 +89,47 @@ function parseViewCount(raw: string | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
+export interface BrowseCacheOptions {
+  /** Filter-chip values -- OR'd together (any one matching is enough), same
+   *  as picking "Romance" or "Hindi" has always meant. Empty/omitted means
+   *  "no filter constraint," not "match nothing." */
+  keywords?: string[]
+  /** The Discovery search box's typed text, matched independently of
+   *  `keywords` and AND'd against it (both constraints must hold) -- every
+   *  whitespace-separated word must appear somewhere in the item, same as
+   *  a normal "search within a list" box, not a single literal phrase. */
+  query?: string
+  offset?: number
+  limit?: number
+}
+
+export interface BrowseCacheResult {
+  results: SearchResultItem[]
+  /** Total matches available (pre-pagination) -- lets the client know
+   *  whether there's more to page in without a second round-trip. */
+  total: number
+}
+
 /**
- * Scans every committed cache file (not just one query's own results) for
- * items whose title/channel/tags match any of the given keywords -- this is
- * "search into the cache first" as a real capability, not just "was this
- * exact query searched before": a taxonomy keyword like "Romance" or
- * "Hindi" may show up across dozens of different queries' cached results,
- * and this is what makes those all groupable without re-searching.
- *
- * Deduped by videoId (the same video legitimately turns up under several
- * different queries) and sorted by view count -- pure local read, safe
- * anywhere including api/*.ts in production, same as getCachedSearch.
+ * The default-view feed: every cached result across every committed
+ * search-cache file, deduped by videoId, sorted by view count desc,
+ * paginated via offset/limit for infinite scroll. `keywords` (filter
+ * chips) and `query` (the typed search box) each narrow it further, on
+ * top of each other -- this is what lets the app open on a YouTube-
+ * homepage-style feed built entirely from what's already local, no live
+ * fetch, with both filters and typing narrowing the *same* feed rather
+ * than replacing it with a different code path -- see App.tsx's
+ * cache-feed effect.
  */
-export async function searchCachedByKeywords(
-  keywords: string[],
-  limit = 25,
-): Promise<SearchResultItem[]> {
-  const terms = keywords.map((k) => k.toLowerCase().trim()).filter(Boolean)
-  if (terms.length === 0) return []
+export async function browseCache(options: BrowseCacheOptions = {}): Promise<BrowseCacheResult> {
+  const keywordTerms = (options.keywords ?? []).map((k) => k.toLowerCase().trim()).filter(Boolean)
+  const queryWords = (options.query ?? '').toLowerCase().trim().split(/\s+/).filter(Boolean)
+  const offset = Math.max(0, options.offset ?? 0)
+  const limit = Math.max(1, options.limit ?? 24)
 
   const files = await listCachedQueries()
   const seen = new Set<string>()
-  const matches: SearchResultItem[] = []
+  const all: SearchResultItem[] = []
 
   for (const file of files) {
     let entry: SearchCacheEntry
@@ -122,13 +141,16 @@ export async function searchCachedByKeywords(
     }
     for (const item of entry.results ?? []) {
       if (!item.videoId || seen.has(item.videoId)) continue
-      const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
-      if (terms.some((t) => haystack.includes(t))) {
-        seen.add(item.videoId)
-        matches.push(item)
+      if (keywordTerms.length > 0 || queryWords.length > 0) {
+        const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
+        if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystack.includes(t))) continue
+        if (queryWords.length > 0 && !queryWords.every((w) => haystack.includes(w))) continue
       }
+      seen.add(item.videoId)
+      all.push(item)
     }
   }
 
-  return matches.sort((a, b) => parseViewCount(b.viewCount) - parseViewCount(a.viewCount)).slice(0, limit)
+  all.sort((a, b) => parseViewCount(b.viewCount) - parseViewCount(a.viewCount))
+  return { results: all.slice(offset, offset + limit), total: all.length }
 }

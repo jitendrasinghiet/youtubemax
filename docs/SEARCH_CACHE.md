@@ -57,9 +57,11 @@ test` (86 tests) still passes.
 
 `src/App.tsx` reads a `discover` query param on mount and, if present,
 pre-fills and auto-runs a Discovery search with it (same code path as
-typing a query and hitting Search — `handleSearchFromDiscovery`), instead
-of the usual default "trending" load. This is what the sibling DEKHO
-project's detail pane links to for a title with no confirmed videoId yet,
+typing a query and hitting Search — `handleSearchFromDiscovery`), shown
+in its own pinned section above the cache-backed feed that's always
+loading underneath regardless (see "The default feed is the cache"
+below). This is what the sibling DEKHO project's detail pane links to
+for a title with no confirmed videoId yet,
 so "search on YouTube" opens youtubemax's own richer results (trusted-
 channel sorting, filters) instead of a plain `youtube.com/results` page.
 
@@ -84,28 +86,55 @@ together, so `?discover=<query>&videoId=<id>` searches *and* plays a
 specific result inline from one link, rather than needing two separate
 visits.
 
-## Cache-first filter lookup, and merged (not replaced) results
+## The default feed is the cache, browsable and paginated
 
-`server/searchCache.ts`'s `searchCachedByKeywords()` scans **every**
-committed cache file (not just one query's own results) for items whose
-title/channel/tags match given keywords — deduped by videoId, sorted by
-view count. Exposed at `GET /api/dev/search-cache?keywords=a,b,c` and
-`src/lib/api.ts`'s `searchCachedLocally()`.
+`server/searchCache.ts`'s `browseCache()` is the superset this app is
+actually built on: given no keywords, it pages through **every** cached
+result across every committed cache file (deduped by videoId, sorted by
+view count); given keywords, it's the same scan narrowed to matches
+(what `searchCachedByKeywords()` did before `browseCache` existed, kept
+today as a thin wrapper for the one-shot keyword-only case). Exposed at
+`GET /api/dev/search-cache`, accepting `keywords` (optional), `offset`,
+and `maxResults` — the response carries `{ results, total }` so the
+client always knows whether there's more to page in. `src/lib/api.ts`'s
+`browseCachedResults()` is the typed client wrapper; `searchCachedLocally()`
+(keywords required, no `total`) still exists for a one-shot lookup.
 
-`src/App.tsx` calls this the moment a filter chip is toggled — before,
-and regardless of whether, an actual search ever runs. Toggling "Romance"
-or "Hindi" shows whatever's already cached across every prior search,
-instantly, with no YouTube fetch. A live search submitted afterward
-**merges** its results onto whatever's already showing
-(`mergeUniqueResults()`, deduped by videoId) instead of replacing the
-list — filters and search augment the same local listing, they don't
-each reset it.
+`src/App.tsx` opens on this feed directly — **no live "trending" fetch on
+mount anymore**. `cacheResults` pages in on load ("From your library"),
+an `IntersectionObserver` sentinel past the last row calls
+`loadMoreCache()` as the user scrolls near the bottom (a "Load more"
+button is the no-JS/no-observer fallback in the same spot), and the
+grid's own sort controls re-order whatever's been paged in so far — the
+same infinite-scroll feel as opening YouTube itself, built entirely from
+what's already local.
 
-Verified live: toggling the "Hanuman Chalisa" evergreen filter (5 chips:
-category/language/era/audience/vibe) took the default trending view from
-23 → 48 videos purely from cache, no fetch; submitting "Sai Baba" as a
-live search afterward took it to 67 — the live results added onto the
-cache-derived 48, not replacing them.
+**Filters narrow this same feed — they don't bolt a lookup onto it.**
+Toggling a filter chip re-fetches page 0 of `browseCache` with that
+filter's keywords folded in (the heading switches to "Matching your
+filters" and both the count and total shrink accordingly); clearing
+filters re-fetches page 0 with no keywords, back to "From your library"
+and the full total. A `cacheGenerationRef` counter discards any in-flight
+fetch a newer filter change or page-load has since superseded, so a slow
+response can't clobber a more recent one.
+
+**A live search's results are shown separately, pinned above the cache
+feed, not merged into it.** Submitting a search renders its own "Search
+results for '<query>'" section with a "✕ Clear" dismiss control; the
+cache feed underneath is untouched by it either way. This replaced an
+earlier version of this behavior where a live search merged onto the
+cache-derived listing (`mergeUniqueResults()`) — kept today only for
+deduping pages *within* the cache feed as more of it loads in, not for
+combining live and cached results into one list.
+
+Verified live: default load showed "From your library — Showing 24 of
+1297"; scrolling loaded more ("Showing 48 of 1297") with no duplicates;
+toggling the "Hanuman Chalisa" evergreen filter narrowed it to "Matching
+your filters — Showing 24 of 501"; clearing filters restored "From your
+library — Showing 24 of 1297" (a fresh page 0, not the stale 48);
+searching "Kesariya Brahmastra" opened a distinct "Search results for…"
+section above the still-unchanged library feed, and "✕ Clear" removed
+just that section.
 
 ## `dekho-*` playlists in `data/playlists/`
 

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
 import { buildYouTubeSearchUrl, searchYouTubeVideos } from './server/search.ts'
-import { getCachedSearch, recordSearch, searchCachedByKeywords } from './server/searchCache.ts'
+import { browseCache, getCachedSearch, recordSearch } from './server/searchCache.ts'
 import { fetchYouTubeSuggestions } from './server/suggest.ts'
 import { fetchPlaylistItems, fetchPlaylistMeta, PlaylistFetchError } from './server/youtubePlaylists.ts'
 import { searchPlaylists, PlaylistSearchError } from './server/youtubePlaylistSearch.ts'
@@ -114,25 +114,28 @@ function apiPlugin(): Plugin {
           return
         }
 
-        // Local-cache-first lookup: given taxonomy/filter keywords (not a
-        // literal typed query), scans every committed search-cache file for
-        // matching items instead of hitting YouTube. Meant to be called the
-        // moment a filter chip is toggled -- before, and regardless of
-        // whether, an actual search ever runs -- so a facet like "Romance"
-        // or "Hindi" shows whatever's already cached instantly. Read-only,
-        // so (unlike /api/search's cache-miss path) this is safe to also
-        // wire into api/*.ts for production later.
+        // Local-cache-first browse/lookup -- scans every committed
+        // search-cache file instead of hitting YouTube. `keywords` (from a
+        // toggled filter chip) and `query` (the typed Discovery search box)
+        // each narrow the result set independently, on top of each other;
+        // both omitted browses the *entire* cache (paginated via
+        // `offset`/`maxResults`) -- this is the default discovery feed on
+        // first load, see App.tsx. Read-only, so (unlike /api/search's
+        // cache-miss path) this is safe to also wire into api/*.ts for
+        // production later.
         if (url.pathname === '/api/dev/search-cache') {
           const keywords = (url.searchParams.get('keywords') ?? '')
             .split(',')
             .map((k) => k.trim())
             .filter(Boolean)
+          const query = url.searchParams.get('query') ?? ''
           const limit = Number(url.searchParams.get('maxResults') ?? 25)
+          const offset = Number(url.searchParams.get('offset') ?? 0)
 
           try {
-            const results = await searchCachedByKeywords(keywords, limit)
+            const { results, total } = await browseCache({ keywords, query, offset, limit })
             res.statusCode = 200
-            res.end(JSON.stringify({ results }))
+            res.end(JSON.stringify({ results, total }))
           } catch (err) {
             const message = err instanceof Error ? err.message : 'Local cache search failed'
             res.statusCode = 500

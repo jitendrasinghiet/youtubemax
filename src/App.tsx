@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChapterList } from './components/ChapterList'
 import { DiscoverySearchBar } from './components/DiscoverySearchBar'
 import { FilterMenu } from './components/FilterMenu'
@@ -16,11 +16,11 @@ import { useVoiceSearch } from './hooks/useVoiceSearch'
 import {
   analyzeVideo,
   appendSearchTerm,
+  browseCachedResults,
   fetchPlaylistResults,
   fetchSearchSuggestions,
   parseSearchTerms,
   removeSearchTerm,
-  searchCachedLocally,
   searchVideos,
 } from './lib/api'
 import type { FilterDimensionKey, FilterItem } from './lib/filterTaxonomy'
@@ -43,6 +43,7 @@ import { PlaylistSections } from './components/PlaylistSections'
 import { PlaylistManagerPanel } from './dev/PlaylistManagerPanel'
 import type { AnalyzeResult, SearchResultItem, PlaylistSection } from './types'
 
+const CACHE_PAGE_SIZE = 24
 const SEARCH_HISTORY_KEY = 'youtubemax.discoverySearchHistory'
 const SEARCH_HISTORY_LIMIT = 5
 const VIEWER_PREFS_KEY = 'youtubemax.viewerPrefs'
@@ -112,10 +113,9 @@ function isLikelyMobileWindow() {
 }
 
 /** Appends `incoming` onto `existing`, deduped by videoId -- the same
- *  video legitimately shows up under several different queries/filters,
- *  and this is what keeps a merged listing from repeating itself. Used
- *  both for the cache-first filter lookup and for a live search's results
- *  landing on top of whatever's already showing, rather than replacing it. */
+ *  video legitimately shows up under several different cache pages, and
+ *  this is what keeps the infinite-scroll feed from repeating itself as
+ *  more pages load in. */
 function mergeUniqueResults(
   existing: SearchResultItem[],
   incoming: SearchResultItem[],
@@ -203,7 +203,22 @@ function App() {
   const [searchHistory, setSearchHistory] = useState<string[]>([])
   const [querySuggestions, setQuerySuggestions] = useState<string[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
-  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([])
+  // The cache-backed default feed -- every locally-cached result (or, with
+  // filters selected, just the matching ones), paginated for infinite
+  // scroll. This is what's on screen before any live search runs, and what
+  // filters narrow directly (see the cache-feed effect below).
+  const [cacheResults, setCacheResults] = useState<SearchResultItem[]>([])
+  const [cacheOffset, setCacheOffset] = useState(0)
+  const [cacheTotal, setCacheTotal] = useState(0)
+  const [cacheLoading, setCacheLoading] = useState(false)
+  const cacheGenerationRef = useRef(0)
+  const cacheSentinelRef = useRef<HTMLDivElement | null>(null)
+  // An explicit, manual search's results -- shown in their own section
+  // pinned above the cache feed, distinct from it rather than merged in,
+  // so it's always visually clear what just came from typing a search vs.
+  // what was already in the local library.
+  const [liveResults, setLiveResults] = useState<SearchResultItem[]>([])
+  const [liveQuery, setLiveQuery] = useState<string | null>(null)
   const [searchSortType, setSearchSortType] = useState<SearchSortType>('recommended')
   const [defaultsLoaded, setDefaultsLoaded] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>(() => loadStoredFilters())
@@ -347,10 +362,11 @@ function App() {
       // any filter selected, fall back to a default browse query.
       const effectiveQuery = buildEffectiveQuery(input, selectedFilters) || 'trending'
       const { results, warning } = await searchVideos(effectiveQuery)
-      // Merged on top of whatever's already showing (e.g. the cache-first
-      // filter lookup below), deduped by videoId -- a live search result
-      // set augments the local listing, it doesn't wipe it out.
-      setSearchResults((prev) => mergeUniqueResults(prev, results))
+      // A fresh manual search replaces the live section (not the cache
+      // feed below it, and not accumulated with a previous search) -- see
+      // the liveResults section in the render below.
+      setLiveResults(results)
+      setLiveQuery(input.trim() || effectiveQuery)
       if (warning) setSearchSoftWarning(warning)
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : 'Search failed')
@@ -359,30 +375,92 @@ function App() {
     }
   }, [selectedFilters])
 
+  const dismissLiveResults = useCallback(() => {
+    setLiveResults([])
+    setLiveQuery(null)
+  }, [])
+
   // Persist selected filters (in selection order) so they survive a reload.
   useEffect(() => {
     persistFilters(selectedFilters)
   }, [selectedFilters])
 
-  // Toggling a filter chip still never fires a live YouTube fetch on its
-  // own (see below) -- but it does now trigger an instant *local* lookup
-  // across every already-committed search-cache file for that filter's
-  // keyword, merged onto whatever's showing. This is "search the cache
-  // first" as a real behavior: applying a taxonomy filter like Romance or
-  // Hindi surfaces whatever's already cached immediately, before -- and
-  // regardless of whether -- an actual search ever runs.
+  // The cache-backed default feed: browses the *entire* local search-cache
+  // -- no live YouTube fetch, ever, for this effect. This is "search the
+  // cache first" as the default view itself, not just a lookup bolted onto
+  // filter clicks: toggling a filter, or typing in the Discovery search
+  // box, both re-page the *same* feed against a narrower match set (folded
+  // together -- see browseCache's `keywords`/`query`), and clearing
+  // filters/the search box goes back to browsing everything. Typing is
+  // debounced (250ms of no keystrokes) so it doesn't re-scan the cache on
+  // every character; a bare filter-chip change (no typed text) still fires
+  // immediately, matching the original instant-filter feel. Always
+  // re-fetches page 0 fresh on a change (a new browsing context) rather
+  // than merging onto whatever was already on screen. `cacheGenerationRef`
+  // guards against a slow page-0 fetch landing after a newer change (or a
+  // loadMoreCache page landing after that) -- see loadMoreCache below.
+  //
+  // This never fires a live YouTube search on its own -- that only ever
+  // happens on an explicit submit (handleVideoSearch), which shows its
+  // results in the separate, pinned liveResults section instead.
   useEffect(() => {
-    if (isPopoutMode || selectedFilters.length === 0) return
+    if (isPopoutMode) return
     const keywords = selectedFilters.map((f) => f.value).filter(Boolean)
-    let cancelled = false
-    searchCachedLocally(keywords).then((cachedResults) => {
-      if (cancelled || cachedResults.length === 0) return
-      setSearchResults((prev) => mergeUniqueResults(prev, cachedResults))
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [selectedFilters, isPopoutMode])
+    const query = searchQuery.trim()
+    const timeoutId = setTimeout(() => {
+      const generation = ++cacheGenerationRef.current
+      setCacheLoading(true)
+      browseCachedResults({ keywords, query, offset: 0, limit: CACHE_PAGE_SIZE })
+        .then(({ results, total }) => {
+          if (cacheGenerationRef.current !== generation) return
+          setCacheResults(results)
+          setCacheOffset(results.length)
+          setCacheTotal(total)
+        })
+        .finally(() => {
+          if (cacheGenerationRef.current === generation) setCacheLoading(false)
+        })
+    }, query ? 250 : 0)
+    return () => clearTimeout(timeoutId)
+  }, [selectedFilters, searchQuery, isPopoutMode])
+
+  const loadMoreCache = useCallback(() => {
+    if (isPopoutMode || cacheLoading || cacheOffset >= cacheTotal) return
+    const generation = cacheGenerationRef.current
+    const keywords = selectedFilters.map((f) => f.value).filter(Boolean)
+    const query = searchQuery.trim()
+    setCacheLoading(true)
+    browseCachedResults({ keywords, query, offset: cacheOffset, limit: CACHE_PAGE_SIZE })
+      .then(({ results, total }) => {
+        if (cacheGenerationRef.current !== generation) return
+        setCacheResults((prev) => mergeUniqueResults(prev, results))
+        setCacheOffset((prev) => prev + results.length)
+        setCacheTotal(total)
+      })
+      .finally(() => {
+        if (cacheGenerationRef.current === generation) setCacheLoading(false)
+      })
+  }, [isPopoutMode, cacheLoading, cacheOffset, cacheTotal, selectedFilters, searchQuery])
+
+  // Infinite scroll: a sentinel div sits just past the last row of the
+  // cache grid (see the render below); once it's within 600px of the
+  // viewport, load the next page -- same "YouTube homepage" feel as
+  // scrolling for more, no explicit pagination controls needed day to day
+  // (the "Load more" button in the footer is the no-JS/no-observer
+  // fallback, not the primary path).
+  useEffect(() => {
+    if (isPopoutMode) return
+    const node = cacheSentinelRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreCache()
+      },
+      { rootMargin: '600px' },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [isPopoutMode, loadMoreCache])
 
   // Filters are implicit — they're folded into the next *live* search a
   // user actually runs (typed submit, suggestion/history pick, or the
@@ -885,11 +963,18 @@ function App() {
     }
   }, [viewerSizePreset, captionsEnabled, playbackRate, isPopoutMode])
 
-  // Sort results based on selected sort type
-  const sortedSearchResults = useMemo(
-    () => sortSearchResults(searchResults, searchSortType, searchQuery),
-    [searchResults, searchSortType, searchQuery],
+  // Sort results based on selected sort type -- shared across both
+  // sections; the live section hides its own sort row (hideSortControls)
+  // so there's exactly one visible control, not two that could disagree.
+  const sortedCacheResults = useMemo(
+    () => sortSearchResults(cacheResults, searchSortType, searchQuery),
+    [cacheResults, searchSortType, searchQuery],
   )
+  const sortedLiveResults = useMemo(
+    () => sortSearchResults(liveResults, searchSortType, liveQuery ?? searchQuery),
+    [liveResults, searchSortType, liveQuery, searchQuery],
+  )
+  const cacheIsNarrowed = selectedFilters.length > 0 || Boolean(searchQuery.trim())
 
   // An external link (the sibling DEKHO project's detail pane) drives the
   // initial state two ways, independently: `?discover=<query>` pre-fills +
@@ -906,19 +991,6 @@ function App() {
     if (discoverQuery) handleSearchFromDiscovery(discoverQuery)
     if (requestedVideoId) runAnalysis(requestedVideoId)
   }, [isPopoutMode, discoverQuery, requestedVideoId, defaultsLoaded, handleSearchFromDiscovery, runAnalysis])
-
-  // Load default trending videos on first mount (session-based). Popout
-  // windows never render the discovery UI, so skip the fetch there. Skips
-  // entirely when a `?discover=`/`?videoId=` link is driving the initial
-  // state instead.
-  useEffect(() => {
-    if (isPopoutMode) return
-    if (discoverQuery || requestedVideoId) return
-    if (!defaultsLoaded && searchResults.length === 0 && !searchQuery) {
-      setDefaultsLoaded(true)
-      handleVideoSearch('trending')
-    }
-  }, [isPopoutMode, discoverQuery, requestedVideoId, defaultsLoaded, searchResults.length, searchQuery, handleVideoSearch])
 
   useEffect(() => {
     if (isPopoutMode) return
@@ -1291,13 +1363,64 @@ function App() {
                   />
                 )}
 
+                {liveResults.length > 0 && (
+                  <SearchResultsGrid
+                    results={liveResults}
+                    sortedResults={sortedLiveResults}
+                    sortType={searchSortType}
+                    onSortChange={setSearchSortType}
+                    onSelect={handleSelectSearchResult}
+                    hasQuery
+                    title={`Search results for "${liveQuery ?? searchQuery}"`}
+                    hideSortControls
+                    onDismiss={dismissLiveResults}
+                  />
+                )}
+
                 <SearchResultsGrid
-                  results={searchResults}
-                  sortedResults={sortedSearchResults}
+                  results={cacheResults}
+                  sortedResults={sortedCacheResults}
                   sortType={searchSortType}
                   onSortChange={setSearchSortType}
                   onSelect={handleSelectSearchResult}
-                  hasQuery={Boolean(searchQuery.trim())}
+                  hasQuery={cacheIsNarrowed}
+                  title={
+                    selectedFilters.length > 0 && searchQuery.trim()
+                      ? `Matching your filters and "${searchQuery.trim()}"`
+                      : selectedFilters.length > 0
+                        ? 'Matching your filters'
+                        : searchQuery.trim()
+                          ? `Matching "${searchQuery.trim()}"`
+                          : 'From your library'
+                  }
+                  emptyMessage={
+                    cacheLoading
+                      ? 'Loading…'
+                      : cacheIsNarrowed
+                        ? 'No cached videos match yet.'
+                        : 'Nothing cached yet — try a search below.'
+                  }
+                  countLabel={
+                    cacheTotal > 0
+                      ? `Showing ${cacheResults.length} of ${cacheTotal}`
+                      : undefined
+                  }
+                  footer={
+                    <div ref={cacheSentinelRef} className="flex justify-center py-4">
+                      {cacheLoading && cacheResults.length > 0 && (
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-red-500" />
+                      )}
+                      {!cacheLoading && cacheOffset < cacheTotal && (
+                        <button
+                          type="button"
+                          onClick={loadMoreCache}
+                          className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-white/20 hover:text-white"
+                        >
+                          Load more
+                        </button>
+                      )}
+                    </div>
+                  }
                 />
               </div>
             </div>
