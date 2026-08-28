@@ -108,7 +108,12 @@ export function VideoCard({ video, selected, onToggleSelected, onSelect, showSel
           onReady: () => {
             pollRef.current = window.setInterval(() => {
               const player = playerRef.current
-              if (!player) return
+              // A close-then-reopen of the same video reuses this Player
+              // wrapper before its postMessage handshake with the new
+              // iframe has necessarily finished -- isMuted isn't attached
+              // yet in that window, so guard rather than let the interval
+              // throw every tick.
+              if (!player || typeof player.isMuted !== 'function') return
               saveMutePreference(player.isMuted())
             }, MUTE_POLL_MS)
           },
