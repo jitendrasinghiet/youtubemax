@@ -5,8 +5,8 @@
   "channel": "DEKHO",
   "loadedVia": "manual",
   "sourcePlaylistId": null,
-  "lastPulledAt": "2026-08-28T06:03:40.000Z",
-  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "lastPulledAt": "2026-08-28T07:51:30.000Z",
+  "lastEditedAt": "2026-08-28T07:51:30.000Z",
   "items": [
     {
       "videoId": "EKFdSCCJhL0",
@@ -114,88 +114,109 @@
       "position": 14
     },
     {
+      "videoId": "QQoghpLVyfM",
+      "title": "Indian Idol",
+      "channel": "SET India",
+      "thumbnail": "https://i.ytimg.com/vi/QQoghpLVyfM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLA5qm4EUYgte1rPOBVTz5WwvvrMHA",
+      "position": 15
+    },
+    {
       "videoId": "KjpaOAzhHNI",
       "title": "Kumkum",
       "channel": "MediaXone",
       "thumbnail": "https://i.ytimg.com/vi/KjpaOAzhHNI/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAUU6Da210YI3zdsqZrcJ6D_D1sqw",
-      "position": 15
+      "position": 16
     },
     {
       "videoId": "-wzxkNb_GFw",
       "title": "Jassi Jaisi Koi Nahin",
       "channel": "NatureCat Fanatic LPS Hater",
       "thumbnail": "https://i.ytimg.com/vi/-wzxkNb_GFw/hqdefault.jpg?sqp=-oaymwE2COADEI4CSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gSAAuADigIMCAAQARhAIGUoUDAP&rs=AOn4CLCSAYYiU4wfOJ4Wn-frc8OZg9i98A",
-      "position": 16
+      "position": 17
+    },
+    {
+      "videoId": "9_FmBzFO7ho",
+      "title": "Sarabhai vs Sarabhai",
+      "channel": "STAR भारत",
+      "thumbnail": "https://i.ytimg.com/vi/9_FmBzFO7ho/hq720_2.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGABwAcABBvABAfgBtgiAAoAPigIMCAAQARg5ICAofzAP&rs=AOn4CLC_guxW3tvvS-pZ4G8sZcYby6SqAQ",
+      "position": 18
     },
     {
       "videoId": "sbvdqLljJNQ",
       "title": "Koffee with Karan",
       "channel": "Star World",
       "thumbnail": "https://i.ytimg.com/vi/sbvdqLljJNQ/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLANFeV4FpE83KdoLGsEDAerr_uc-A",
-      "position": 17
+      "position": 19
     },
     {
       "videoId": "rxs75HgmWzw",
       "title": "Balika Vadhu",
       "channel": "Colors Rishtey Americas",
       "thumbnail": "https://i.ytimg.com/vi/rxs75HgmWzw/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIFUoNTAP&rs=AOn4CLBNVvYtg8dPPJnRDRpbsYRPNREahQ",
-      "position": 18
+      "position": 20
     },
     {
       "videoId": "vxW1WpOKyEY",
       "title": "Pavitra Rishta",
       "channel": "Zee TV",
       "thumbnail": "https://i.ytimg.com/vi/vxW1WpOKyEY/hq720.jpg?sqp=-oaymwE6CNAFEJQDSFXyq4qpAywIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIEkoQDAPuALzGA==&rs=AOn4CLB0Qo1Y6oHpO4cbDOvXK5NZu3mBkQ",
-      "position": 19
+      "position": 21
     },
     {
       "videoId": "s6lszE2f4d8",
       "title": "Dance India Dance",
       "channel": "Dance India Dance",
       "thumbnail": "https://i.ytimg.com/vi/s6lszE2f4d8/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAVRDZVFhYbkM9zz_46BxcHkrPeVA",
-      "position": 20
+      "position": 22
     },
     {
       "videoId": "BtfFX7PCfQM",
       "title": "Iss Pyaar Ko Kya Naam Doon?",
       "channel": "All Serials Themes & Montages ",
       "thumbnail": "https://i.ytimg.com/vi/BtfFX7PCfQM/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAsYFigIMCAAQARhPIF8oZTAP&rs=AOn4CLDwod-k2MTWNzVR_hnk83VYEvF6ug",
-      "position": 21
+      "position": 23
     },
     {
       "videoId": "K4pivVmV1yc",
       "title": "Yeh Rishta Kya Kehlata Hai",
       "channel": "JioHotstar",
       "thumbnail": "https://i.ytimg.com/vi/K4pivVmV1yc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAJjXf8v3jld5--5C_ajR7KMqwaFQ",
-      "position": 22
+      "position": 24
     },
     {
       "videoId": "Apw3yhyFA9o",
       "title": "Kumkum Bhagya",
       "channel": "Zee TV",
       "thumbnail": "https://i.ytimg.com/vi/Apw3yhyFA9o/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIFIoNDAP&rs=AOn4CLBtRJzCTbhCW0fwACYNQa_tuycEgw",
-      "position": 23
+      "position": 25
     },
     {
       "videoId": "BsjaZixXfHs",
       "title": "Baalveer",
       "channel": "Sony SAB",
       "thumbnail": "https://i.ytimg.com/vi/BsjaZixXfHs/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCNAqMeQBHeRhRM1nBUKU5x6ucjjg",
-      "position": 24
+      "position": 26
     },
     {
       "videoId": "KrZ_3o3UrSc",
       "title": "Indian Idol 12",
       "channel": "SET India",
       "thumbnail": "https://i.ytimg.com/vi/KrZ_3o3UrSc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBuGsyi2d-o2JJYEBz-np6LFV1m3g",
-      "position": 25
+      "position": 27
+    },
+    {
+      "videoId": "xjsr4X-FHEE",
+      "title": "Anupamaa",
+      "channel": "Orygnals",
+      "thumbnail": "https://i.ytimg.com/vi/xjsr4X-FHEE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCnYJaOwyqAQwMexeMy1sZ9jI2_FQ",
+      "position": 28
     },
     {
       "videoId": "nw5vTPczlr4",
       "title": "Bigg Boss",
       "channel": "JioHotstar and 2 more",
       "thumbnail": "https://i.ytimg.com/vi/nw5vTPczlr4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAr869zfU6ibo8jjAUdYlUaXViaIQ",
-      "position": 26
+      "position": 29
     }
   ]
 }

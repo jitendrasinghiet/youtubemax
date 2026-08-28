@@ -5,8 +5,8 @@
   "channel": "DEKHO",
   "loadedVia": "manual",
   "sourcePlaylistId": null,
-  "lastPulledAt": "2026-08-28T06:03:40.000Z",
-  "lastEditedAt": "2026-08-28T06:03:40.000Z",
+  "lastPulledAt": "2026-08-28T07:51:30.000Z",
+  "lastEditedAt": "2026-08-28T07:51:30.000Z",
   "items": [
     {
       "videoId": "aif66Z5xwjM",
@@ -35,6 +35,13 @@
       "channel": "JioHotstar",
       "thumbnail": "https://i.ytimg.com/vi/K4pivVmV1yc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAJjXf8v3jld5--5C_ajR7KMqwaFQ",
       "position": 3
+    },
+    {
+      "videoId": "xjsr4X-FHEE",
+      "title": "Anupamaa",
+      "channel": "Orygnals",
+      "thumbnail": "https://i.ytimg.com/vi/xjsr4X-FHEE/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCnYJaOwyqAQwMexeMy1sZ9jI2_FQ",
+      "position": 4
     }
   ]
 }

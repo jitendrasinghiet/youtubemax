@@ -1,0 +1,33 @@
+{
+  "slug": "dekho-tv-music",
+  "label": "DEKHO — TV — Music",
+  "icon": "📺",
+  "channel": "DEKHO",
+  "loadedVia": "manual",
+  "sourcePlaylistId": null,
+  "lastPulledAt": "2026-08-28T07:51:30.000Z",
+  "lastEditedAt": "2026-08-28T07:51:30.000Z",
+  "items": [
+    {
+      "videoId": "tY12ei_sNs4",
+      "title": "Sa Re Ga Ma",
+      "channel": "Zee TV",
+      "thumbnail": "https://i.ytimg.com/vi/tY12ei_sNs4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD2vWtHtONqIH_yceRgRAmDDUjaIQ",
+      "position": 0
+    },
+    {
+      "videoId": "QQoghpLVyfM",
+      "title": "Indian Idol",
+      "channel": "SET India",
+      "thumbnail": "https://i.ytimg.com/vi/QQoghpLVyfM/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLA5qm4EUYgte1rPOBVTz5WwvvrMHA",
+      "position": 1
+    },
+    {
+      "videoId": "KrZ_3o3UrSc",
+      "title": "Indian Idol 12",
+      "channel": "SET India",
+      "thumbnail": "https://i.ytimg.com/vi/KrZ_3o3UrSc/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBuGsyi2d-o2JJYEBz-np6LFV1m3g",
+      "position": 2
+    }
+  ]
+}

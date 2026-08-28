@@ -1,6 +1,6 @@
 {
-  "slug": "dekho-youtube",
-  "label": "DEKHO — YouTube",
+  "slug": "dekho-youtube-kids",
+  "label": "DEKHO — YouTube — Kids",
   "icon": "▶️",
   "channel": "DEKHO",
   "loadedVia": "manual",
@@ -28,34 +28,6 @@
       "channel": "Get Movies",
       "thumbnail": "https://i.ytimg.com/vi/KYniUCGPGLs/hqdefault.jpg",
       "position": 2
-    },
-    {
-      "videoId": "a18py61_F_w",
-      "title": "Tajdar-e-Haram",
-      "channel": "Coke Studio",
-      "thumbnail": "https://i.ytimg.com/vi/a18py61_F_w/hqdefault.jpg",
-      "position": 3
-    },
-    {
-      "videoId": "1GFbX-spV94",
-      "title": "The Kapil Sharma Show",
-      "channel": "Sony",
-      "thumbnail": "https://i.ytimg.com/vi/1GFbX-spV94/hqdefault.jpg",
-      "position": 4
-    },
-    {
-      "videoId": "kw4tT7SCmaY",
-      "title": "Afreen Afreen",
-      "channel": "Coke Studio",
-      "thumbnail": "https://i.ytimg.com/vi/kw4tT7SCmaY/hqdefault.jpg",
-      "position": 5
-    },
-    {
-      "videoId": "5Eqb_-j3FDA",
-      "title": "Pasoori",
-      "channel": "Coke Studio",
-      "thumbnail": "https://i.ytimg.com/vi/5Eqb_-j3FDA/hqdefault.jpg",
-      "position": 6
     }
   ]
 }
