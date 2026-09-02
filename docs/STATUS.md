@@ -81,6 +81,32 @@ current unlimited scraping-based search. That's a decision for whoever
 owns this product's direction, not something to silently rip out and
 replace. Flagging it plainly is the actual deliverable here.
 
+## Default viewer changed from docked-top to a floating M-size panel, bottom-right
+
+Reported directly. Previously the *first* video played in a session
+opened as a full-width panel docked to the top of the page (the
+original "like YouTube's own mobile watch page" design, see the viewer-
+redesign entry below); asked to change the default to the existing
+floating window instead -- M size, bottom-right corner -- while keeping
+top/dock fully available as something the user picks, not the default.
+
+`viewerMode`'s initial state changed `'top' -> 'floating'`; nothing else
+needed touching, since `viewerPosition`'s and `viewerSizePreset`'s own
+existing defaults already computed a bottom-right, M-size window (they
+just weren't being *used* on a fresh session because mode defaulted to
+`'top'` first). The dock button and drag-to-top gesture both still work
+exactly as before. Also closed a real gap while in this code: the
+existing `sessionStorage`-backed "remember what the user set" restore
+only ever handled `mode === 'floating'` -- a user who explicitly docked
+to top had that choice silently dropped on the next reload in the same
+session. Now restores `'top'` the same way, so "stays as per user pref"
+holds for both states symmetrically, not just floating position.
+
+Verified live: fresh session, played a video, got a 432x312 (M) panel
+at the viewport's bottom-right corner with results still visible behind
+it -- not the old full-width top bar. `npx tsc --noEmit && npm run
+build` clean; `npm test` 97/97.
+
 ## Rate limiting added to the public API routes -- crawler/abuse protection parity with DEKHO
 
 Asked directly to check whether the sibling DEKHO project's crawler/

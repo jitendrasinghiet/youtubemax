@@ -203,15 +203,19 @@ function App() {
   const [viewerOpen, setViewerOpen] = useState(false)
   // Which of the two visual states the viewer is in -- 'top' (docked,
   // full-width bar at the top of the page, the results grid scrollable
-  // beneath it) or 'floating' (the pre-existing draggable/resizable
-  // corner window). Starts 'top' -- with nothing in sessionStorage yet
-  // (a session's first video), that's exactly "top panel wide when user
-  // plays for first time." Only ever changes via the drag/swipe gesture
-  // on the viewer's own header (startViewerDrag) or the explicit S/M/L/
-  // dock controls -- never reset just because a *different* video was
-  // selected from the list, which is what let it persist "as per user
-  // set across multiple items played" once dragged into floating mode.
-  const [viewerMode, setViewerMode] = useState<ViewerMode>('top')
+  // beneath it) or 'floating' (the draggable/resizable corner window).
+  // Starts 'floating' -- reported directly as the wanted default
+  // (an M-size window in the bottom-right corner, same as
+  // viewerPosition/viewerSizePreset's own defaults just below, which
+  // already computed a bottom-right/M-size window and only needed this
+  // mode default to match). 'top'/dock stays fully available -- the
+  // explicit dock button, or dragging a floating window's header up to
+  // the top edge, both still switch to it same as before. Restored from
+  // sessionStorage below (the effect reading VIEWER_PREFS_KEY) once a
+  // video's been played and this got explicitly set at least once in
+  // the current browser session -- covers "position stays as per user
+  // pref," including picking 'top' again if that's what was last set.
+  const [viewerMode, setViewerMode] = useState<ViewerMode>('floating')
   const [viewerPosition, setViewerPosition] = useState(() => {
     if (typeof window === 'undefined') return { x: VIEWER_MARGIN, y: VIEWER_MARGIN }
     return {
@@ -1062,6 +1066,13 @@ function App() {
         ) {
           setViewerPosition(parsed.position)
         }
+      } else if (parsed.mode === 'top') {
+        // Wasn't previously restored at all (only 'floating' was) --
+        // reported directly wanting dock/top to stay available and
+        // "stick" the same way floating position does, so a user who
+        // explicitly docked to top keeps that choice too, not just one
+        // who dragged into floating.
+        setViewerMode('top')
       }
 
       if (parsed.sizePreset === 'S' || parsed.sizePreset === 'M' || parsed.sizePreset === 'L') {
