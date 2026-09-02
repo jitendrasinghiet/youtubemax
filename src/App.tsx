@@ -58,6 +58,23 @@ const VIEWER_MARGIN = 16
 const POP_WINDOW_BOTTOM_OFFSET = 72
 const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const
 
+// Docked mode: a full-width bar pinned to the very top of the viewport,
+// like YouTube's own mobile "now playing" video with results scrollable
+// beneath it -- the initial view the very first time a video plays in a
+// session (docs/STATUS.md has the full design writeup). `min()` keeps it
+// a real 16:9-ish proportion on a wide window without ever eating more
+// than 60% of a short one.
+const TOP_PANEL_HEIGHT = 'min(58vh, 620px)'
+// How far a downward drag on the docked top bar has to travel before it
+// detaches into the free-floating window -- short enough to feel
+// immediate, long enough that clicking one of the header's own buttons
+// (S/M/L/PiP/CC/rate/fullscreen/close) never accidentally undocks it.
+const TOP_TO_FLOAT_DRAG_THRESHOLD = 56
+// How close to the top edge a drag has to end for a floating window to
+// redock, mirroring the same "drag/swipe to the top" gesture in reverse.
+const FLOAT_TO_TOP_DROP_ZONE = 64
+
+type ViewerMode = 'top' | 'floating'
 type ViewerSizePreset = 'S' | 'M' | 'L' | 'custom'
 
 type BeforeInstallPromptEvent = Event & {
@@ -173,6 +190,17 @@ function App() {
   const [showFilteredChapters, setShowFilteredChapters] = useState(false)
   const [showSummary, setShowSummary] = useState(true)
   const [viewerOpen, setViewerOpen] = useState(false)
+  // Which of the two visual states the viewer is in -- 'top' (docked,
+  // full-width bar at the top of the page, the results grid scrollable
+  // beneath it) or 'floating' (the pre-existing draggable/resizable
+  // corner window). Starts 'top' -- with nothing in sessionStorage yet
+  // (a session's first video), that's exactly "top panel wide when user
+  // plays for first time." Only ever changes via the drag/swipe gesture
+  // on the viewer's own header (startViewerDrag) or the explicit S/M/L/
+  // dock controls -- never reset just because a *different* video was
+  // selected from the list, which is what let it persist "as per user
+  // set across multiple items played" once dragged into floating mode.
+  const [viewerMode, setViewerMode] = useState<ViewerMode>('top')
   const [viewerPosition, setViewerPosition] = useState(() => {
     if (typeof window === 'undefined') return { x: VIEWER_MARGIN, y: VIEWER_MARGIN }
     return {
@@ -625,18 +653,17 @@ function App() {
 
   const handleSelectSearchResult = useCallback(
     (videoId: string) => {
-      const size = clampViewerSize(viewerSize)
-      const bottomRightPosition = clampViewerPosition(
-        {
-          x: window.innerWidth - size.width - VIEWER_MARGIN,
-          y: window.innerHeight - size.height - VIEWER_MARGIN,
-        },
-        size,
-      )
-      setViewerPosition(bottomRightPosition)
+      // Deliberately doesn't touch viewerMode/viewerPosition -- selecting
+      // a *different* video from the list is not the same gesture as
+      // dragging the viewer, and used to hard-reset the floating window
+      // to the bottom-right corner every single time regardless of
+      // where the user had actually dragged it. Whatever mode/position
+      // is already active (top-docked, or floating at wherever it was
+      // last left) carries over to the newly-selected video, which is
+      // the actual "stays the same across multiple items played" ask.
       runAnalysis(videoId)
     },
-    [runAnalysis, viewerSize],
+    [runAnalysis],
   )
 
   const startViewerDrag = useCallback(
@@ -646,27 +673,65 @@ function App() {
       const startPointer = { x: event.clientX, y: event.clientY }
       const startPosition = viewerPosition
       const size = clampViewerSize(viewerSize)
+      // Local to this one gesture, not React state -- a fast drag isn't
+      // gated behind a render, and the pointerup handler below needs to
+      // know how the drag actually ended without waiting for one either.
+      let mode = viewerMode
+      let lastClientY = startPointer.y
 
       const handlePointerMove = (moveEvent: PointerEvent) => {
-        const nextPosition = clampViewerPosition(
-          {
-            x: startPosition.x + (moveEvent.clientX - startPointer.x),
-            y: startPosition.y + (moveEvent.clientY - startPointer.y),
-          },
-          size,
+        lastClientY = moveEvent.clientY
+
+        if (mode === 'top') {
+          // Only a real downward drag detaches the docked top panel --
+          // guards against a stray wobble while just clicking one of the
+          // header's own buttons (S/M/L/PiP/CC/rate/fullscreen/close),
+          // all of which also sit under this same pointerdown handler.
+          const draggedDown = moveEvent.clientY - startPointer.y
+          if (draggedDown < TOP_TO_FLOAT_DRAG_THRESHOLD) return
+          mode = 'floating'
+          setViewerMode('floating')
+          // Detaches from directly under the pointer's *current*
+          // position, not the drag's start -- so the window picks up
+          // exactly where the top panel visually was the instant it
+          // crossed the threshold, instead of jumping.
+          setViewerPosition(
+            clampViewerPosition(
+              { x: moveEvent.clientX - size.width / 2, y: moveEvent.clientY - 16 },
+              size,
+            ),
+          )
+          return
+        }
+
+        setViewerPosition(
+          clampViewerPosition(
+            {
+              x: startPosition.x + (moveEvent.clientX - startPointer.x),
+              y: startPosition.y + (moveEvent.clientY - startPointer.y),
+            },
+            size,
+          ),
         )
-        setViewerPosition(nextPosition)
       }
 
       const handlePointerUp = () => {
         document.removeEventListener('pointermove', handlePointerMove)
         document.removeEventListener('pointerup', handlePointerUp)
+        // The reverse gesture: a floating window dragged back up into the
+        // top strip redocks as the wide top panel, same drop-zone idea as
+        // the detach threshold above, just checked at release instead of
+        // continuously (redocking mid-drag would fight the user's own
+        // pointer position on every subsequent move event).
+        if (mode === 'floating' && lastClientY <= FLOAT_TO_TOP_DROP_ZONE) {
+          setViewerMode('top')
+        }
       }
 
       document.addEventListener('pointermove', handlePointerMove)
       document.addEventListener('pointerup', handlePointerUp)
     },
-    [viewerPosition, viewerSize],
+    [viewerPosition, viewerSize, viewerMode],
   )
 
   const startViewerResize = useCallback(
@@ -704,6 +769,10 @@ function App() {
     const resized = clampViewerSize(nextSize)
     setViewerSize(resized)
     setViewerPosition((currentPosition) => clampViewerPosition(currentPosition, resized))
+    // A specific S/M size is a floating-window concept -- picking one
+    // while docked at the top undocks it there, at that size, rather
+    // than the button silently doing nothing useful in that mode.
+    setViewerMode('floating')
   }, [])
 
   const resizeViewerToMin = useCallback(() => {
@@ -726,10 +795,18 @@ function App() {
     const resized = clampViewerSize({ width, height })
     setViewerSize(resized)
     setViewerSizePreset('L')
+    setViewerMode('floating')
     setViewerPosition({
       x: VIEWER_MARGIN + (availableWidth - resized.width) / 2,
       y: VIEWER_MARGIN + (availableHeight - resized.height) / 2,
     })
+  }, [])
+
+  // The explicit-button equivalent of dragging/swiping a floating window
+  // up into the top drop zone -- same destination, for anyone who'd
+  // rather click than discover the gesture.
+  const dockViewerToTop = useCallback(() => {
+    setViewerMode('top')
   }, [])
 
   const cyclePlaybackRate = useCallback(() => {
@@ -961,6 +1038,19 @@ function App() {
         sizePreset?: ViewerSizePreset
         captionsEnabled?: boolean
         playbackRate?: number
+        mode?: ViewerMode
+        position?: { x: number; y: number }
+      }
+
+      if (parsed.mode === 'floating') {
+        setViewerMode('floating')
+        if (
+          parsed.position &&
+          typeof parsed.position.x === 'number' &&
+          typeof parsed.position.y === 'number'
+        ) {
+          setViewerPosition(parsed.position)
+        }
       }
 
       if (parsed.sizePreset === 'S' || parsed.sizePreset === 'M' || parsed.sizePreset === 'L') {
@@ -1010,12 +1100,14 @@ function App() {
           sizePreset: viewerSizePreset,
           captionsEnabled,
           playbackRate,
+          mode: viewerMode,
+          position: viewerMode === 'floating' ? viewerPosition : undefined,
         }),
       )
     } catch {
       // Ignore sessionStorage write failures.
     }
-  }, [viewerSizePreset, captionsEnabled, playbackRate, isPopoutMode])
+  }, [viewerSizePreset, captionsEnabled, playbackRate, isPopoutMode, viewerMode, viewerPosition])
 
   // Sort results based on selected sort type -- shared across both
   // sections; the live section hides its own sort row (hideSortControls)
@@ -1199,7 +1291,16 @@ function App() {
         <div className="absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-red-900/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+      <div
+        className="relative mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4"
+        // The docked top panel below is `position: fixed` (so it can sit
+        // above the header too, exactly like the video being the very
+        // first thing on a YouTube mobile watch page) -- this padding is
+        // what actually pushes the header + results grid down out from
+        // under it, so "list below to scroll" means *this* content, not
+        // something hidden behind the panel.
+        style={viewerOpen && viewerMode === 'top' ? { paddingTop: TOP_PANEL_HEIGHT } : undefined}
+      >
         <header className="mb-4 flex flex-col gap-2 sm:gap-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5 shrink-0">
@@ -1510,15 +1611,23 @@ function App() {
 
       {viewerOpen && (
         <div
-          className="fixed z-40 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl shadow-black/60 backdrop-blur"
-          style={{
-            left: viewerPosition.x,
-            top: viewerPosition.y,
-            width: viewerSize.width,
-            height: viewerSize.height,
-            maxWidth: `calc(100vw - ${VIEWER_MARGIN * 2}px)`,
-            maxHeight: `calc(100vh - ${VIEWER_MARGIN * 2}px)`,
-          }}
+          className={
+            viewerMode === 'top'
+              ? 'fixed inset-x-0 top-0 z-40 overflow-hidden border-b border-white/10 bg-zinc-950/95 shadow-2xl shadow-black/60 backdrop-blur'
+              : 'fixed z-40 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl shadow-black/60 backdrop-blur'
+          }
+          style={
+            viewerMode === 'top'
+              ? { height: TOP_PANEL_HEIGHT }
+              : {
+                  left: viewerPosition.x,
+                  top: viewerPosition.y,
+                  width: viewerSize.width,
+                  height: viewerSize.height,
+                  maxWidth: `calc(100vw - ${VIEWER_MARGIN * 2}px)`,
+                  maxHeight: `calc(100vh - ${VIEWER_MARGIN * 2}px)`,
+                }
+          }
         >
           <div className="flex h-full flex-col">
             <div
@@ -1571,6 +1680,20 @@ function App() {
                 >
                   L
                 </button>
+                {viewerMode === 'floating' && (
+                  <button
+                    type="button"
+                    aria-label="Dock viewer to the top of the page"
+                    title="Dock to top"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      dockViewerToTop()
+                    }}
+                    className="rounded border border-white/10 bg-white/5 px-2 py-1 text-zinc-300 transition hover:border-white/20 hover:text-white"
+                  >
+                    ⤒
+                  </button>
+                )}
                 <button
                   type="button"
                   aria-label="Open viewer in picture-in-picture window"
@@ -1749,14 +1872,16 @@ function App() {
               )}
             </div>
 
-            <button
-              type="button"
-              aria-label="Resize viewer"
-              onPointerDown={startViewerResize}
-              className="absolute bottom-1.5 right-1.5 h-5 w-5 touch-none cursor-se-resize rounded-sm text-zinc-500 transition hover:text-white"
-            >
-              <span className="pointer-events-none absolute bottom-0.5 right-0.5 block h-3 w-3 border-b-2 border-r-2 border-current" />
-            </button>
+            {viewerMode === 'floating' && (
+              <button
+                type="button"
+                aria-label="Resize viewer"
+                onPointerDown={startViewerResize}
+                className="absolute bottom-1.5 right-1.5 h-5 w-5 touch-none cursor-se-resize rounded-sm text-zinc-500 transition hover:text-white"
+              >
+                <span className="pointer-events-none absolute bottom-0.5 right-0.5 block h-3 w-3 border-b-2 border-r-2 border-current" />
+              </button>
+            )}
           </div>
         </div>
       )}

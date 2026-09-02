@@ -57,14 +57,27 @@ vercel
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
 
+See [docs/STATUS.md](docs/STATUS.md) for the running log of real,
+verified work on this project (what changed, why, how it was checked) —
+the source of truth for current behavior when it disagrees with this
+README's own summaries below. `docs/DELTA_REQUIREMENTS.md` is the
+narrower filter/taxonomy-specific tracker.
+
 ---
 
 ## Features in Detail
 
-### Current Status (2026-08-05)
+### Current Status (2026-08-05, viewer behavior updated -- see docs/STATUS.md)
 
 - Discovery search default is **25** results, capped at 25 server-side.
-- Viewer opens centered on search-result click.
+- The viewer's first video in a session opens docked full-width to the
+  top of the page (results scrollable beneath it); dragging its header
+  down detaches it into the existing small draggable window, which then
+  keeps its mode and position across every later video picked from the
+  results grid until dragged/swiped back to the top (or the explicit
+  "Dock to top" button) -- see `docs/STATUS.md`'s "Viewer redesign" entry
+  for the full design and why the old "always reopens at a fixed corner"
+  behavior was a real bug, not the intended design.
 - `Pop` opens a separate window centered on screen.
 - Cross-window pause signaling is active for viewer instances.
 - In-viewer top-middle PiP overlay control is **not** in current state (rolled back).
