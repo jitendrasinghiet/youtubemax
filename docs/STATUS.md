@@ -7,6 +7,24 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## 36 real stand-up comedy search-cache entries persisted (DEKHO's new Comedy content)
+
+DEKHO added 36 new Comedy-type entries (stand-up specials/clips) from a
+user-supplied list, after verifying every videoId against YouTube's
+oEmbed first (22 of the original 61 supplied were dead links -- see
+DEKHO's own `docs/STATUS.md` for the full verification writeup). For
+the 36 that verified real, ran each through this app's own live
+`/api/search` (not just oEmbed) to get real view counts/channels/tags
+for DEKHO's catalog -- the dev server's existing write-on-miss caching
+(`server/searchCache.ts`, wired through `vite.config.ts`'s dev-only
+middleware) persisted the full result set for each query as a normal
+side effect, no separate script needed. Committed those 36
+`data/search-cache/*.json` files (plus 4 unrelated ones already sitting
+uncommitted from earlier session work: Kota Factory/Mirzapur trailer
+re-resolution for DEKHO's own dead-link fix, and two other queries from
+earlier search-behavior testing). All are genuine, unedited `/api/search`
+responses.
+
 ## 4 real YouTube playlists ingested (111 items) -- 7 of 11 given URLs came back 404
 
 Given 11 real YouTube playlist URLs directly, asked to pull their
