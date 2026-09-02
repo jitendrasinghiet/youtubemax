@@ -37,7 +37,7 @@ import {
   toggleSliderFilter,
   type SelectedFilter,
 } from './lib/searchFilters'
-import { sortSearchResults, type SearchSortType } from './lib/searchSort'
+import { declutterMadeForKids, hasKidsFilterActive, sortSearchResults, type SearchSortType } from './lib/searchSort'
 import { parsePlaylistId } from './lib/youtubeUrl'
 import { CURATED_PLAYLISTS } from './lib/curatedPlaylists'
 import { PlaylistSections } from './components/PlaylistSections'
@@ -1123,14 +1123,20 @@ function App() {
   // Sort results based on selected sort type -- shared across both
   // sections; the live section hides its own sort row (hideSortControls)
   // so there's exactly one visible control, not two that could disagree.
-  const sortedCacheResults = useMemo(
-    () => sortSearchResults(cacheResults, searchSortType, searchQuery),
-    [cacheResults, searchSortType, searchQuery],
+  // Skipped entirely once the user has explicitly asked for Kids/Rhymes
+  // content via a filter chip -- see hasKidsFilterActive's own comment.
+  const kidsFilterActive = useMemo(
+    () => hasKidsFilterActive(selectedFilters.map((f) => f.label)),
+    [selectedFilters],
   )
-  const sortedLiveResults = useMemo(
-    () => sortSearchResults(liveResults, searchSortType, liveQuery ?? searchQuery),
-    [liveResults, searchSortType, liveQuery, searchQuery],
-  )
+  const sortedCacheResults = useMemo(() => {
+    const sorted = sortSearchResults(cacheResults, searchSortType, searchQuery)
+    return kidsFilterActive ? sorted : declutterMadeForKids(sorted)
+  }, [cacheResults, searchSortType, searchQuery, kidsFilterActive])
+  const sortedLiveResults = useMemo(() => {
+    const sorted = sortSearchResults(liveResults, searchSortType, liveQuery ?? searchQuery)
+    return kidsFilterActive ? sorted : declutterMadeForKids(sorted)
+  }, [liveResults, searchSortType, liveQuery, searchQuery, kidsFilterActive])
   const cacheIsNarrowed = selectedFilters.length > 0 || Boolean(searchQuery.trim())
 
   // An external link (the sibling DEKHO project's detail pane) drives the

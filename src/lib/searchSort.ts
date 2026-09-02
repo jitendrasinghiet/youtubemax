@@ -170,3 +170,43 @@ export function sortSearchResults(
   }
   return sorted
 }
+
+// Kids content (YouTube's own `status.madeForKids` flag, server/search-
+// metadata.ts) tends to have outsized view counts -- nursery rhyme
+// channels routinely hit billions -- so any view/popularity-weighted sort
+// (viewCount, and 'recommended's own popularity term) piles it up at the
+// front of general/mixed results. Reported directly as Kids content
+// "flooding" results outside its own audience. Spreads it to at most one
+// in every KIDS_SPACING slots instead of removing it -- nothing is hidden,
+// same approach as DEKHO's own declutterKids (lib/filtering.ts there).
+// A no-op whenever the caller has explicitly asked for Kids/Rhymes content
+// (see hasKidsFilterActive below), since flooding *toward* Kids content is
+// exactly the point once that's an explicit choice.
+const KIDS_SPACING = 12
+
+export function declutterMadeForKids(results: SearchResultItem[]): SearchResultItem[] {
+  const kids = results.filter((r) => r.madeForKids === true)
+  if (kids.length === 0) return results
+  const rest = results.filter((r) => r.madeForKids !== true)
+  const merged: SearchResultItem[] = []
+  let ki = 0
+  let sinceLastKid = KIDS_SPACING
+  for (const item of rest) {
+    merged.push(item)
+    sinceLastKid++
+    if (sinceLastKid >= KIDS_SPACING && ki < kids.length) {
+      merged.push(kids[ki++])
+      sinceLastKid = 0
+    }
+  }
+  while (ki < kids.length) merged.push(kids[ki++])
+  return merged
+}
+
+/** True when the user has explicitly asked for Kids/Rhymes content via the
+ *  filter chips (audience: Kids, or a Kids/Rhyme category) -- in which case
+ *  declutterMadeForKids should be skipped entirely rather than spreading
+ *  out the very content that was asked for. */
+export function hasKidsFilterActive(selectedFilterLabels: string[]): boolean {
+  return selectedFilterLabels.some((label) => /kids|rhyme/i.test(label))
+}

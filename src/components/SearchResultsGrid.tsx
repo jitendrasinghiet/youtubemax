@@ -4,14 +4,14 @@ import { VideoCard } from './VideoCard'
 import type { SearchSortType } from '../lib/searchSort'
 import type { SearchResultItem } from '../types'
 
+// Trusted channels / Safer picks / Longest hidden from the sort row --
+// reported directly as clutter. The underlying sort logic (searchSort.ts)
+// is untouched, so re-adding any of these later is just uncommenting a row.
 const SORT_OPTIONS: { type: SearchSortType; label: string }[] = [
   { type: 'recommended', label: 'Recommended' },
   { type: 'relevance', label: 'Relevance' },
-  { type: 'channelTrust', label: 'Trusted channels' },
-  { type: 'safety', label: 'Safer picks' },
   { type: 'publishDate', label: 'Newest' },
   { type: 'viewCount', label: 'Most viewed' },
-  { type: 'duration', label: 'Longest' },
 ]
 
 interface SearchResultsGridProps {

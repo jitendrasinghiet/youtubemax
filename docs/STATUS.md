@@ -7,6 +7,31 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Sort row decluttered (Trusted channels/Safer picks/Longest hidden); Kids content no longer floods general results
+
+Two small reports, both scoped to a single file each.
+
+**Three sort options hidden from the results sort row.** Reported
+directly: "Longest", "Safer picks", "Trusted channels" were clutter.
+`SearchResultsGrid.tsx`'s `SORT_OPTIONS` trimmed to Recommended /
+Relevance / Newest / Most viewed; the underlying sort logic
+(`searchSort.ts`'s `channelTrust`/`safety`/`duration` cases) is untouched,
+so restoring any of them later is a one-line uncomment, not new work.
+
+**Kids content (YouTube's own `status.madeForKids` flag) was flooding
+general/mixed results.** Same underlying shape as DEKHO's own Kids-flood
+report (see its `docs/STATUS.md`): Kids channels routinely post huge view
+counts (nursery rhymes in the billions), so any popularity-weighted sort
+piles them at the front. New `declutterMadeForKids()` (`lib/searchSort.ts`)
+spreads Kids-flagged results to at most one in every 12 slots instead of
+letting them cluster -- nothing removed, same approach as DEKHO's
+`declucterKids`. Skipped entirely via `hasKidsFilterActive()` once the
+user has explicitly picked a Kids/Rhymes filter chip (checks selected
+filter labels for `/kids|rhyme/i`), since spreading out the very content
+someone asked for would defeat the point. Wired into both the cached
+("From your library") and live-search result lists in `App.tsx`.
+`npx tsc --noEmit && npm run build` clean.
+
 ## Docked top panel's dead black space trimmed to fit the video; settings dropdown no longer hidden behind the search bar on mobile
 
 Two follow-up reports on the viewer redesign below, both root-caused and
