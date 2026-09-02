@@ -7,6 +7,40 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## 4 real YouTube playlists ingested (111 items) -- 7 of 11 given URLs came back 404
+
+Given 11 real YouTube playlist URLs directly, asked to pull their
+content into this app's own data (and the sibling DEKHO project's, see
+its own `docs/STATUS.md`).
+
+Fetched via the official Data API (`YOUTUBE_DATA_API_KEY`, already
+configured) -- `playlists.list` for real names/channel, `playlistItems.list`
+for items, `videos.list` for real view counts/durations. Of 11 URLs: 4
+resolved (Bhakti/34 items, Energy/24, Old is Gold/27, Language of
+Nothing/30 -- all one channel, "Wise Mind"), 7 returned 404. Most likely
+private/unlisted playlists from the same account, not reachable by a
+public API key without the owner's own OAuth login -- flagged plainly
+rather than silently dropped.
+
+Written to two places, matching how this app actually surfaces content:
+- `data/playlists/*.json` (the dev-only local playlist manager, see
+  `server/localPlaylistStore.ts`) -- one entry existed already under a
+  placeholder label (`"Playlist PLaR8WFbIbbojeT3lPvQ66_7c_mOcjb7gH"`,
+  pulled 2026-08-18 before this session ever ran) for what turned out to
+  be "Energy" -- updated in place with the real name/channel instead of
+  creating a duplicate. The other 3 written fresh, real names throughout
+  ("use playlist names from YT response" was the explicit ask).
+- `data/search-cache/*.json` (the production-facing default "From your
+  library" feed, `server/searchCache.ts`) -- one file per playlist,
+  keyed by its real title as the query. This is what actually makes the
+  content discoverable in the deployed app, not just the dev tool.
+  Verified live: `/api/search-cache?query=Hansraj%20Raghuwanshi` returns
+  the new "Radhe Radhe" item alongside pre-existing Hansraj Raghuwanshi
+  content, confirming it merged into the shared pool rather than sitting
+  inert in its own file.
+
+`npm test` (97/97) still passes.
+
 ## YouTube ToS notice added; a real compliance gap found and flagged, not silently patched
 
 Asked to check YouTube/TMDb ToS and add required handling/credits ahead
