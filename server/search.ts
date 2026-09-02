@@ -6,8 +6,24 @@ import {
 } from './search-metadata.js'
 import type { PlaylistSearchResultItem, SearchResultItem } from './types.js'
 
-export function buildYouTubeSearchUrl(query: string): string {
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`
+// hl (interface/relevance language) and gl (region) -- YouTube's own
+// signal for language-appropriate results, real API-level context
+// rather than just another word mixed into the query text. Reported
+// directly: a selected language filter (src/lib/filterTaxonomy.ts) was
+// only ever appended as a free-text search term (searchFilters.ts's
+// buildEffectiveQuery), and this endpoint hardcoded hl:'en'/gl:'US' for
+// every request regardless -- checked directly, no client ever passed
+// anything else through. Optional and additive: omitted, behavior is
+// exactly what it was before.
+export interface SearchLocale {
+  hl: string
+  gl: string
+}
+
+export function buildYouTubeSearchUrl(query: string, locale?: SearchLocale): string {
+  const base = `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`
+  if (!locale) return base
+  return `${base}&hl=${encodeURIComponent(locale.hl)}&gl=${encodeURIComponent(locale.gl)}`
 }
 
 function extractText(field: unknown): string {
@@ -271,8 +287,8 @@ async function filterEmbeddableResults(
   return { filtered, removed: results.length - filtered.length }
 }
 
-async function fetchResultsPageInitialData(query: string, fetchFn: typeof fetch): Promise<unknown> {
-  const url = buildYouTubeSearchUrl(query)
+async function fetchResultsPageInitialData(query: string, fetchFn: typeof fetch, locale?: SearchLocale): Promise<unknown> {
+  const url = buildYouTubeSearchUrl(query, locale)
   const res = await fetchWithHeaders(fetchFn, url, {
     headers: { Accept: 'text/html,application/xhtml+xml' },
   })
@@ -294,12 +310,13 @@ async function searchViaResultsUrl(
   query: string,
   maxResults: number,
   fetchFn: typeof fetch,
+  locale?: SearchLocale,
 ): Promise<SearchResultItem[]> {
-  const initialData = await fetchResultsPageInitialData(query, fetchFn)
+  const initialData = await fetchResultsPageInitialData(query, fetchFn, locale)
   return collectFromInitialData(initialData, maxResults)
 }
 
-async function fetchInnertubeSearchData(query: string, fetchFn: typeof fetch): Promise<unknown> {
+async function fetchInnertubeSearchData(query: string, fetchFn: typeof fetch, locale?: SearchLocale): Promise<unknown> {
   const res = await fetchWithHeaders(
     fetchFn,
     'https://www.youtube.com/youtubei/v1/search?prettyPrint=false',
@@ -308,15 +325,15 @@ async function fetchInnertubeSearchData(query: string, fetchFn: typeof fetch): P
       headers: {
         'Content-Type': 'application/json',
         Origin: 'https://www.youtube.com',
-        Referer: buildYouTubeSearchUrl(query),
+        Referer: buildYouTubeSearchUrl(query, locale),
       },
       body: JSON.stringify({
         context: {
           client: {
             clientName: 'WEB',
             clientVersion: INNERTUBE_CLIENT_VERSION,
-            hl: 'en',
-            gl: 'US',
+            hl: locale?.hl ?? 'en',
+            gl: locale?.gl ?? 'US',
           },
         },
         query,
@@ -335,8 +352,9 @@ async function searchViaInnertube(
   query: string,
   maxResults: number,
   fetchFn: typeof fetch,
+  locale?: SearchLocale,
 ): Promise<SearchResultItem[]> {
-  const data = await fetchInnertubeSearchData(query, fetchFn)
+  const data = await fetchInnertubeSearchData(query, fetchFn, locale)
   return collectFromInitialData(data, maxResults)
 }
 
@@ -460,9 +478,10 @@ export async function searchYouTubePlaylistsScraped(
 export async function searchYouTubeVideos(
   query: string,
   maxResults = 25,
+  locale?: SearchLocale,
 ): Promise<{ results: SearchResultItem[]; searchUrl: string; warning?: string }> {
   const trimmed = query.trim().slice(0, MAX_QUERY_LENGTH)
-  const searchUrl = buildYouTubeSearchUrl(trimmed)
+  const searchUrl = buildYouTubeSearchUrl(trimmed, locale)
   if (!trimmed) {
     return { results: [], searchUrl }
   }
@@ -473,8 +492,8 @@ export async function searchYouTubeVideos(
   const fetchFn = fetch
 
   const attempts: Array<{ name: string; run: () => Promise<SearchResultItem[]> }> = [
-    { name: 'results page', run: () => searchViaResultsUrl(trimmed, limit, fetchFn) },
-    { name: 'innertube', run: () => searchViaInnertube(trimmed, limit, fetchFn) },
+    { name: 'results page', run: () => searchViaResultsUrl(trimmed, limit, fetchFn, locale) },
+    { name: 'innertube', run: () => searchViaInnertube(trimmed, limit, fetchFn, locale) },
   ]
 
   for (const attempt of attempts) {

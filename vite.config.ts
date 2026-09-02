@@ -114,6 +114,13 @@ function apiPlugin(): Plugin {
 
           const maxResults = Number(url.searchParams.get('maxResults') ?? 12)
           const bypassCache = url.searchParams.get('refresh') === '1'
+          const LOCALE_CODE_RE = /^[a-zA-Z-]{2,10}$/
+          const hlParam = url.searchParams.get('hl')
+          const glParam = url.searchParams.get('gl')
+          const locale =
+            hlParam && glParam && LOCALE_CODE_RE.test(hlParam) && LOCALE_CODE_RE.test(glParam)
+              ? { hl: hlParam, gl: glParam }
+              : undefined
 
           try {
             if (!bypassCache) {
@@ -123,7 +130,7 @@ function apiPlugin(): Plugin {
                 res.end(
                   JSON.stringify({
                     results: cached.results,
-                    searchUrl: buildYouTubeSearchUrl(query),
+                    searchUrl: buildYouTubeSearchUrl(query, locale),
                     warning: undefined,
                     fromCache: true,
                     cachedAt: cached.searchedAt,
@@ -133,7 +140,7 @@ function apiPlugin(): Plugin {
               }
             }
 
-            const { results, searchUrl, warning } = await searchYouTubeVideos(query, maxResults)
+            const { results, searchUrl, warning } = await searchYouTubeVideos(query, maxResults, locale)
             // Dev-only write (see server/searchCache.ts's header) -- this
             // middleware only exists in configureServer, never in the
             // deployed api/*.ts path, so this can't run against a

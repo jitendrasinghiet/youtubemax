@@ -29,8 +29,16 @@ export async function analyzeVideo(input: string, options: AnalyzeOptions = {}):
   return data as AnalyzeResult
 }
 
-export async function searchVideos(query: string, maxResults = 25): Promise<SearchResponse> {
+export async function searchVideos(
+  query: string,
+  maxResults = 25,
+  locale?: { hl: string; gl: string },
+): Promise<SearchResponse> {
   const params = new URLSearchParams({ q: query.trim(), maxResults: String(maxResults) })
+  if (locale) {
+    params.set('hl', locale.hl)
+    params.set('gl', locale.gl)
+  }
   const res = await fetch(`/api/search?${params}`)
   const data = await res.json()
 

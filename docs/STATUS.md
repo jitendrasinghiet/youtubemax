@@ -94,6 +94,55 @@ sit next to `SelectedFilter`. Verified live: picked "Newest," reloaded,
 button still shows selected. `npx tsc --noEmit && npm run build` clean;
 `npm test` 97/97.
 
+## Search: a selected language filter now reaches YouTube as a real locale signal, and category chips carry their parent group as extra disambiguating context
+
+Asked directly for two related improvements: pass the selected language
+filter into search (not just as one of several free-text keywords), and
+use more context from the taxonomy ("master data") for disambiguation.
+
+**Language filter -> real `hl`/`gl` signal.** Checked first: a selected
+language chip's own value (e.g. "Hindi") was already being folded into
+the search query text (`searchFilters.ts`'s `buildEffectiveQuery`,
+pre-existing), but the actual search functions
+(`server/search.ts`'s `searchViaResultsUrl`/`searchViaInnertube`)
+hardcoded `hl: 'en', gl: 'US'` on every request regardless -- a real,
+concrete gap, not something already covered by the keyword. Threaded an
+optional `SearchLocale { hl, gl }` through the whole chain: `server/
+search.ts`'s functions -> `api/search.ts` (production) and
+`vite.config.ts`'s dev middleware (both validate `hl`/`gl` as short
+alnum-only codes before they reach an outbound request) -> `src/lib/
+api.ts`'s `searchVideos` -> `App.tsx`'s search handler. New `src/lib/
+searchLocale.ts` maps each of the 15 language filter labels to a real
+`(hl, gl)` pair (`gl: 'IN'` for every Indian-language entry; Haryanvi/
+Bhojpuri have no YouTube-recognized `hl` code of their own, so they fall
+back to Hindi's -- `gl: 'IN'` is the stronger, always-applicable half of
+the signal regardless). Backward compatible: omitted when no language
+filter is selected, verified live both ways (`hl=hi&gl=IN` present with
+Hindi selected, absent without).
+
+**Category chips now also carry their parent group's own label.**
+Selecting a Category item under a group (e.g. "Bhajan" under
+"Devotional & Family") previously only contributed that one leaf term;
+`buildEffectiveQuery` now also includes the group's own display label
+(deduped across multiple chips sharing a group) -- extra taxonomy
+context for disambiguation, pulled from the same structured data driving
+the filter menu itself, not guessed. Deliberately *not* extended to the
+separate local-cache-browsing keyword path (`App.tsx`'s two
+`browseCachedResults` call sites) -- that mechanism has an explicit,
+documented invariant that a filter chip's displayed count must never
+disagree with what selecting it actually returns, and widening its
+keyword set without also touching the parallel facet-count computation
+would risk breaking that.
+
+Caught a real test regression from the `searchYouTubeVideos` signature
+change (now takes an optional third `locale` argument) -- three existing
+`api/search.test.ts` assertions expected the old 2-argument call
+exactly; updated them to match the real new contract instead of
+suppressing the argument, and added two new tests covering locale
+passthrough (valid `hl`/`gl` accepted) and validation (malformed codes
+ignored). `npx tsc --noEmit && npm run build` clean; `npm test` 99/99
+(97 before, +2 new).
+
 ## Default viewer changed from docked-top to a floating M-size panel, bottom-right
 
 Reported directly. Previously the *first* video played in a session

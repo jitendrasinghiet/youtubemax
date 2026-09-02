@@ -55,7 +55,7 @@ describe('api/search handler', () => {
     searchYouTubeVideos.mockResolvedValue({ results: [], searchUrl: 'https://x', warning: undefined })
     const res = mockRes()
     await handler(mockReq({ query: { q: 'lofi' } }), res)
-    expect(searchYouTubeVideos).toHaveBeenCalledWith('lofi', 25)
+    expect(searchYouTubeVideos).toHaveBeenCalledWith('lofi', 25, undefined)
     expect(res.statusCode).toBe(200)
     expect(res.headers['Cache-Control']).toContain('s-maxage')
   })
@@ -64,14 +64,28 @@ describe('api/search handler', () => {
     searchYouTubeVideos.mockResolvedValue({ results: [], searchUrl: 'https://x', warning: undefined })
     const res = mockRes()
     await handler(mockReq({ query: { q: 'lofi', maxResults: '10' } }), res)
-    expect(searchYouTubeVideos).toHaveBeenCalledWith('lofi', 10)
+    expect(searchYouTubeVideos).toHaveBeenCalledWith('lofi', 10, undefined)
   })
 
   it('trims the query before validating and searching', async () => {
     searchYouTubeVideos.mockResolvedValue({ results: [], searchUrl: 'https://x', warning: undefined })
     const res = mockRes()
     await handler(mockReq({ query: { q: '  lofi  ' } }), res)
-    expect(searchYouTubeVideos).toHaveBeenCalledWith('lofi', 25)
+    expect(searchYouTubeVideos).toHaveBeenCalledWith('lofi', 25, undefined)
+  })
+
+  it('passes hl/gl through as a locale when both are valid codes', async () => {
+    searchYouTubeVideos.mockResolvedValue({ results: [], searchUrl: 'https://x', warning: undefined })
+    const res = mockRes()
+    await handler(mockReq({ query: { q: 'bhajan', hl: 'hi', gl: 'IN' } }), res)
+    expect(searchYouTubeVideos).toHaveBeenCalledWith('bhajan', 25, { hl: 'hi', gl: 'IN' })
+  })
+
+  it('ignores hl/gl when either is missing or malformed', async () => {
+    searchYouTubeVideos.mockResolvedValue({ results: [], searchUrl: 'https://x', warning: undefined })
+    const res = mockRes()
+    await handler(mockReq({ query: { q: 'bhajan', hl: 'not a code!', gl: 'IN' } }), res)
+    expect(searchYouTubeVideos).toHaveBeenCalledWith('bhajan', 25, undefined)
   })
 
   it('maps a thrown error to a 500 with its message', async () => {

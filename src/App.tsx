@@ -37,6 +37,7 @@ import {
   toggleSliderFilter,
   type SelectedFilter,
 } from './lib/searchFilters'
+import { localeForFilters } from './lib/searchLocale'
 import {
   declutterMadeForKids,
   hasKidsFilterActive,
@@ -414,7 +415,12 @@ function App() {
       // Filters are folded in implicitly; if there's neither typed text nor
       // any filter selected, fall back to a default browse query.
       const effectiveQuery = buildEffectiveQuery(input, selectedFilters) || 'trending'
-      const { results, warning } = await searchVideos(effectiveQuery)
+      // Reported directly: a selected language filter should reach the
+      // search itself, not just ride along as a keyword in effectiveQuery
+      // above (which it already does) -- this is the real hl/gl signal
+      // YouTube's own search actually understands, on top of that.
+      const locale = localeForFilters(selectedFilters)
+      const { results, warning } = await searchVideos(effectiveQuery, 25, locale)
       // A fresh manual search replaces the live section (not the cache
       // feed below it, and not accumulated with a previous search) -- see
       // the liveResults section in the render below.

@@ -80,11 +80,26 @@ const MAX_VIBE_TERMS = 2
  * results — the cap plus "last, not first" ordering keeps Vibe acting as a
  * gentle bias on top of the real search, never the thing that defines it.
  */
+/** A grouped-dimension filter's parent group label (e.g. selecting the
+ *  "Bhajan" item under Category's "devotional" group also surfaces the
+ *  group's own display label, "Devotional") -- extra disambiguating
+ *  context pulled from the taxonomy itself ("master data"), not just the
+ *  one term the selected leaf item carries. Reported directly wanting
+ *  richer context for search disambiguation, not only the literal chip
+ *  clicked. */
+function groupLabelFor(filter: SelectedFilter): string | null {
+  if (!filter.group) return null
+  const dim = FILTER_TAXONOMY[filter.dimension]
+  if (dim.type !== 'grouped') return null
+  return dim.groups[filter.group]?.label ?? null
+}
+
 export function buildEffectiveQuery(typedQuery: string, filters: SelectedFilter[]): string {
   const topical = filters.filter((f) => f.dimension !== 'vibe')
   const vibe = filters.filter((f) => f.dimension === 'vibe')
 
-  const topicalTerms = topical.map((f) => f.value).join(' ')
+  const groupTerms = [...new Set(topical.map(groupLabelFor).filter((g): g is string => g !== null))]
+  const topicalTerms = [...topical.map((f) => f.value), ...groupTerms].join(' ')
   const vibeTerms = vibe.slice(0, MAX_VIBE_TERMS).map((f) => f.value).join(' ')
 
   return [topicalTerms, typedQuery.trim(), vibeTerms].filter(Boolean).join(' ').trim()
