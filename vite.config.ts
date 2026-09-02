@@ -20,6 +20,8 @@ import {
 } from './server/localPlaylistStore.ts'
 import { parseVideoId } from './server/youtube.ts'
 import type { IncomingMessage } from 'node:http'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 // Only the new dev-only local-playlist write routes need a JSON body —
 // every other route in this middleware is GET/query-string only.
@@ -30,6 +32,41 @@ async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
   }
   const raw = Buffer.concat(chunks).toString('utf-8')
   return raw ? (JSON.parse(raw) as T) : ({} as T)
+}
+
+// dist/sw.js is a plain copy of public/sw.js -- Vite doesn't hash or
+// otherwise process public/ files, so without this its bytes would be
+// byte-identical across every deploy. That's the actual reason "new
+// changes not picked up" is possible here at all: the browser's service-
+// worker update check works by comparing the new script's bytes against
+// the currently-installed one, and finds nothing different to install,
+// so the (already-correct) reload-on-controllerchange listener in
+// src/main.tsx never has a real update to fire for. Swapping in a real,
+// build-unique id turns every deploy into a real byte difference, so the
+// normal install -> activate -> clients.claim -> controllerchange ->
+// reload flow actually runs each time. Prefers Vercel's own commit SHA
+// (stable, human-traceable) when building there; a timestamp otherwise
+// covers plain `vite build` locally, where that env var doesn't exist.
+function swVersionPlugin(): Plugin {
+  return {
+    name: 'youtubemax-sw-version',
+    apply: 'build',
+    closeBundle() {
+      const buildId =
+        process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || Date.now().toString(36)
+      // vite build always runs with cwd at the project root -- no
+      // __dirname available here (this file is loaded as native ESM,
+      // `"type": "module"` in package.json), and closeBundle has no
+      // config/outDir argument of its own to read it from instead.
+      const swPath = resolve(process.cwd(), 'dist/sw.js')
+      const contents = readFileSync(swPath, 'utf-8')
+      // Global replace, not just the first match -- the file's own
+      // explanatory comment above CACHE_NAME also contains the literal
+      // placeholder text, which a non-global replace() would consume
+      // instead of the real one it's actually meant to stamp.
+      writeFileSync(swPath, contents.replaceAll('__BUILD_ID__', buildId), 'utf-8')
+    },
+  }
 }
 
 function apiPlugin(): Plugin {
@@ -410,7 +447,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tailwindcss(), apiPlugin()],
+    plugins: [react(), tailwindcss(), apiPlugin(), swVersionPlugin()],
     server: {
       host: '0.0.0.0',
     },

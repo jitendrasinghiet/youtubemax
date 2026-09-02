@@ -1,4 +1,12 @@
-const CACHE_NAME = 'youtubemax-shell-v1'
+// __BUILD_ID__ is replaced with a real build-time value by vite.config.ts's
+// swVersionPlugin -- without it, this file's bytes never change between
+// deploys (it's a static public/ file, not part of Vite's own hashed
+// asset pipeline), so the browser's service-worker update check never
+// finds anything different and the reload-on-update listener in
+// src/main.tsx (already correct) never has a real update to react to.
+// The dist/ copy this ships from always has a real id substituted in;
+// this literal placeholder only appears in source/dev.
+const CACHE_NAME = 'youtubemax-shell-__BUILD_ID__'
 const SHELL_FILES = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg']
 
 self.addEventListener('install', (event) => {
