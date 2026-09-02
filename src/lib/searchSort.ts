@@ -9,6 +9,34 @@ export type SearchSortType =
   | 'channelTrust'
   | 'safety'
 
+const SORT_TYPE_KEY = 'youtubemax.searchSortType'
+const VALID_SORT_TYPES: SearchSortType[] = [
+  'recommended', 'relevance', 'publishDate', 'viewCount', 'duration', 'channelTrust', 'safety',
+]
+
+// Reported directly wanting user prefs/filters to survive a refresh --
+// selectedFilters already did (searchFilters.ts's own loadStoredFilters/
+// persistFilters), sort type didn't, same gap. Same localStorage pattern.
+export function loadStoredSortType(): SearchSortType {
+  if (typeof window === 'undefined') return 'recommended'
+  try {
+    const raw = localStorage.getItem(SORT_TYPE_KEY)
+    if (raw && (VALID_SORT_TYPES as string[]).includes(raw)) return raw as SearchSortType
+  } catch {
+    // ignored -- falls through to the default
+  }
+  return 'recommended'
+}
+
+export function persistSortType(sortType: SearchSortType): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(SORT_TYPE_KEY, sortType)
+  } catch {
+    // storage full/unavailable -- preference just won't persist
+  }
+}
+
 function clamp(value: number, min = 0, max = 1): number {
   return Math.min(max, Math.max(min, value))
 }

@@ -81,6 +81,19 @@ current unlimited scraping-based search. That's a decision for whoever
 owns this product's direction, not something to silently rip out and
 replace. Flagging it plainly is the actual deliverable here.
 
+## Sort order now survives a refresh too
+
+Reported directly, alongside DEKHO's own filters-not-persisting fix
+(see its `docs/STATUS.md`): `selectedFilters` already persisted here
+(`searchFilters.ts`'s `loadStoredFilters`/`persistFilters`), but
+`searchSortType` didn't -- reloading always reset back to
+"Recommended" regardless of what was picked. Same `localStorage`
+pattern, colocated with the type definition (`searchSort.ts`'s new
+`loadStoredSortType`/`persistSortType`) the same way the filters helpers
+sit next to `SelectedFilter`. Verified live: picked "Newest," reloaded,
+button still shows selected. `npx tsc --noEmit && npm run build` clean;
+`npm test` 97/97.
+
 ## Default viewer changed from docked-top to a floating M-size panel, bottom-right
 
 Reported directly. Previously the *first* video played in a session

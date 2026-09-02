@@ -37,7 +37,14 @@ import {
   toggleSliderFilter,
   type SelectedFilter,
 } from './lib/searchFilters'
-import { declutterMadeForKids, hasKidsFilterActive, sortSearchResults, type SearchSortType } from './lib/searchSort'
+import {
+  declutterMadeForKids,
+  hasKidsFilterActive,
+  loadStoredSortType,
+  persistSortType,
+  sortSearchResults,
+  type SearchSortType,
+} from './lib/searchSort'
 import { parsePlaylistId } from './lib/youtubeUrl'
 import { CURATED_PLAYLISTS } from './lib/curatedPlaylists'
 import { PlaylistSections } from './components/PlaylistSections'
@@ -263,7 +270,7 @@ function App() {
   // what was already in the local library.
   const [liveResults, setLiveResults] = useState<SearchResultItem[]>([])
   const [liveQuery, setLiveQuery] = useState<string | null>(null)
-  const [searchSortType, setSearchSortType] = useState<SearchSortType>('recommended')
+  const [searchSortType, setSearchSortType] = useState<SearchSortType>(() => loadStoredSortType())
   const [defaultsLoaded, setDefaultsLoaded] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>(() => loadStoredFilters())
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -447,6 +454,12 @@ function App() {
   useEffect(() => {
     persistFilters(selectedFilters)
   }, [selectedFilters])
+
+  // Same "survive a reload" treatment for the sort order -- reported
+  // directly alongside filters, same gap.
+  useEffect(() => {
+    persistSortType(searchSortType)
+  }, [searchSortType])
 
   // Floating "back to top" affordance -- the results feed is a plain
   // window-scrolled list (no inner overflow container), and it now
