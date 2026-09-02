@@ -7,6 +7,42 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Docked top panel's dead black space trimmed to fit the video; settings dropdown no longer hidden behind the search bar on mobile
+
+Two follow-up reports on the viewer redesign below, both root-caused and
+verified live across desktop/tablet/mobile viewports.
+
+**Docked top panel left growing unused black space below the video as
+the viewport narrowed** -- reported directly, with tablet and mobile
+both called out. `TOP_PANEL_HEIGHT` was a fixed `min(58vh, 620px)`,
+disconnected from the video's own real rendered height: the video is
+100%-width/16:9, so its actual height shrinks a lot faster than `58vh`
+does as the viewport narrows. Measured live before fixing: 115px of
+dead space at tablet width (820px), 226px at mobile width (390px).
+Replaced with `min(calc(100vw * 9 / 16 + 64px), 70vh)` -- `100vw * 9 /
+16` is the video's real rendered height at any width, `+64px` covers
+the header row and the scrollable body's own small padding, and the
+`min(..., 70vh)` cap still applies on a short/desktop-ish window where
+the calc() value would otherwise exceed the viewport (the video
+scrolls internally there, same as before). Verified live: dead space
+now 21px on tablet, 20px on mobile -- both just residual layout
+padding, not a regression.
+
+**Settings dropdown rendered behind the search bar and result cards on
+mobile.** Reported directly. Confirmed live with a screenshot taken
+*before* any video was playing (to separate this from the viewer
+panel): the dropdown was there, but the sticky search/filter bar and
+the video cards below it painted on top of it. Root cause: the
+dropdown (`z-30`) and the sticky search bar (`z-30`, `App.tsx`) are
+siblings in the same stacking context, and CSS breaks z-index ties by
+DOM order -- the search bar comes later in the tree, so it always won
+regardless of which element the user had actually just opened. Fixed
+by bumping the dropdown to `z-50`, strictly above every other layered
+element on the page (sticky bar and scroll-top button at `z-30`/`z-40`,
+the docked/floating viewer panel at `z-40`). Verified live both with no
+video playing and with a video docked at top -- the full dropdown now
+paints cleanly on top in both cases.
+
 ## Viewer redesign: docked top panel (initial view) → drag-to-detach floating window, position persists across plays
 
 Asked directly to make the in-page video viewer's UX closer to real

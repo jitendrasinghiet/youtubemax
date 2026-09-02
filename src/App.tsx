@@ -61,10 +61,21 @@ const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const
 // Docked mode: a full-width bar pinned to the very top of the viewport,
 // like YouTube's own mobile "now playing" video with results scrollable
 // beneath it -- the initial view the very first time a video plays in a
-// session (docs/STATUS.md has the full design writeup). `min()` keeps it
-// a real 16:9-ish proportion on a wide window without ever eating more
-// than 60% of a short one.
-const TOP_PANEL_HEIGHT = 'min(58vh, 620px)'
+// session (docs/STATUS.md has the full design writeup).
+//
+// Tied to the video's own real height, not an arbitrary vh figure --
+// reported directly (and confirmed live: 115px of dead black space on a
+// tablet-width viewport, 226px on a phone-width one) that a fixed
+// `min(58vh, 620px)` panel height leaves growing unused space below the
+// video as the viewport narrows, since the *video* is 100%-width/16:9
+// (so its own real height shrinks a lot faster than 58vh does) while the
+// panel's height didn't track that at all. `100vw * 9 / 16` is the
+// video's actual rendered height at any width; +64px covers the header
+// row (~45px, measured) plus the scrollable body's own small padding.
+// The `min(..., 70vh)` cap still applies on a short/desktop-ish window,
+// where the calc() value would otherwise exceed the viewport -- the
+// video scrolls internally there exactly as it already did.
+const TOP_PANEL_HEIGHT = 'min(calc(100vw * 9 / 16 + 64px), 70vh)'
 // How far a downward drag on the docked top bar has to travel before it
 // detaches into the free-floating window -- short enough to feel
 // immediate, long enough that clicking one of the header's own buttons
@@ -1332,7 +1343,16 @@ function App() {
               </button>
 
               {settingsOpen && (
-                <div className="absolute right-0 top-full z-30 mt-2 w-64 rounded-xl border border-white/10 bg-zinc-950/95 p-3 shadow-2xl backdrop-blur">
+                // z-50: strictly above every other layered element on the page
+                // (sticky search bar and scroll-top button are both z-30/z-40,
+                // the docked video panel is z-40). Reported directly: on mobile
+                // the dropdown rendered behind the search bar and result cards.
+                // Root cause confirmed live -- this dropdown and the sticky
+                // search bar below it are both z-30 siblings in the same
+                // stacking context, and CSS breaks z-index ties by DOM order,
+                // so the search bar (later in the tree) always painted on top
+                // regardless of which one the user had actually just opened.
+                <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-white/10 bg-zinc-950/95 p-3 shadow-2xl backdrop-blur">
                   <div className="mb-2">
                     <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                       Display
