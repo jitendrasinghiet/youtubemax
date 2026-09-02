@@ -7,6 +7,46 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## YouTube ToS notice added; a real compliance gap found and flagged, not silently patched
+
+Asked to check YouTube/TMDb ToS and add required handling/credits ahead
+of going public-facing. Added a straightforward piece (a ToS/Privacy
+Policy notice + attribution in the settings dropdown, linking to
+YouTube's actual Terms and Google's Privacy Policy, as required
+wherever an app is built on YouTube data) -- but checked the actual data
+sourcing first rather than treating this as just "add a footer," and
+found something more serious that needs a real product decision, not a
+code patch.
+
+**`server/search.ts` -- the core search this whole app is built around --
+does not use the official YouTube Data API.** It scrapes YouTube's own
+search-results HTML page (`extractYtInitialData`/`collectFromInitialData`
+parse the embedded `ytInitialData` JSON), and `server/constants.ts`'s own
+comment says exactly what it's for: *"Shared constants for YouTube
+scraping requests... update when YouTube changes its anti-bot behavior"*
+-- rotating realistic browser user agents specifically to evade YouTube's
+own bot detection (`proxy.ts`, `getBrowserHeaders`). YouTube's Terms of
+Service prohibit accessing the service by automated means other than
+its provided interfaces, and circumventing technical protections --
+this is a genuine ToS risk if operated publicly at real scale, not a
+cosmetic gap a credits notice fixes.
+
+**Not everything is like this, checked precisely rather than assumed
+uniform:** `enrichResultsWithYouTubeDataApi` (search.ts) and
+`youtubePlaylists.ts` (playlist fetching) both already use the *official*
+`googleapis.com/youtube/v3/*` endpoints with a real API key when
+`YOUTUBE_DATA_API_KEY` is set -- fully compliant. It's specifically the
+primary search-discovery path that scrapes.
+
+**Deliberately not "fixed" here** -- migrating core search to the
+official Data API is a real product/cost tradeoff, not a drop-in swap:
+YouTube's `search.list` costs 100 quota units per call against a default
+10,000 units/day free quota (roughly 100 searches/day before paying or
+requesting a quota increase), a very different constraint than the
+current unlimited scraping-based search. That's a decision for whoever
+owns this product's direction, not something to silently rip out and
+replace. Flagging it plainly is the actual deliverable here.
+
 ## Rate limiting added to the public API routes -- crawler/abuse protection parity with DEKHO
 
 Asked directly to check whether the sibling DEKHO project's crawler/

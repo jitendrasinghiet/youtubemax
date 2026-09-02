@@ -1418,6 +1418,31 @@ function App() {
                       </label>
                     ))}
                   </div>
+
+                  {/* YouTube API Services Terms of Service require this
+                      kind of attribution/notice wherever an app is built
+                      on YouTube data. */}
+                  <p className="mt-3 border-t border-white/10 pt-3 text-[11px] leading-relaxed text-zinc-500">
+                    Video data and playback via YouTube. Use of this app is subject to the{' '}
+                    <a
+                      href="https://www.youtube.com/t/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-zinc-400 underline"
+                    >
+                      YouTube Terms of Service
+                    </a>{' '}
+                    and{' '}
+                    <a
+                      href="https://policies.google.com/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-zinc-400 underline"
+                    >
+                      Google Privacy Policy
+                    </a>
+                    .
+                  </p>
                 </div>
               )}
             </div>
