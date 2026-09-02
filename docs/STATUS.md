@@ -7,6 +7,58 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Rate limiting added to the public API routes -- crawler/abuse protection parity with DEKHO
+
+Asked directly to check whether the sibling DEKHO project's crawler/
+scraping defenses apply here too. Checked DEKHO's own mechanism first
+(its `docs/STATUS.md`): it obfuscates YouTube video ids inside a static
+`entities.json` file it ships to every visitor, so a script can't just
+fetch that one URL and bulk-harvest thousands of real ids. That specific
+technique doesn't translate here -- youtubemax has no equivalent static
+bulk-data file to protect; it proxies live, per-query YouTube requests
+instead (`api/search.ts`, `api/suggest.ts`, `api/analyze.ts`,
+`api/playlist.ts`). Checked those directly rather than assuming parity
+was unnecessary: zero auth, zero rate limiting, callable by anything
+directly, not just this app's own UI -- the real equivalent risk is
+someone using this deployment as a free, anonymous YouTube-scraping
+proxy at unlimited volume, `api/analyze.ts` especially (fetches a
+transcript, generates a summary, and builds chapters, all per call).
+
+New `server/rateLimit.ts`: a per-IP fixed-window limiter (`x-forwarded-
+for`, Vercel sets this), wired into all four live-YouTube-touching
+routes -- 30 req/60s for search and suggest, 20/60s for playlist, a
+stricter 10/60s for analyze given its real cost per call.
+`api/search-cache.ts` deliberately left alone -- it's a pure read of
+data already committed to the deployment, not a live YouTube fetch, so
+it doesn't carry the same abuse cost.
+
+Stated plainly rather than glossed over: this is in-memory, best-effort.
+Vercel serverless functions don't guarantee one persistent warm
+instance -- a cold start clears the counters, and concurrent
+regions/instances each keep their own. It meaningfully throttles a
+single naive script hammering one warm instance; it is not a hard
+guarantee against a determined or distributed abuser. Real hardening
+would need shared state (Vercel KV / Upstash Redis or similar) -- not
+added here since that's a new paid dependency/infra decision, not one to
+make unilaterally.
+
+Caught a real bug via the existing test suite before shipping: the first
+version's `clientIp()` read `req.headers['x-forwarded-for']`
+unconditionally, which crashed every `api/search.test.ts`/
+`api/analyze.test.ts` case (their handler mocks construct a bare
+`{ method, query }` object with no `headers`/`socket` at all) --
+`npm test` went from 9 failing to all 97 passing after guarding both
+reads with `?.`. Also verified the limiter's own logic directly (not
+just via the mocked route tests): 35 calls against a 30/60s limit
+allowed exactly 30 and blocked 5. The local dev server (`npm run dev`)
+uses a separate `configureServer` middleware implementation for these
+same routes (`vite.config.ts`, its own dev-only equivalent of the
+`api/*.ts` Vercel functions) -- rate limiting only takes effect in the
+actual deployed app, not local dev, which is why a live `curl` loop
+against the dev server doesn't show 429s; that's the existing dev/prod
+split, not a gap in this change. `npx tsc --noEmit && npm run build`
+clean.
+
 ## Sort row decluttered (Trusted channels/Safer picks/Longest hidden); Kids content no longer floods general results
 
 Two small reports, both scoped to a single file each.

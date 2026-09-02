@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { fetchPlaylistItems, PlaylistFetchError } from '../server/youtubePlaylists.js'
+import { checkRateLimit, clientIp } from '../server/rateLimit.js'
 
 const PLAYLIST_ID_RE = /^[a-zA-Z0-9_-]{2,64}$/
 
@@ -7,6 +8,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const { allowed, retryAfterSeconds } = checkRateLimit(`playlist:${clientIp(req)}`, 20, 60_000)
+  if (!allowed) {
+    res.setHeader('Retry-After', String(retryAfterSeconds))
+    return res.status(429).json({ error: 'Too many requests, slow down' })
   }
 
   const playlistId = typeof req.query.playlistId === 'string' ? req.query.playlistId.trim() : ''

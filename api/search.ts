@@ -1,10 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { searchYouTubeVideos } from '../server/search.js'
+import { checkRateLimit, clientIp } from '../server/rateLimit.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const { allowed, retryAfterSeconds } = checkRateLimit(`search:${clientIp(req)}`, 30, 60_000)
+  if (!allowed) {
+    res.setHeader('Retry-After', String(retryAfterSeconds))
+    return res.status(429).json({ error: 'Too many requests, slow down' })
   }
 
   const query = typeof req.query.q === 'string' ? req.query.q.trim() : ''
