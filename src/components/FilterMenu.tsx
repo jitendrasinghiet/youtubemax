@@ -182,6 +182,22 @@ function CategoryGroupSection({
 
   const count = isEvergreen && selected.length > 0 ? eligible.length : rawItems.length + (group.sliderItems?.length ?? 0)
 
+  // Reported directly ("check filters layout seems too complicated, make
+  // Ux better suggest") -- flagged in docs/FILTER_ROADMAP.md item 12 as a
+  // real first-open complexity issue: Evergreen rendered all ~29 items,
+  // fully expanded, as the very first thing a first-time opener saw.
+  // Lowest-risk suggested fix from that doc, now actually built: show one
+  // representative item per cluster (its own first item, already the
+  // cluster's own editorial lead) as a "top picks" strip instead, with an
+  // explicit expand for the full grid. No new ranking/eligibility data --
+  // same clusters, same items, just fewer shown by default.
+  const [showAllEvergreen, setShowAllEvergreen] = useState(false)
+  const topPicks = isEvergreen
+    ? (group.clusters ?? [])
+        .map((cluster) => cluster.itemLabels.map((label) => rawItems.find((i) => i.label === label)).find((i) => i && eligibleLabels.has(i.label)))
+        .filter((i): i is FilterItem => !!i)
+    : []
+
   return (
     <div className="rounded-md border border-white/10">
       <button
@@ -217,45 +233,81 @@ function CategoryGroupSection({
             </div>
           )}
 
-          {(group.clusters ?? []).map((cluster) => {
-            const items = cluster.itemLabels
-              .map((label) => rawItems.find((i) => i.label === label))
-              .filter((i): i is FilterItem => !!i && eligibleLabels.has(i.label))
-            if (items.length === 0) return null
-            return (
-              <div key={cluster.label} className="mb-2.5 last:mb-0">
-                <div className="mb-1 text-[10px] font-medium text-zinc-500">{cluster.label}</div>
+          {isEvergreen && !showAllEvergreen && topPicks.length > 0 ? (
+            <>
+              <div className="grid grid-cols-4 gap-1 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+                {topPicks.map((item) => (
+                  <ItemChip
+                    key={item.label}
+                    item={item}
+                    accent="emerald"
+                    active={isFilterSelected(selected, 'category', item.label)}
+                    onClick={() => onSelectEvergreen(item)}
+                    count={facetCounts[filterItemValue(item)]}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAllEvergreen(true)}
+                className="mt-2 w-full rounded-md border border-dashed border-white/10 py-1.5 text-center text-[10px] text-zinc-500 transition hover:border-white/20 hover:text-zinc-300"
+              >
+                Show all Evergreen ({eligible.length})
+              </button>
+            </>
+          ) : (
+            <>
+              {isEvergreen && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllEvergreen(false)}
+                  className="mb-2 w-full rounded-md border border-dashed border-white/10 py-1.5 text-center text-[10px] text-zinc-500 transition hover:border-white/20 hover:text-zinc-300"
+                >
+                  Show fewer
+                </button>
+              )}
+
+              {(group.clusters ?? []).map((cluster) => {
+                const items = cluster.itemLabels
+                  .map((label) => rawItems.find((i) => i.label === label))
+                  .filter((i): i is FilterItem => !!i && eligibleLabels.has(i.label))
+                if (items.length === 0) return null
+                return (
+                  <div key={cluster.label} className="mb-2.5 last:mb-0">
+                    <div className="mb-1 text-[10px] font-medium text-zinc-500">{cluster.label}</div>
+                    <div className="grid grid-cols-4 gap-1 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+                      {items.map((item) => (
+                        <ItemChip
+                          key={item.label}
+                          item={item}
+                          accent={isEvergreen ? 'emerald' : 'red'}
+                          active={isFilterSelected(selected, 'category', item.label)}
+                          onClick={() =>
+                            isEvergreen ? onSelectEvergreen(item) : onToggle('category', item.label, item.icon, groupKey)
+                          }
+                          count={facetCounts[filterItemValue(item)]}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {unclustered.length > 0 && (
                 <div className="grid grid-cols-4 gap-1 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-                  {items.map((item) => (
+                  {unclustered.map((item) => (
                     <ItemChip
                       key={item.label}
                       item={item}
                       accent={isEvergreen ? 'emerald' : 'red'}
                       active={isFilterSelected(selected, 'category', item.label)}
-                      onClick={() =>
-                        isEvergreen ? onSelectEvergreen(item) : onToggle('category', item.label, item.icon, groupKey)
-                      }
+                      onClick={() => (isEvergreen ? onSelectEvergreen(item) : onToggle('category', item.label, item.icon, groupKey))}
                       count={facetCounts[filterItemValue(item)]}
                     />
                   ))}
                 </div>
-              </div>
-            )
-          })}
-
-          {unclustered.length > 0 && (
-            <div className="grid grid-cols-4 gap-1 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-              {unclustered.map((item) => (
-                <ItemChip
-                  key={item.label}
-                  item={item}
-                  accent={isEvergreen ? 'emerald' : 'red'}
-                  active={isFilterSelected(selected, 'category', item.label)}
-                  onClick={() => (isEvergreen ? onSelectEvergreen(item) : onToggle('category', item.label, item.icon, groupKey))}
-                  count={facetCounts[filterItemValue(item)]}
-                />
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       )}

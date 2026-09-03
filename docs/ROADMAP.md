@@ -67,16 +67,16 @@ entry.
    overwhelmingly Kids content to begin with will still look
    Kids-heavy, which is correct, not a bug, but worth stating plainly
    given how the feature is named.
-5. **Filter menu UX flagged as complex** ("check filters layout seems
-   too complicated, make Ux better suggest") — asked to check and
-   suggest, not to redesign blind. `docs/FILTER_ROADMAP.md` already
-   documents real, deliberate reasoning behind the current shape (5
-   dimensions, accordion + editorial clustering chosen *over* a worse
-   flat-list alternative, per-chip counts) — see that doc's new item 12
-   for concrete, lower-risk directions that don't just re-litigate
-   decisions already made there, plus what's *not* recommended and why.
+5. ~~**Filter menu UX flagged as complex.**~~ **Done** — the
+   lowest-risk suggested direction (`docs/FILTER_ROADMAP.md` item 12)
+   shipped: Evergreen now shows a 7-chip "top picks" strip by default
+   instead of all 29 items, with an explicit "Show all Evergreen"
+   expand. Two of the three original suggestions (a filter-search box,
+   mobile-specific collapse) weren't asked for and remain open in that
+   doc if wanted.
 6. **No CI/test-suite parity check on the sibling DEKHO project** —
-   this app has both (GitHub Actions, 100 passing tests); DEKHO has
-   neither. Not this project's code to change, but worth linking:
-   DEKHO's own `docs/ROADMAP.md` "Next up" now tracks it from that
+   partially resolved: DEKHO now has a test suite too (83 tests, added
+   the same session, `docs/STATUS.md`), but still no CI. Not this
+   project's code to change, but worth linking: DEKHO's own
+   `docs/ROADMAP.md` "Next up" now tracks it from that
    side.

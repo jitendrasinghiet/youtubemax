@@ -7,6 +7,38 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Filter menu: Evergreen collapses to a 7-chip "top picks" strip by default
+
+User picked this directly off the quick-wins list ("go for item 4") --
+the lowest-risk suggested direction from `docs/FILTER_ROADMAP.md`
+item 12's own writeup a few turns ago ("check filters layout seems
+too complicated, make Ux better suggest").
+
+**Before**: opening Filters, on the default Category tab, immediately
+rendered the `Evergreen` group fully expanded -- all 29 items across
+7 editorial sub-cards -- before a first-time opener had touched
+anything, with every other group (Entertainment, Music, Education,
+...) collapsed below it.
+
+**Now**: `CategoryGroupSection` (`FilterMenu.tsx`) shows one
+representative chip per cluster (each cluster's own first
+`itemLabels` entry -- already its editorial lead, not a new ranking
+decision) as a 7-chip strip, plus a "Show all Evergreen (29)" button
+that expands to the exact same full grid as before, and a "Show
+fewer" button to collapse back. No taxonomy/data change, no new
+eligibility logic -- same items, same clusters, just fewer shown by
+default. New local `showAllEvergreen` state, scoped to that one
+component instance.
+
+Verified live (Playwright): 7 top-pick chips + the count-labeled
+expand button render on first open of the Category tab; clicking
+"Show all Evergreen" reveals the full 29-item grid and swaps in "Show
+fewer"; clicking that collapses back. A before/after screenshot shows
+the whole Filters panel (all 5 dimension tabs' worth) now fitting
+without scrolling, where the old Evergreen grid alone used to push
+every other group and the results feed below the fold. Full suite
+(114 tests) and lint stay clean.
+
 ## Two quick wins: robots.txt and security headers
 
 User picked these directly off the "quick wins" list ("go for 1 2 3"
