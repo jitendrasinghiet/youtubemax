@@ -224,14 +224,30 @@ function App() {
   // the current browser session -- covers "position stays as per user
   // pref," including picking 'top' again if that's what was last set.
   const [viewerMode, setViewerMode] = useState<ViewerMode>('floating')
+  // Found live: on a phone-width viewport, the un-clamped math below
+  // (`window.innerWidth - MID_VIEWER_WIDTH - VIEWER_MARGIN`, MID_VIEWER_WIDTH
+  // = 432px) goes negative -- the floating panel's default bottom-right
+  // position rendered partly off-screen to the left on a fresh mobile
+  // load, before the user had ever dragged or resized it (nothing restores
+  // a corrected position until sessionStorage has a saved one, which only
+  // exists after at least one prior video play this session). Both
+  // `clampViewerSize`/`clampViewerPosition` already exist and are used
+  // everywhere else this panel's size/position can change (drag, resize,
+  // window resize) -- they just weren't applied to this initial computation.
+  const [viewerSize, setViewerSize] = useState(() =>
+    clampViewerSize({ width: MID_VIEWER_WIDTH, height: MID_VIEWER_HEIGHT }),
+  )
   const [viewerPosition, setViewerPosition] = useState(() => {
     if (typeof window === 'undefined') return { x: VIEWER_MARGIN, y: VIEWER_MARGIN }
-    return {
-      x: window.innerWidth - MID_VIEWER_WIDTH - VIEWER_MARGIN,
-      y: window.innerHeight - MID_VIEWER_HEIGHT - VIEWER_MARGIN,
-    }
+    const size = clampViewerSize({ width: MID_VIEWER_WIDTH, height: MID_VIEWER_HEIGHT })
+    return clampViewerPosition(
+      {
+        x: window.innerWidth - MID_VIEWER_WIDTH - VIEWER_MARGIN,
+        y: window.innerHeight - MID_VIEWER_HEIGHT - VIEWER_MARGIN,
+      },
+      size,
+    )
   })
-  const [viewerSize, setViewerSize] = useState({ width: MID_VIEWER_WIDTH, height: MID_VIEWER_HEIGHT })
   const [viewerSizePreset, setViewerSizePreset] = useState<ViewerSizePreset>('M')
   const [captionsEnabled, setCaptionsEnabled] = useState(
     () => searchParams.get('cc') === '1',

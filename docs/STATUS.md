@@ -7,6 +7,30 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Fixed floating viewer rendering off-screen on a fresh mobile load
+
+User-reported: "ytmax mobile preview pane check visibility position for
+fresh new load seems need fix."
+
+Root cause: the viewer panel's initial `viewerPosition` (`App.tsx`)
+computed `window.innerWidth - MID_VIEWER_WIDTH - VIEWER_MARGIN` with no
+clamping -- `MID_VIEWER_WIDTH` is a fixed 432px, so on any viewport
+narrower than ~448px (i.e. essentially every phone) this goes negative,
+rendering the panel partly off-screen to the left. `clampViewerSize`/
+`clampViewerPosition` already exist and are applied on every later
+resize/drag/window-resize, just never to this initial computation --
+so nothing corrected it until the panel was manually dragged, or a
+prior session had already saved a (viewport-appropriate) position to
+`sessionStorage`. A genuinely fresh visitor -- no saved session state --
+hit the broken default every time.
+
+Fixed by applying both existing clamp functions to the initial
+`viewerSize`/`viewerPosition` state. Verified live (Playwright, iPhone
+13 profile, fresh context with no storage): the viewer panel now
+renders at `x: 16, width: 358` inside a 390px-wide viewport -- fully
+on-screen on both axes, vs. the un-clamped `x: -58` it would have
+computed before.
+
 ## 36 real stand-up comedy search-cache entries persisted (DEKHO's new Comedy content)
 
 DEKHO added 36 new Comedy-type entries (stand-up specials/clips) from a
