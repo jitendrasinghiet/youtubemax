@@ -6,7 +6,9 @@ detailed running log (newest entries at top, one per real change); this
 file is the shorter, persistent "what's next" view that a fast-growing
 log isn't a good home for. `docs/DELTA_REQUIREMENTS.md` and
 `docs/FILTER_ROADMAP.md` remain the narrower filter/taxonomy-specific
-trackers.
+trackers, and `docs/MONETIZATION.md` is the business-side evaluation
+(feature suggestions, viability, monetization scopes, replacement-cost
+estimate, market potential) — advisory content, not a build phase.
 
 ## Where things stand
 
