@@ -72,14 +72,36 @@ export function DiscoverySearchBar({
             onFocus={() => setShowAssist(true)}
             onClick={() => setShowAssist(true)}
             placeholder="Search YouTube for videos…"
-            className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20"
+            className="w-full rounded-lg border border-white/10 bg-black/30 py-2 pl-3 pr-16 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20"
             disabled={loading}
           />
+          {/* Reported directly ("ytmax add search text clear option") --
+              there was no way to empty this box short of manually
+              selecting and deleting the text. Only shown once there's
+              something to clear; onQueryChange('') routes through
+              App.tsx's handleSearchQueryChange, same as typing, so a
+              pinned live-results section still gets dismissed the same
+              way it would from clearing by hand. */}
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                onQueryChange('')
+                setShowAssist(false)
+              }}
+              disabled={loading}
+              className="absolute right-10 top-1/2 -translate-y-1/2 text-sm text-zinc-600 transition hover:text-zinc-300"
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
           <button
             type="button"
             onClick={onToggleVoice}
             disabled={loading}
-            className={`absolute right-10 top-1/2 -translate-y-1/2 text-sm transition ${
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm transition ${
               isVoiceListening
                 ? 'text-red-400 animate-pulse'
                 : 'text-zinc-600 hover:text-zinc-400'

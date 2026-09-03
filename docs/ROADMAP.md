@@ -61,3 +61,16 @@ entry.
    overwhelmingly Kids content to begin with will still look
    Kids-heavy, which is correct, not a bug, but worth stating plainly
    given how the feature is named.
+5. **Filter menu UX flagged as complex** ("check filters layout seems
+   too complicated, make Ux better suggest") — asked to check and
+   suggest, not to redesign blind. `docs/FILTER_ROADMAP.md` already
+   documents real, deliberate reasoning behind the current shape (5
+   dimensions, accordion + editorial clustering chosen *over* a worse
+   flat-list alternative, per-chip counts) — see that doc's new item 12
+   for concrete, lower-risk directions that don't just re-litigate
+   decisions already made there, plus what's *not* recommended and why.
+6. **No CI/test-suite parity check on the sibling DEKHO project** —
+   this app has both (GitHub Actions, 100 passing tests); DEKHO has
+   neither. Not this project's code to change, but worth linking:
+   DEKHO's own `docs/ROADMAP.md` "Next up" now tracks it from that
+   side.

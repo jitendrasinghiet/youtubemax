@@ -151,7 +151,7 @@ export function VideoCard({ video, selected, onToggleSelected, onSelect, showSel
         className="w-full rounded-lg border border-white/10 bg-black/20 overflow-hidden text-left transition hover:border-red-500/30 hover:bg-white/5"
       >
         <div className="relative w-full h-32 bg-black">
-          <img src={video.thumbnail} alt="" className="w-full h-32 object-cover" />
+          <img src={video.thumbnail} alt="" loading="lazy" className="w-full h-32 object-cover" />
           {/* Muted-by-default autoplay is required, not cosmetic: browsers
              block unmuted iframe autoplay without a prior user gesture.
              The starting mute state instead follows whatever the user

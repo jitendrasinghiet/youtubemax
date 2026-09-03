@@ -7,6 +7,47 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Fixed CI; grid perf (default 50, lazy thumbnails); added a search-clear button
+
+Four small, separately-verified items from the same pass.
+
+**CI was red on `main`** ("ytmax ci error on github") -- confirmed via
+GitHub's API rather than assumed: the `build` workflow's `npm run
+test` step was failing on the latest pushed commit.
+`api/search.test.ts` only mocked `searchYouTubeVideos` from
+`server/search.js`, but an earlier change this session
+(`api/search.ts`'s cache-check-first fix) added a `getCachedSearch`
+call before ever reaching that mock, plus a `buildYouTubeSearchUrl`
+import neither test file update accounted for. Unmocked,
+`getCachedSearch` hit the real `data/search-cache/` on disk; "lofi"
+(used throughout the test file) is a genuinely cached query, so the
+handler silently took the cache-hit branch and never called the mock
+at all -- 0 calls, or a stray "buildYouTubeSearchUrl is not mocked"
+error surfacing as the wrong 500 message. Mocked both, defaulted to a
+cache miss in `beforeEach`. All 8 tests pass; full local
+lint/test/build mirrors CI exactly and is clean. (DEKHO has no
+CI/test suite at all to check the same way -- see its own
+`docs/ROADMAP.md`.)
+
+**Grid perf**, same user ask as the sibling DEKHO project's own pass
+("optimize both apps for perf & quick load of grid contents, make
+grid size default 50 if needed"): `CACHE_PAGE_SIZE` 24 -> 50 (matches
+DEKHO's own default exactly). Separately, `VideoCard.tsx` and
+`PlaylistSections.tsx`'s thumbnail `<img>` tags had no `loading="lazy"`
+at all -- with the page size increase alone, that would have made
+things worse (50 eager thumbnail fetches instead of 24). Added.
+Verified live: 50 thumbnails render, all 50 carry `loading="lazy"`.
+
+**Search-clear button** ("ytmax add search text clear option"):
+`DiscoverySearchBar.tsx`'s main search input had no way to empty it
+short of manually selecting and deleting the text -- the mic button
+was the only icon in the field. Added a `✕` clear button, shown only
+once there's text, positioned left of the mic icon. Routes through the
+same `onQueryChange('')` path typing does, so a pinned live-results
+section still gets dismissed the same way clearing by hand would.
+Verified live: typed "lofi", clear button appeared, click emptied the
+field.
+
 ## Fixed: filter-count endpoint took 18-90+ seconds cold, occasionally never returning
 
 User-reported directly: "check all filters content counts both apps."

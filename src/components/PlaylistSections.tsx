@@ -42,7 +42,7 @@ export function PlaylistSections({ sections, loading, onSelectVideo }: PlaylistS
                   onClick={() => onSelectVideo(video.videoId, section.playlistId)}
                   className="group w-40 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20 text-left transition hover:border-red-500/30 hover:bg-white/5"
                 >
-                  <img src={video.thumbnail} alt="" className="h-24 w-full object-cover" />
+                  <img src={video.thumbnail} alt="" loading="lazy" className="h-24 w-full object-cover" />
                   <div className="p-2">
                     <p className="line-clamp-2 text-[11px] font-medium text-white group-hover:text-red-200">
                       {video.title}

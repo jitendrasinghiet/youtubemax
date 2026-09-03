@@ -1,6 +1,6 @@
 # Filter/Discovery Roadmap — Delta Requirements
 
-Last updated: 2026-08-29
+Last updated: 2026-09-03
 
 ## Purpose
 
@@ -317,6 +317,56 @@ longer disagree. Full detail in `docs/SEARCH_CACHE.md`.
 
 ---
 
+### 12. First-open complexity — `SUGGESTED, NOT ACTIONED`
+
+**Gap:** User-reported directly ("check filters layout seems too
+complicated, make Ux better suggest") — asked to check and suggest,
+not to implement a redesign blind. Checked live (Playwright + a
+screenshot) rather than assumed.
+
+**What's actually there today, for context:** opening Filters shows 5
+dimension tabs (Vibe/Audience/Category/Language/Channel) with a count
+badge each; Category (the default-open tab) immediately renders its
+`Evergreen` group fully expanded — 29 items across 7 small editorial
+sub-cards — with every *other* group (Entertainment, Music, Education,
+Lifestyle, Relationships & Social, News, Sports, Technology, Era)
+collapsed behind a `+`. So it's not literally "everything shown at
+once" — item 4 above already solved that half — but the very first
+thing a first-time opener sees is still a ~29-item grid before they've
+touched anything.
+
+**Why this isn't a quick fix to just ship:** almost every obvious
+simplification was already considered and deliberately rejected
+elsewhere in this same doc — a popularity-ranked "top N" (item 4's
+own ranking note: no real popularity data source, didn't want to fake
+one), a Topic/Subtopic tree that would *reduce* items-per-screen
+(item 7, deferred as a large data-modeling project), full contextual
+eligibility hiding irrelevant items automatically (item 4b, deferred
+pending real usage data). Redesigning around any of these without
+picking one back up on purpose would re-litigate settled decisions,
+not add a new one.
+
+**Suggested directions that don't conflict with anything above:**
+- Shrink Evergreen's own default view from all 29 items to a smaller
+  "top picks" strip (e.g. 6-8, one per sub-card) with an explicit
+  "Show all Evergreen" expand — same data, no new ranking/eligibility
+  logic needed, just less on screen on first paint. Lowest-risk option.
+- A plain text filter-*search* box at the top of the Filters panel
+  (type "Bhajan" or "Hindi", jump straight to matching chips across
+  every dimension) — sidesteps needing to understand 5 dimension tabs
+  before finding anything, without touching the taxonomy itself.
+- Mobile-specific: collapse Evergreen by default on narrow viewports
+  specifically (it's the "convenience for browsing" surface, most
+  valuable on a bigger screen where scanning 29 chips costs less
+  vertical space relatively) — DEKHO's own FilterSidebar already has a
+  mobile-simplification precedent worth matching in spirit.
+
+**Not suggested:** touching item 7's Topic/Subtopic tree or item 4b's
+full eligibility system to "solve" this — both are real projects on
+their own, already correctly scoped as deferred, not a first move here.
+
+---
+
 ## Explicitly out of scope right now (from source doc 1)
 
 Carried over from the architecture-context review, unchanged — these are
@@ -361,4 +411,5 @@ each would need its own BUILD/DEFER/REVIEW pass before implementation.
 | 9 | Dynamic entity layer | Large | Deferred |
 | 10 | Vibe dimension (Mood + Context, icon-only) | Medium | **DONE** |
 | 11 | Per-chip match counts | Medium | **DONE** |
+| 12 | First-open complexity (Evergreen default view) | Small-Medium | Suggested, not actioned |
 | — | BYOK / quota / query dedup / entitlements | Large | Out of scope this session |

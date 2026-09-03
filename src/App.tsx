@@ -61,7 +61,10 @@ import { PlaylistSections } from './components/PlaylistSections'
 import { PlaylistManagerPanel } from './dev/PlaylistManagerPanel'
 import type { AnalyzeResult, SearchResultItem, PlaylistSection } from './types'
 
-const CACHE_PAGE_SIZE = 24
+// 50 -- reported directly ("make grid size default 50 if needed"),
+// matching the sibling DEKHO project's own default page size. Both the
+// initial cache-feed load and each infinite-scroll page use this.
+const CACHE_PAGE_SIZE = 50
 const SEARCH_HISTORY_KEY = 'youtubemax.discoverySearchHistory'
 const SEARCH_HISTORY_LIMIT = 5
 const VIEWER_PREFS_KEY = 'youtubemax.viewerPrefs'
