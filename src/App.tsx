@@ -28,6 +28,7 @@ import { allFilterItemValues, type FilterDimensionKey, type FilterItem } from '.
 import {
   applyEvergreenSelection,
   buildEffectiveQuery,
+  groupFilterValuesByDimension,
   loadStoredFilters,
   makeSelectedFilter,
   makeSliderFilter,
@@ -537,12 +538,12 @@ function App() {
   // results in the separate, pinned liveResults section instead.
   useEffect(() => {
     if (isPopoutMode) return
-    const keywords = selectedFilters.map((f) => f.value).filter(Boolean)
+    const keywordGroups = groupFilterValuesByDimension(selectedFilters)
     const query = searchQuery.trim()
     const timeoutId = setTimeout(() => {
       const generation = ++cacheGenerationRef.current
       setCacheLoading(true)
-      browseCachedResults({ keywords, query, offset: 0, limit: CACHE_PAGE_SIZE })
+      browseCachedResults({ keywordGroups, query, offset: 0, limit: CACHE_PAGE_SIZE })
         .then(({ results, total }) => {
           if (cacheGenerationRef.current !== generation) return
           setCacheResults(results)
@@ -559,10 +560,10 @@ function App() {
   const loadMoreCache = useCallback(() => {
     if (isPopoutMode || cacheLoading || cacheOffset >= cacheTotal) return
     const generation = cacheGenerationRef.current
-    const keywords = selectedFilters.map((f) => f.value).filter(Boolean)
+    const keywordGroups = groupFilterValuesByDimension(selectedFilters)
     const query = searchQuery.trim()
     setCacheLoading(true)
-    browseCachedResults({ keywords, query, offset: cacheOffset, limit: CACHE_PAGE_SIZE })
+    browseCachedResults({ keywordGroups, query, offset: cacheOffset, limit: CACHE_PAGE_SIZE })
       .then(({ results, total }) => {
         if (cacheGenerationRef.current !== generation) return
         setCacheResults((prev) => mergeUniqueResults(prev, results))

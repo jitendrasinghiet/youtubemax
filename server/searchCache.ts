@@ -160,17 +160,34 @@ export function wordsAreSimilar(a: string, b: string): boolean {
 }
 
 export interface BrowseCacheOptions {
-  /** Filter-chip values -- OR'd together (any one matching is enough), same
-   *  as picking "Romance" or "Hindi" has always meant. Empty/omitted means
-   *  "no filter constraint," not "match nothing." Matched as a literal
-   *  phrase only, the same rule `getFacetCounts` uses -- these are curated
-   *  taxonomy terms, not typed text, so the chip's displayed count and
-   *  what selecting it actually returns can never disagree. No
-   *  `wordsAreSimilar` fuzzy fallback here (see the note in `query` below
-   *  for why that matters: a multi-word term like "Hindi Songs" checked
-   *  word-by-word against wordsAreSimilar previously matched almost
-   *  anything merely containing "Hindi"). */
-  keywords?: string[]
+  /** Filter-chip values, grouped by filter dimension -- e.g. selecting
+   *  both "Hindi" and "English" (two Language chips) plus "Bhajan" (one
+   *  Category chip) arrives as `[['Hindi', 'English'], ['Bhajan']]`.
+   *  OR'd *within* a group (any one matching is enough -- picking two
+   *  Language chips has always meant "either"), AND'd *across* groups
+   *  (every group must have at least one match) -- the same "OR within a
+   *  field, AND across fields" rule the sibling DEKHO project's own
+   *  filter sidebar uses (lib/filtering.ts's applyFilters there).
+   *
+   *  Reported directly ("check ytmax filters content relevance...
+   *  matching criterias behavior from dekho"): this used to be one flat
+   *  `keywords: string[]` OR'd together regardless of which dimension
+   *  each term came from -- confirmed live, selecting Language:"English"
+   *  (1075 matches alone) and Category:"Bhajan" (1109 alone) together
+   *  returned 2155, essentially their *union*, not a narrower
+   *  intersection of "English-language Bhajans." A filter UI combining
+   *  two different criteria is expected to narrow, not broaden.
+   *
+   *  Empty/omitted (or every group empty) means "no filter constraint,"
+   *  not "match nothing." Matched as a literal phrase only, the same
+   *  rule `getFacetCounts` uses -- these are curated taxonomy terms, not
+   *  typed text, so a chip's displayed count and what selecting it
+   *  actually returns can never disagree. No `wordsAreSimilar` fuzzy
+   *  fallback here (see the note in `query` below for why that matters:
+   *  a multi-word term like "Hindi Songs" checked word-by-word against
+   *  wordsAreSimilar previously matched almost anything merely
+   *  containing "Hindi"). */
+  keywordGroups?: string[][]
   /** The Discovery search box's typed text, matched independently of
    *  `keywords` and AND'd against it (both constraints must hold) -- every
    *  whitespace-separated word must appear somewhere in the item, same as
@@ -184,6 +201,20 @@ export interface BrowseCacheOptions {
   query?: string
   offset?: number
   limit?: number
+}
+
+/** Decodes the `keywords` query-string param (`src/lib/api.ts`'s own
+ *  encoding: groups separated by `|`, terms within a group by `,`) back
+ *  into `BrowseCacheOptions.keywordGroups`. Shared by both HTTP entry
+ *  points (`api/search-cache.ts` for production, `vite.config.ts`'s
+ *  dev-only middleware for local) so the wire format only has one
+ *  parser to stay in sync with the encoder. */
+export function parseKeywordGroupsParam(raw: string): string[][] {
+  if (!raw) return []
+  return raw
+    .split('|')
+    .map((group) => group.split(',').map((k) => k.trim()).filter(Boolean))
+    .filter((group) => group.length > 0)
 }
 
 export interface BrowseCacheResult {
@@ -237,7 +268,9 @@ async function loadAllUniqueResults(): Promise<SearchResultItem[]> {
 }
 
 export async function browseCache(options: BrowseCacheOptions = {}): Promise<BrowseCacheResult> {
-  const keywordTerms = (options.keywords ?? []).map((k) => k.toLowerCase().trim()).filter(Boolean)
+  const keywordGroups = (options.keywordGroups ?? [])
+    .map((group) => group.map((k) => k.toLowerCase().trim()).filter(Boolean))
+    .filter((group) => group.length > 0)
   const queryWords = (options.query ?? '').toLowerCase().trim().split(/\s+/).filter(Boolean)
   const offset = Math.max(0, options.offset ?? 0)
   const limit = Math.max(1, options.limit ?? 24)
@@ -253,7 +286,7 @@ export async function browseCache(options: BrowseCacheOptions = {}): Promise<Bro
 
   for (const item of items) {
     let tier = 0
-    if (keywordTerms.length > 0 || queryWords.length > 0) {
+    if (keywordGroups.length > 0 || queryWords.length > 0) {
       const haystack = [item.title, item.channel, ...(item.tags ?? [])].join(' ').toLowerCase()
       // Filter-chip values are curated taxonomy terms (src/lib/
       // filterTaxonomy.ts), not typed text -- matched as a literal
@@ -262,8 +295,13 @@ export async function browseCache(options: BrowseCacheOptions = {}): Promise<Bro
       // can never disagree (verified: "Hindi Songs" previously showed
       // 859 but returned 2,569 -- wordsAreSimilar comparing the whole
       // phrase against a single haystack word let it match anything
-      // merely containing "Hindi"). No fuzzy fallback here.
-      if (keywordTerms.length > 0 && !keywordTerms.some((t) => haystack.includes(t))) continue
+      // merely containing "Hindi"). No fuzzy fallback here. Every
+      // *group* must have at least one matching term (OR within a
+      // group, AND across groups -- see BrowseCacheOptions.keywordGroups'
+      // own docblock for the relevance bug this fixes).
+      if (keywordGroups.length > 0 && !keywordGroups.every((group) => group.some((t) => haystack.includes(t)))) {
+        continue
+      }
 
       if (queryWords.length > 0) {
         const haystackWords = haystack.split(/\s+/).filter(Boolean)

@@ -57,24 +57,35 @@ export interface BrowseCachePage {
 }
 
 /** Pages through the *entire* local search-result cache -- no live YouTube
- *  fetch. `keywords` (filter chips) and `query` (the typed Discovery search
- *  box) each narrow the result set independently, on top of each other;
- *  both omitted browses everything. This is what backs the default
- *  discovery feed (infinite scroll on first load), what a selected filter
- *  re-pages against, and what typing in the search box re-pages against
- *  before any online search runs -- see server/searchCache.ts's
- *  browseCache(). */
+ *  fetch. `keywordGroups` (filter chips, grouped by dimension -- e.g.
+ *  `[['Hindi', 'English'], ['Bhajan']]` for two Language chips plus one
+ *  Category chip) and `query` (the typed Discovery search box) each
+ *  narrow the result set independently, on top of each other; both
+ *  omitted browses everything. OR'd within a group, AND'd across groups
+ *  -- see server/searchCache.ts's `browseCache()` / its
+ *  `BrowseCacheOptions.keywordGroups` docblock for the relevance bug
+ *  this shape fixes (a flat keyword list used to OR everything
+ *  regardless of which filter dimension it came from). This is what
+ *  backs the default discovery feed (infinite scroll on first load),
+ *  what a selected filter re-pages against, and what typing in the
+ *  search box re-pages against before any online search runs. */
 export async function browseCachedResults(
-  { keywords = [], query = '', offset = 0, limit = 24 }: {
-    keywords?: string[]
+  { keywordGroups = [], query = '', offset = 0, limit = 24 }: {
+    keywordGroups?: string[][]
     query?: string
     offset?: number
     limit?: number
   } = {},
 ): Promise<BrowseCachePage> {
   const params = new URLSearchParams({ offset: String(offset), maxResults: String(limit) })
-  const terms = keywords.map((k) => k.trim()).filter(Boolean)
-  if (terms.length > 0) params.set('keywords', terms.join(','))
+  // Wire encoding: groups separated by `|`, terms within a group by `,` --
+  // safe because filter-chip values are curated taxonomy phrases
+  // (src/lib/filterTaxonomy.ts), none of which contain either character
+  // (checked directly, not assumed).
+  const groups = keywordGroups
+    .map((group) => group.map((k) => k.trim()).filter(Boolean))
+    .filter((group) => group.length > 0)
+  if (groups.length > 0) params.set('keywords', groups.map((g) => g.join(',')).join('|'))
   if (query.trim()) params.set('query', query.trim())
   const res = await fetch(`/api/search-cache?${params}`)
   if (!res.ok) return { results: [], total: 0 }

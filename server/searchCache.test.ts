@@ -78,10 +78,33 @@ describe('browseCache', () => {
   it(
     "a multi-word keyword's displayed count always matches what selecting it returns",
     async () => {
-      const applied = await browseCache({ keywords: ['Hindi Songs'], limit: 1 })
+      const applied = await browseCache({ keywordGroups: [['Hindi Songs']], limit: 1 })
       const counts = await getFacetCounts(['Hindi Songs'])
       expect(applied.total).toBe(counts['Hindi Songs'])
       expect(applied.total).toBeGreaterThan(0)
+    },
+    15000,
+  )
+
+  // Reported directly ("check ytmax filters content relevance...
+  // matching criterias behavior from dekho"): selecting two chips from
+  // *different* filter dimensions (e.g. a Language chip and a Category
+  // chip) used to OR them together -- combining criteria broadened
+  // results instead of narrowing them, the opposite of what a filter UI
+  // is for. `keywordGroups` groups by dimension (OR within a group,
+  // AND across groups); this pins that AND behavior down so it can't
+  // silently regress back to the flat-OR bug.
+  it(
+    'ANDs across keyword groups (different filter dimensions) instead of ORing everything together',
+    async () => {
+      const groupA = await browseCache({ keywordGroups: [['Hindi']], limit: 1 })
+      const groupB = await browseCache({ keywordGroups: [['Bhajan']], limit: 1 })
+      const both = await browseCache({ keywordGroups: [['Hindi'], ['Bhajan']], limit: 1 })
+      // A genuine intersection can only be smaller than (or equal to) the
+      // smaller of the two groups on their own -- it can never exceed
+      // either individual count, which is exactly what the old flat-OR
+      // behavior did (the combined total was roughly their sum).
+      expect(both.total).toBeLessThanOrEqual(Math.min(groupA.total, groupB.total))
     },
     15000,
   )

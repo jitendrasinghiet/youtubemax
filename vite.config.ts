@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { analyzeVideo } from './server/analyze.ts'
 import { buildYouTubeSearchUrl, searchYouTubeVideos } from './server/search.ts'
-import { browseCache, getCachedSearch, getFacetCounts, recordSearch } from './server/searchCache.ts'
+import { browseCache, getCachedSearch, getFacetCounts, parseKeywordGroupsParam, recordSearch } from './server/searchCache.ts'
 import { fetchYouTubeSuggestions } from './server/suggest.ts'
 import { fetchPlaylistItems, fetchPlaylistMeta, PlaylistFetchError } from './server/youtubePlaylists.ts'
 import { searchPlaylists, PlaylistSearchError } from './server/youtubePlaylistSearch.ts'
@@ -170,16 +170,13 @@ function apiPlugin(): Plugin {
         // middleware handler is just the local-dev equivalent of it, same
         // path, same underlying browseCache() call.
         if (url.pathname === '/api/search-cache') {
-          const keywords = (url.searchParams.get('keywords') ?? '')
-            .split(',')
-            .map((k) => k.trim())
-            .filter(Boolean)
+          const keywordGroups = parseKeywordGroupsParam(url.searchParams.get('keywords') ?? '')
           const query = url.searchParams.get('query') ?? ''
           const limit = Number(url.searchParams.get('maxResults') ?? 25)
           const offset = Number(url.searchParams.get('offset') ?? 0)
 
           try {
-            const { results, total } = await browseCache({ keywords, query, offset, limit })
+            const { results, total } = await browseCache({ keywordGroups, query, offset, limit })
             res.statusCode = 200
             res.end(JSON.stringify({ results, total }))
           } catch (err) {

@@ -7,6 +7,51 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Fixed: combining filters from different dimensions broadened results instead of narrowing them
+
+User-reported: "check ytmax filters content relevance with matching
+criterias behavior from dekho, seems relevance for content in ytmax
+needs fix" -- asked to check the local cache-feed filter matching
+against the sibling DEKHO project's own model, which is explicit:
+`lib/filtering.ts`'s `applyFilters` there does "OR within a field, AND
+across fields" (selecting Language:Hindi + Category:Comedy shows Hindi
+Comedy, not everything that's either).
+
+`browseCache()` (`server/searchCache.ts`) never had that distinction --
+every selected filter chip, across every dimension, flattened into one
+list and OR'd together regardless of where it came from (its own
+docblock even said so explicitly: "OR'd together... same as picking
+'Romance' or 'Hindi' has always meant"). Confirmed live before touching
+anything: Language:"English" alone matched 1075 cached items,
+Category:"Bhajan" alone matched 1109, and selecting *both together*
+returned 2155 -- essentially their union, not a narrower "English-
+language Bhajans" intersection. A filter UI combining two criteria is
+expected to narrow, not broaden.
+
+Changed `BrowseCacheOptions.keywords: string[]` to
+`keywordGroups: string[][]` -- filter values grouped by dimension (two
+Language chips stay OR'd with each other, but AND against a selected
+Category chip), matching DEKHO's own semantics exactly. Added
+`groupFilterValuesByDimension()` (`src/lib/searchFilters.ts`) to build
+these groups from `selectedFilters` at both `App.tsx` call sites, a
+shared `parseKeywordGroupsParam()` so the `|`-between-groups/`,`-
+within-group wire encoding only has one parser (used by both
+`api/search-cache.ts` production and `vite.config.ts`'s dev middleware,
+kept in sync automatically instead of by hand). `getFacetCounts` (each
+chip's own standalone "how many total" label) was already independent
+of other selections and needed no change.
+
+Verified at every layer: the same English/Bhajan combination now
+returns 29 (a real intersection, not a sum) via direct curl, via the
+production `api/search-cache.ts` handler invoked directly, and via the
+dev middleware; added a dedicated regression test
+(`searchCache.test.ts`, 12 tests now, all passing) asserting the
+combined count can never exceed the smaller of the two individual
+counts. Also confirmed live in the browser: selecting Language:English
+correctly narrows the Category picker's own Evergreen combo list to
+only English-compatible options (a separate, pre-existing feature that
+was already working correctly and stayed unaffected by this fix).
+
 ## Production /api/search now checks the cache first; write path dedupes by videoId
 
 User-reported: "keep ytmax cache updated with all those contents &

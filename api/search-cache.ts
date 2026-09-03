@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { browseCache } from '../server/searchCache.js'
+import { browseCache, parseKeywordGroupsParam } from '../server/searchCache.js'
 
 // Pure read of committed data/search-cache/*.json files, which ship with
 // the deployment -- unlike /api/search (which writes a fresh cache entry
@@ -14,16 +14,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const keywords = (typeof req.query.keywords === 'string' ? req.query.keywords : '')
-    .split(',')
-    .map((k) => k.trim())
-    .filter(Boolean)
+  const keywordGroups = parseKeywordGroupsParam(typeof req.query.keywords === 'string' ? req.query.keywords : '')
   const query = typeof req.query.query === 'string' ? req.query.query : ''
   const offset = typeof req.query.offset === 'string' ? Number(req.query.offset) : 0
   const limit = typeof req.query.maxResults === 'string' ? Number(req.query.maxResults) : 25
 
   try {
-    const { results, total } = await browseCache({ keywords, query, offset, limit })
+    const { results, total } = await browseCache({ keywordGroups, query, offset, limit })
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
     return res.status(200).json({ results, total })
   } catch (err) {

@@ -94,6 +94,30 @@ function groupLabelFor(filter: SelectedFilter): string | null {
   return dim.groups[filter.group]?.label ?? null
 }
 
+/** Groups selected filter chips by dimension for `browseCachedResults`'s
+ *  `keywordGroups` (server/searchCache.ts's `browseCache` -- OR within a
+ *  group, AND across groups, e.g. two Language chips plus one Category
+ *  chip becomes `[['Hindi', 'English'], ['Bhajan']]`). Reported directly
+ *  ("check ytmax filters content relevance... from dekho"): every
+ *  selected chip used to flatten into one OR'd list regardless of which
+ *  dimension it came from, so combining two different criteria broadened
+ *  results instead of narrowing them -- see keywordGroups' own docblock
+ *  for the numbers. Grouped by `dimension` alone (not further by a
+ *  grouped dimension's own sub-`group`, e.g. Category's "lifestyle" vs
+ *  "genre") -- two Category picks from *different* sub-groups still OR
+ *  together, matching the sibling DEKHO project's own "one filter field,
+ *  several selected values" semantics (lib/filtering.ts's applyFilters). */
+export function groupFilterValuesByDimension(filters: SelectedFilter[]): string[][] {
+  const byDimension = new Map<FilterDimensionKey, string[]>()
+  for (const f of filters) {
+    if (!f.value) continue
+    const existing = byDimension.get(f.dimension)
+    if (existing) existing.push(f.value)
+    else byDimension.set(f.dimension, [f.value])
+  }
+  return [...byDimension.values()]
+}
+
 export function buildEffectiveQuery(typedQuery: string, filters: SelectedFilter[]): string {
   const topical = filters.filter((f) => f.dimension !== 'vibe')
   const vibe = filters.filter((f) => f.dimension === 'vibe')
