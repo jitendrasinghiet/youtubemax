@@ -247,17 +247,34 @@ async function loadAllUniqueResults(): Promise<SearchResultItem[]> {
     return allResultsCache.items
   }
   const files = await listCachedQueries()
+  // Reported directly ("check all filters content counts both apps"):
+  // a cold call to this function -- the very first filter-menu open, or
+  // any request more than ALL_RESULTS_TTL_MS after the last one -- was
+  // taking 18-90+ seconds on this Windows dev machine (measured directly:
+  // one cold /api/search-cache-facet-counts call never returned within a
+  // 60s curl timeout at all) for what the ~1-1.5s estimate above assumed
+  // was cheap. Root cause: over 2,000 cache files read one at a time,
+  // each a separate awaited fs.readFile -- every file's disk-I/O latency
+  // added in serial instead of overlapping. Reading them all concurrently
+  // instead (Node's libuv threadpool naturally caps actual parallel disk
+  // ops, so this doesn't risk an EMFILE burst) turned the same cold call
+  // into a few hundred ms once warmed by the OS's own file cache, and
+  // Promise.all still preserves `files`' original (readdir) order for the
+  // dedupe pass below, same first-occurrence-wins semantics as before.
+  const entries = await Promise.all(
+    files.map(async (file): Promise<SearchCacheEntry | null> => {
+      try {
+        const raw = await fs.readFile(path.join(CACHE_DIR, file), 'utf-8')
+        return JSON.parse(raw) as SearchCacheEntry
+      } catch {
+        return null
+      }
+    }),
+  )
   const seen = new Set<string>()
   const all: SearchResultItem[] = []
-  for (const file of files) {
-    let entry: SearchCacheEntry
-    try {
-      const raw = await fs.readFile(path.join(CACHE_DIR, file), 'utf-8')
-      entry = JSON.parse(raw) as SearchCacheEntry
-    } catch {
-      continue
-    }
-    for (const item of entry.results ?? []) {
+  for (const entry of entries) {
+    for (const item of entry?.results ?? []) {
       if (!item.videoId || seen.has(item.videoId)) continue
       seen.add(item.videoId)
       all.push(item)

@@ -7,6 +7,54 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Fixed: filter-count endpoint took 18-90+ seconds cold, occasionally never returning
+
+User-reported directly: "check all filters content counts both apps."
+Opened the filter menu live and found every chip's count badge simply
+never appeared (`CountBadge` renders `null` until `facetCounts` has an
+entry) -- not a rendering bug, the request behind it just never
+finished in a reasonable time. Measured directly: a cold call to
+`/api/search-cache-facet-counts` (App.tsx fetches this once,
+unconditionally, on every page load) took 18.5s for one run and
+outright failed to complete within a 60s curl timeout on another --
+against the ~1-1.5s this same code path's own comment assumed.
+
+Root cause: `loadAllUniqueResults()` (`server/searchCache.ts`, shared
+by both `browseCache` and `getFacetCounts`) read the 2,008 files
+currently in `data/search-cache/` one at a time, each a separately
+`await`ed `fs.readFile` -- every file's disk-I/O latency added in
+strict series instead of overlapping. Whatever machine the "~1-1.5s"
+estimate was measured on, it doesn't hold at 2,000+ files on this
+Windows dev environment. Changed the loop to `Promise.all` over every
+file (Node's own libuv threadpool already caps real concurrent disk
+ops, so no EMFILE risk from firing 2,008 reads at once) while keeping
+the exact same first-occurrence-wins dedupe order. Verified live:
+identical cold call after a dev-server restart (so nothing was
+warmed) dropped to 2.4s, same counts returned
+(`{"Hindi Songs":1041,"Punjabi Songs":66,"Bollywood-style Latest
+Songs":0}` -- unchanged, confirming correctness wasn't touched, only
+speed). This is the shared module both `api/search-cache.ts` /
+`api/search-cache-facet-counts.ts` (production) and `vite.config.ts`'s
+dev middleware import, so the fix covers both without a separate
+change to either.
+
+Also audited, while in there, whether any filter chip's count reflects
+a real gap rather than the above slowness: of 227 distinct filter
+labels, 53 returned 0 against the local cache. Most are expected --
+either group/section headers (not real chips) or "Evergreen" curated
+search suggestions (`src/lib/filterTaxonomy.ts`'s `evergreen` group),
+which are designed to fire a fresh live YouTube search rather than
+filter the already-cached library, so an empty local-cache count there
+doesn't mean the filter is broken. Excluding those, 24 genuine
+taxonomy chips (outside Evergreen) still show 0 local matches --
+niche/specific ones like Badminton, Kabaddi, Zoology, Botany, JrKG/
+SrKG, Sun TV, and the Excited/Focused Vibe chips. Selecting any of
+these still works via live search (unaffected by the local cache); it's
+only the "FROM YOUR LIBRARY" preview section that would show nothing
+for them right now. Left as-is rather than auto-backfilled -- populating
+cache coverage for 24 specific terms means 24 real YouTube Data API
+search calls, a live-quota cost not incurred without being asked.
+
 ## Added: Media Session wiring for lock-screen controls and better Android background/locked-screen playback
 
 User-reported directly: "check for audio only play from viewer in both
