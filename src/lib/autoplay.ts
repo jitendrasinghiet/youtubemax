@@ -37,3 +37,14 @@ export function nextResultVideoId(
   if (currentIndex === -1 || currentIndex === list.length - 1) return null
   return list[currentIndex + 1].videoId
 }
+
+/** Same as `nextResultVideoId` but backward -- backs the Media Session
+ *  API's "previous track" lock-screen/notification control (App.tsx). */
+export function previousResultVideoId(
+  list: SearchResultItem[],
+  currentVideoId: string,
+): string | null {
+  const currentIndex = list.findIndex((item) => item.videoId === currentVideoId)
+  if (currentIndex <= 0) return null
+  return list[currentIndex - 1].videoId
+}

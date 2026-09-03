@@ -13,6 +13,11 @@ interface VideoPlayerProps {
   captionsEnabled?: boolean
   playbackRate?: number
   pauseSignal?: number
+  /** Same shape as `pauseSignal` (any increment sends the command once) --
+   *  added so the Media Session API's `play` handler (App.tsx) has a way
+   *  to actually resume playback, since this embed otherwise only exposes
+   *  YouTube's own on-iframe play button. */
+  playSignal?: number
   onCurrentTimeChange?: (seconds: number) => void
   /** Fires once when the current video reaches YouTube's own "ended"
    *  player state (postMessage `onStateChange` info `0`) -- reported
@@ -73,6 +78,7 @@ export function VideoPlayer({
   captionsEnabled = false,
   playbackRate = 1,
   pauseSignal = 0,
+  playSignal = 0,
   onCurrentTimeChange,
   onEnded,
 }: VideoPlayerProps) {
@@ -130,6 +136,11 @@ export function VideoPlayer({
     if (pauseSignal <= 0) return
     sendPlayerCommand(iframeRef.current, 'pauseVideo')
   }, [pauseSignal])
+
+  useEffect(() => {
+    if (playSignal <= 0) return
+    sendPlayerCommand(iframeRef.current, 'playVideo')
+  }, [playSignal])
 
   useEffect(() => {
     if (!onEnded || playlistId) return

@@ -7,6 +7,63 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Added: Media Session wiring for lock-screen controls and better Android background/locked-screen playback
+
+User-reported directly: "check for audio only play from viewer in both
+dekho/ytmax with background audio only playback on android mobile/
+tablet even with app minimized or screen locked be better." Checked
+both apps' actual state before changing anything:
+
+- Neither app extracts or plays a raw audio-only stream, and neither
+  should -- there is no legitimate way to pull a bare audio stream out
+  of a YouTube video without violating YouTube's Terms of Service (the
+  same constraint DEKHO's `lib/cast.ts` already documents for a
+  different reason). Both apps only ever play back through YouTube's
+  own iframe embed, which is the ToS-compliant surface.
+- DEKHO already had real infrastructure for the "keeps playing in the
+  background" half of this ask -- `lib/useMediaSession.ts` (wires
+  `navigator.mediaSession` to give the OS a real now-playing surface)
+  plus `FloatingPlayer.tsx` (a tray player that stays mounted and never
+  pauses itself just because the tab loses focus). Its own docblock is
+  already honest about the ceiling: actual background/lock-screen
+  survival is governed by the browser/OS and by YouTube's own embedded
+  player, which DEKHO's JS can't reach into (cross-origin iframe) or
+  override.
+- youtubemax had **none of this** -- no Media Session wiring at all,
+  so Android's lock screen/notification showed no title, artwork, or
+  play/pause/prev/next controls for whatever was playing, and the tab
+  lacked the one concrete signal (an active media session on an
+  audibly-playing tab) that Chrome uses to grant a persistent media
+  notification and exempt a background tab from being frozen/killed.
+
+Ported DEKHO's hook as `src/lib/useMediaSession.ts`, wired into the
+main viewer in `App.tsx`: sets real metadata (title/channel/thumbnail)
+from the already-fetched `AnalyzeResult`, and wires `previoustrack`/
+`nexttrack` to the same `activePlaybackList` navigation the new
+autoplay-next feature (below) uses, `stop` to closing the viewer.
+`play`/`pause` needed one small addition to `VideoPlayer.tsx` --it
+already had a one-way `pauseSignal` prop (an increment-to-fire counter
+sending YouTube's `pauseVideo` postMessage command, originally built
+for cross-window pause sync when popping into PiP) but nothing
+symmetric for resuming; added a matching `playSignal` prop sending
+`playVideo`, so the Media Session's `play` handler actually works
+instead of only `pause` being wired.
+
+youtubemax is already served as an installable standalone-display PWA
+(`public/manifest.webmanifest`), which is the other prerequisite
+commonly needed for Chrome on Android to treat backgrounded/locked-
+screen audio playback as a first-class case rather than a plain
+throttled tab -- no change needed there, it was already in place.
+
+Verified live (Playwright): opened a video, confirmed
+`navigator.mediaSession.metadata.title` matches the real video title
+and `playbackState` is `'playing'`. Actual lock-screen behavior on a
+physical Android device isn't something a headless browser can verify
+directly -- this closes the gap that's actually under the app's
+control (Media Session wiring, matching DEKHO), the remaining ceiling
+(YouTube's own iframe backgrounding behavior) isn't something either
+app can change.
+
 ## Added: autoplay-next and a cast/watch_videos link in the viewer, mirroring DEKHO
 
 User-reported directly: "ytmax also should autoplay next items from

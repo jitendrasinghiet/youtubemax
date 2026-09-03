@@ -48,8 +48,14 @@ import {
   type SearchSortType,
 } from './lib/searchSort'
 import { parsePlaylistId } from './lib/youtubeUrl'
-import { loadAutoplayNextPreference, nextResultVideoId, persistAutoplayNextPreference } from './lib/autoplay'
+import {
+  loadAutoplayNextPreference,
+  nextResultVideoId,
+  persistAutoplayNextPreference,
+  previousResultVideoId,
+} from './lib/autoplay'
 import { youtubeCastPlaylistUrl } from './lib/cast'
+import { useMediaSession } from './lib/useMediaSession'
 import { CURATED_PLAYLISTS } from './lib/curatedPlaylists'
 import { PlaylistSections } from './components/PlaylistSections'
 import { PlaylistManagerPanel } from './dev/PlaylistManagerPanel'
@@ -260,6 +266,7 @@ function App() {
   )
   const [viewerCurrentTime, setViewerCurrentTime] = useState(0)
   const [pauseSignal, setPauseSignal] = useState(0)
+  const [playSignal, setPlaySignal] = useState(0)
   const [popoutSizePreset, setPopoutSizePreset] = useState<ViewerSizePreset>('M')
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isStandaloneApp, setIsStandaloneApp] = useState(() => isStandaloneDisplayMode())
@@ -1212,6 +1219,25 @@ function App() {
     if (nextVideoId) runAnalysis(nextVideoId)
   }, [result, activePlaybackList, runAnalysis])
 
+  const playPreviousFromList = useCallback(() => {
+    if (!result) return
+    const prevVideoId = previousResultVideoId(activePlaybackList, result.meta.videoId)
+    if (prevVideoId) runAnalysis(prevVideoId)
+  }, [result, activePlaybackList, runAnalysis])
+
+  // Media Session API wiring (lib/useMediaSession.ts) -- gives Android's
+  // lock-screen/notification widget real title/artwork/play-pause-prev-next
+  // controls, and is also the standard signal Chrome uses to exempt an
+  // audibly-playing tab from background throttling. See that hook's own
+  // docblock for what this can and can't guarantee.
+  useMediaSession(viewerOpen && Boolean(result), result?.meta ?? null, {
+    onPlay: () => setPlaySignal((value) => value + 1),
+    onPause: () => setPauseSignal((value) => value + 1),
+    onPrevious: playPreviousFromList,
+    onNext: playNextFromList,
+    onStop: () => setViewerOpen(false),
+  })
+
   // An external link (the sibling DEKHO project's detail pane) drives the
   // initial state two ways, independently: `?discover=<query>` pre-fills +
   // auto-runs Discovery search; `?videoId=` *without* `?popout=1` also
@@ -1949,6 +1975,7 @@ function App() {
                         captionsEnabled={captionsEnabled}
                         playbackRate={playbackRate}
                         pauseSignal={pauseSignal}
+                        playSignal={playSignal}
                         onCurrentTimeChange={setViewerCurrentTime}
                         onEnded={autoplayNext ? playNextFromList : undefined}
                       />
