@@ -48,6 +48,8 @@ import {
   type SearchSortType,
 } from './lib/searchSort'
 import { parsePlaylistId } from './lib/youtubeUrl'
+import { loadAutoplayNextPreference, nextResultVideoId, persistAutoplayNextPreference } from './lib/autoplay'
+import { youtubeCastPlaylistUrl } from './lib/cast'
 import { CURATED_PLAYLISTS } from './lib/curatedPlaylists'
 import { PlaylistSections } from './components/PlaylistSections'
 import { PlaylistManagerPanel } from './dev/PlaylistManagerPanel'
@@ -289,6 +291,7 @@ function App() {
   const [liveResults, setLiveResults] = useState<SearchResultItem[]>([])
   const [liveQuery, setLiveQuery] = useState<string | null>(null)
   const [searchSortType, setSearchSortType] = useState<SearchSortType>(() => loadStoredSortType())
+  const [autoplayNext, setAutoplayNext] = useState<boolean>(() => loadAutoplayNextPreference())
   const [defaultsLoaded, setDefaultsLoaded] = useState(false)
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>(() => loadStoredFilters())
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -483,6 +486,10 @@ function App() {
   useEffect(() => {
     persistSortType(searchSortType)
   }, [searchSortType])
+
+  useEffect(() => {
+    persistAutoplayNextPreference(autoplayNext)
+  }, [autoplayNext])
 
   // Floating "back to top" affordance -- the results feed is a plain
   // window-scrolled list (no inner overflow container), and it now
@@ -1186,6 +1193,25 @@ function App() {
   }, [liveResults, searchSortType, liveQuery, searchQuery, kidsFilterActive])
   const cacheIsNarrowed = selectedFilters.length > 0 || Boolean(searchQuery.trim())
 
+  // Whichever of the two result lists the currently-playing video actually
+  // came from -- liveResults (the pinned section) is checked first since
+  // it's the more specific of the two when a video happens to appear in
+  // both. Backs both "autoplay next" and the cast/watch_videos link below.
+  const activePlaybackList = useMemo(() => {
+    if (!result) return []
+    const videoId = result.meta.videoId
+    if (sortedLiveResults.some((item) => item.videoId === videoId)) return sortedLiveResults
+    return sortedCacheResults
+  }, [result, sortedLiveResults, sortedCacheResults])
+
+  const castUrl = result ? youtubeCastPlaylistUrl(activePlaybackList, result.meta.videoId) : null
+
+  const playNextFromList = useCallback(() => {
+    if (!result) return
+    const nextVideoId = nextResultVideoId(activePlaybackList, result.meta.videoId)
+    if (nextVideoId) runAnalysis(nextVideoId)
+  }, [result, activePlaybackList, runAnalysis])
+
   // An external link (the sibling DEKHO project's detail pane) drives the
   // initial state two ways, independently: `?discover=<query>` pre-fills +
   // auto-runs Discovery search; `?videoId=` *without* `?popout=1` also
@@ -1440,6 +1466,11 @@ function App() {
                         label: 'Debug messages',
                         checked: showDebugMessages,
                         onChange: setShowDebugMessages,
+                      },
+                      {
+                        label: 'Autoplay next',
+                        checked: autoplayNext,
+                        onChange: setAutoplayNext,
                       },
                     ].map((option) => (
                       <label
@@ -1803,6 +1834,19 @@ function App() {
                 >
                   PiP
                 </button>
+                {castUrl && (
+                  <a
+                    href={castUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(event) => event.stopPropagation()}
+                    aria-label="Cast: open this list on YouTube for sequential playback on a TV"
+                    title="Opens this list on YouTube -- cast from there to a Chromecast, Android TV, or TV stick for sequential playback"
+                    className="rounded border border-white/10 bg-white/5 px-2 py-1 text-zinc-300 transition hover:border-white/20 hover:text-white"
+                  >
+                    Cast
+                  </a>
+                )}
                 <button
                   type="button"
                   aria-label="Toggle captions"
@@ -1906,6 +1950,7 @@ function App() {
                         playbackRate={playbackRate}
                         pauseSignal={pauseSignal}
                         onCurrentTimeChange={setViewerCurrentTime}
+                        onEnded={autoplayNext ? playNextFromList : undefined}
                       />
                     </div>
 

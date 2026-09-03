@@ -7,6 +7,59 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Added: autoplay-next and a cast/watch_videos link in the viewer, mirroring DEKHO
+
+User-reported directly: "ytmax also should autoplay next items from
+list, also give feature/option for cast/view similar to dekho." Neither
+existed before -- the viewer only ever played one video and stopped
+(outside of a `list=` playlist context, where YouTube's own embed
+already auto-advances), and there was no way to send a sequence to a
+TV/Chromecast.
+
+**Autoplay next**: `VideoPlayer.tsx` now listens for YouTube's own
+"ended" player state over its existing postMessage channel (`event:
+'onStateChange', info: 0` -- the same undocumented-but-stable numeric
+states the real IFrame Player API's `YT.PlayerState` enum exposes; this
+embed never loads that JS API, so the ended-state check is duplicated
+here rather than exposed by the SDK) and fires a new `onEnded` prop
+once per video. Deliberately gated on `!playlistId`: when a `list=`
+playlist is already driving playback, YouTube's own queue handles
+advancing and a second, competing "next" trigger would race it.
+`App.tsx` wires this to a new `playNextFromList()` that finds whichever
+of `liveResults`/`cacheResults` the currently-playing video actually
+came from (`activePlaybackList`, checking the pinned live section
+first) and calls the existing `runAnalysis()` on the following item's
+videoId (`lib/autoplay.ts`'s `nextResultVideoId`, forward-only -- no
+wraparound, since these are loaded pages of search/cache results, not
+a stable whole-library ordering like DEKHO's catalog). New "Autoplay
+next" toggle in the settings dropdown, off by default (it changes what
+plays without an explicit click), persisted to
+`localStorage['youtubemax.autoplayNext']` (same pattern as
+`VideoCard.tsx`'s existing mute preference and `searchSort.ts`'s sort
+type).
+
+**Cast/view**: ported DEKHO's `lib/cast.ts` almost directly --
+`youtubeCastPlaylistUrl()` builds a `youtube.com/watch_videos?video_ids=...`
+link (YouTube's own ad-hoc-playlist mechanism, no account needed)
+starting at the current video and walking forward through the same
+`activePlaybackList`, wrapping once. Same reasoning as DEKHO's version:
+a single video already casts to a Chromecast/Android TV for free via
+the iframe embed's native Cast icon, but nothing lets a third-party
+sender command an active Cast receiver to advance to a *next* item, so
+handing the whole sequence to YouTube's own site/app up front is the
+only way sequential playback survives a cast session. Unlike DEKHO's
+version there's no `hasConfirmedVideo`/`videoIdFor` translation step --
+every `SearchResultItem` here is already a real, resolved video, so the
+list is used as-is. New "Cast" link in the viewer header next to the
+existing S/M/L/PiP/CC/speed/fullscreen controls, shown only when the
+current video is actually part of a loaded list.
+
+Verified live (Playwright): opened a video from the cache feed,
+confirmed the new "Autoplay next" toggle appears in settings and its
+on/off state persists to localStorage across the click, and confirmed
+the new "Cast" link renders with a `watch_videos` URL listing 23 real
+video ids starting from the one playing.
+
 ## Fixed: combining filters from different dimensions broadened results instead of narrowing them
 
 User-reported: "check ytmax filters content relevance with matching

@@ -14,6 +14,15 @@ interface VideoPlayerProps {
   playbackRate?: number
   pauseSignal?: number
   onCurrentTimeChange?: (seconds: number) => void
+  /** Fires once when the current video reaches YouTube's own "ended"
+   *  player state (postMessage `onStateChange` info `0`) -- reported
+   *  directly ("ytmax also should autoplay next items from list"). Not
+   *  meaningful/never called while `playlistId` is set: YouTube's own
+   *  `list=` embed param already drives sequential playback for that
+   *  case (see this component's own docblock on why there's no custom
+   *  queue logic here), so App.tsx only wires this up outside of a
+   *  playlist context. */
+  onEnded?: () => void
 }
 
 function buildEmbedUrl(
@@ -52,6 +61,11 @@ function sendPlayerCommand(iframe: HTMLIFrameElement | null, func: string, args:
   )
 }
 
+// YouTube's own postMessage player-state numbers (undocumented officially,
+// but stable/widely relied on -- same values the real IFrame Player API's
+// YT.PlayerState enum exposes, this embed just never loads that JS API).
+const YT_STATE_ENDED = 0
+
 export function VideoPlayer({
   videoId,
   playlistId = null,
@@ -60,6 +74,7 @@ export function VideoPlayer({
   playbackRate = 1,
   pauseSignal = 0,
   onCurrentTimeChange,
+  onEnded,
 }: VideoPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const lastStart = useRef(startAt)
@@ -115,6 +130,41 @@ export function VideoPlayer({
     if (pauseSignal <= 0) return
     sendPlayerCommand(iframeRef.current, 'pauseVideo')
   }, [pauseSignal])
+
+  useEffect(() => {
+    if (!onEnded || playlistId) return
+
+    // Guards against the same "ended" state re-firing this callback twice
+    // for one video (observed in practice: YouTube's postMessage stream
+    // can repeat an onStateChange event) -- resets per videoId change via
+    // this effect's own dependency array, not a plain module-level flag.
+    let firedForThisVideo = false
+
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin.toLowerCase()
+      const trustedYoutubeOrigin = origin.includes('youtube.com') || origin.includes('youtube-nocookie.com')
+      if (!trustedYoutubeOrigin || firedForThisVideo) return
+
+      let payload: unknown = event.data
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload)
+        } catch {
+          return
+        }
+      }
+
+      if (!payload || typeof payload !== 'object') return
+      const record = payload as { event?: string; info?: unknown }
+      if (record.event !== 'onStateChange' || record.info !== YT_STATE_ENDED) return
+
+      firedForThisVideo = true
+      onEnded()
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [onEnded, playlistId, videoId])
 
   useEffect(() => {
     if (!onCurrentTimeChange) return
