@@ -7,6 +7,33 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Two quick wins: robots.txt and security headers
+
+User picked these directly off the "quick wins" list ("go for 1 2 3"
+-- item 1, the YouTube ToS notice, was DEKHO-only since this app
+already had it).
+
+**`robots.txt`.** Was missing; added `public/robots.txt` -- `Allow: /`
+for the real content (a public discovery/analysis app wants to be
+indexed), `Disallow: /api/` since those are functional endpoints
+(search, analyze, playlist) with no SEO value, and crawler traffic
+hitting them for no reason burns real rate-limit budget and YouTube
+Data API quota (`server/rateLimit.ts`, already a documented "Next up"
+concern) for nothing.
+
+**Security headers.** `vercel.json` had none. Added
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`,
+`Referrer-Policy: strict-origin-when-cross-origin`, and a
+`Permissions-Policy`. Deliberately did **not** disable `microphone` in
+that policy the way DEKHO's own version disables camera/geolocation/
+payment -- checked `src/hooks/useVoiceSearch.ts` first and confirmed
+this app's voice search genuinely uses the Web Speech API (real
+microphone access), so blanket-copying DEKHO's header would have
+broken a real feature. No Content-Security-Policy added either, same
+reasoning as DEKHO's own entry: real risk of silently breaking YouTube
+iframe embeds or thumbnail loading without careful domain enumeration
+and testing.
+
 ## Tests for autoplay.ts and cast.ts (114 tests total); recheck of the 404'd playlists moved to DEKHO's side
 
 Two small items from the same pass as the sibling DEKHO project's own
