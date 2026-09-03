@@ -49,11 +49,15 @@ entry.
    distributed abuser. Real hardening needs shared state (Vercel KV /
    Upstash Redis or similar) — a new paid dependency/infra decision,
    not added unilaterally.
-3. **7 of the 11 playlist URLs given directly this pass came back 404**
-   (likely private/unlisted, from the same "Wise Mind" channel the 4
-   successful ones came from) — re-supplying working URLs, or running
-   the same ingestion with an OAuth token instead of a plain API key,
-   would resolve them if they're meant to be public.
+3. ~~**7 of the 11 playlist URLs given directly this pass came back
+   404.**~~ **Resolved on the sibling DEKHO project's side.** Rechecked
+   directly (`playlists.list` against the channel itself, since the
+   original 7 URLs were never recoverable — a 404 has no metadata to
+   log) and found the channel had gone public again, plus grown to 13
+   playlists total. 218 new real items added to DEKHO's catalog; see
+   its own `docs/STATUS.md`. Not yet mirrored into this app's own
+   `data/playlists/`/`data/search-cache/` the way the original 4 were —
+   scope decision, not an oversight, left for a follow-up if wanted.
 4. **The Kids-content declutter (`declutterMadeForKids`,
    `searchSort.ts`) only spaces out results already returned by a
    search** — it can't add non-Kids content that a query genuinely has

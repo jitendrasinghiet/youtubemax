@@ -7,6 +7,34 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Tests for autoplay.ts and cast.ts (114 tests total); recheck of the 404'd playlists moved to DEKHO's side
+
+Two small items from the same pass as the sibling DEKHO project's own
+larger batch of work.
+
+**"add build automated tests to both apps, no ci/cd needed yet"**:
+this app already had a real suite (11 files, 100 tests, CI-wired) --
+DEKHO had neither (see its own `docs/STATUS.md`). The actual gap here
+was narrower: `src/lib/autoplay.ts` and `src/lib/cast.ts`, both added
+earlier this session, had zero test coverage. Added
+`autoplay.test.ts` (9 tests -- `nextResultVideoId`/
+`previousResultVideoId`'s forward/backward, no-wraparound, not-found,
+and empty-list cases, plus a check that `loadAutoplayNextPreference`
+degrades safely with no `window`) and `cast.test.ts` (5 tests --
+`youtubeCastPlaylistUrl`'s ordering, wraparound, and `maxItems` cap).
+**114 tests total, all passing.** No CI change -- already existed,
+and none needed for these additions.
+
+**The "7 of 11 playlist URLs 404'd" item** (this file's own history
+below) is now resolved, but on the sibling DEKHO project's side, not
+here -- rechecked directly against the channel's own `playlists.list`
+(the original 7 URLs were never recoverable, a 404 has no metadata to
+log) and found 218 new real items across 6 playlists, added to
+DEKHO's catalog. Deliberately not mirrored into this app's own
+`data/playlists/`/`data/search-cache/` the way the original 4
+playlists were (`docs/ROADMAP.md`'s "Next up" already flags this as a
+scope decision, not an oversight).
+
 ## Fixed CI; grid perf (default 50, lazy thumbnails); added a search-clear button
 
 Four small, separately-verified items from the same pass.
