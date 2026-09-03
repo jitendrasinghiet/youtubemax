@@ -59,12 +59,32 @@ export async function getCachedSearch(query: string): Promise<SearchCacheEntry |
 }
 
 /** Dev-only -- see the file header. Never import this from api/*.ts. */
+// Reported directly ("post-search dedupe... update back to cache too"):
+// YouTube's own results page can legitimately list the same videoId
+// twice for one query (a Short and the regular listing, or a result
+// that matches more than one of the page's own internal sections) --
+// this had never been deduped before writing, so a rare double could
+// ride into the committed cache file. Keeps the first (highest-ranked)
+// occurrence. loadAllUniqueResults() below already dedupes *across*
+// every cached file at browse-time; this closes the same gap one file
+// at a time, at the point the data is actually written.
+function dedupeByVideoId(results: SearchResultItem[]): SearchResultItem[] {
+  const seen = new Set<string>()
+  const out: SearchResultItem[] = []
+  for (const item of results) {
+    if (seen.has(item.videoId)) continue
+    seen.add(item.videoId)
+    out.push(item)
+  }
+  return out
+}
+
 export async function recordSearch(query: string, results: SearchResultItem[]): Promise<SearchCacheEntry> {
   await fs.mkdir(CACHE_DIR, { recursive: true })
   const entry: SearchCacheEntry = {
     query,
     searchedAt: new Date().toISOString(),
-    results,
+    results: dedupeByVideoId(results),
   }
   await fs.writeFile(filePathFor(query), JSON.stringify(entry, null, 2) + '\n', 'utf-8')
   return entry

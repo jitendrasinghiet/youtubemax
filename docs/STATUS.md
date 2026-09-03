@@ -7,6 +7,44 @@ tracker (a separate, narrower living document); this file is the general
 one, in the same spirit as the sibling `dekho` project's own
 `docs/STATUS.md`.
 
+## Production /api/search now checks the cache first; write path dedupes by videoId
+
+User-reported: "keep ytmax cache updated with all those contents &
+check/use existing cache first before search & post-search dedupe &
+update back to cache too."
+
+The "keep cache updated" and "write back" halves were already true for
+local dev -- `vite.config.ts`'s dev-only middleware already checks
+`getCachedSearch()` before ever hitting YouTube live, and writes a
+fresh result back via `recordSearch()` on a miss (confirmed directly:
+this session's own DEKHO-side work landed ~170 real cache files this
+way, committed alongside this). What was missing: **`api/search.ts`,
+the actual deployed Vercel function**, skipped the cache check entirely
+and went straight to a live fetch on every single request, regardless
+of whether the query was already sitting in the committed cache.
+
+Reading the cache is a plain file read of something that ships with
+the deployment -- safe on Vercel's read-only filesystem, unlike
+writing a fresh entry (`server/searchCache.ts`'s own docstring already
+says so: "safe to call from anywhere, including api/*.ts in
+production"). Added the same cache-check-first logic the dev
+middleware already had to the production handler; the write-back half
+correctly stays dev-only, since Vercel's runtime filesystem genuinely
+can't persist a new file. Verified directly (ran the handler function
+itself against a real request/response pair): a previously-cached
+query now returns in-process with `fromCache: true`, 20 results,
+`cachedAt` set to the original search time -- no live fetch; a novel
+query still correctly falls through to a real search.
+
+**Post-search dedupe:** `recordSearch()` wrote whatever
+`searchYouTubeVideos()` returned verbatim, with no de-duplication --
+YouTube's own results page can legitimately list the same videoId
+twice (a Short plus the regular listing, or a result matching more
+than one of the page's internal sections), which could ride straight
+into a committed cache file. Added a `dedupeByVideoId()` pass before
+every write (keeps the first/highest-ranked occurrence). Existing
+`searchCache.test.ts` suite (11 tests) still passes unchanged.
+
 ## Fixed floating viewer rendering off-screen on a fresh mobile load
 
 User-reported: "ytmax mobile preview pane check visibility position for
