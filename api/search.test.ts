@@ -1,8 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const { searchYouTubeVideos } = vi.hoisted(() => ({ searchYouTubeVideos: vi.fn() }))
-vi.mock('../server/search.js', () => ({ searchYouTubeVideos }))
+const { searchYouTubeVideos, buildYouTubeSearchUrl, getCachedSearch } = vi.hoisted(() => ({
+  searchYouTubeVideos: vi.fn(),
+  buildYouTubeSearchUrl: vi.fn(() => 'https://youtube.com/results?search_query=mock'),
+  getCachedSearch: vi.fn(),
+}))
+vi.mock('../server/search.js', () => ({ searchYouTubeVideos, buildYouTubeSearchUrl }))
+// The handler checks the committed search-cache first (getCachedSearch)
+// before ever calling searchYouTubeVideos -- unmocked, this hit the real
+// data/search-cache/ on disk, so a query that happens to already be
+// cached there (e.g. "lofi") silently took the cache-hit branch and
+// never called the mock at all, breaking every assertion below in a
+// confusing way (0 calls, or a stray "buildYouTubeSearchUrl is not
+// mocked" error). Defaulted to a cache miss so every test exercises the
+// same live-search path it did before that cache-check-first change.
+vi.mock('../server/searchCache.js', () => ({ getCachedSearch }))
 
 const { default: handler } = await import('./search')
 
@@ -34,6 +47,7 @@ function mockRes() {
 describe('api/search handler', () => {
   beforeEach(() => {
     searchYouTubeVideos.mockReset()
+    getCachedSearch.mockReset().mockResolvedValue(null)
   })
 
   it('rejects non-GET methods', async () => {
